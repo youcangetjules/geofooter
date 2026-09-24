@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.28: Blocked beacons match the detected count
+- The export often still says `blocked=0` because Outlook strips the image after the scan. If beacon blocking covers the sender, the footer uses the detected count as blocked.
+- Follow-up: rescan a mail.
+
 ### 2026-09-24 — 1.3.27: Whole HRE label is the link
 - `HRE: N` is one link to the risk report. The number stays colour-coded.
 - Follow-up: rescan a mail.

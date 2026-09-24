@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.28] — 2026-09-24
+
+### Fixed
+
+- With beacon blocking on for the sender, a detected beacon is counted as blocked. The line no longer says “1 detected 0 Blocked” when those beacons are blocked.
+
 ## [1.3.27] — 2026-09-24
 
 ### Changed

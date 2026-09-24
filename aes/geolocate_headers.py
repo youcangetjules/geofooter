@@ -2982,6 +2982,7 @@ class HTMLReportGenerator:
         beacon_button_html, beacon_launch_url = self._create_beacon_assets(
             beacon_count, beacon_urls, metadata, guri, sender_email, sender_domain,
             beacon_blocked,
+            beacons_blocked_for_sender=bool(block_state.get("beacons")),
         )
         links_summary_line, links_detail_html = self._format_link_summary(
             link_findings, body_available
@@ -4882,6 +4883,7 @@ Scanned: {scanned_at} | GURI: {html.escape(guri)}</div>
         sender_email: Optional[str],
         sender_domain: Optional[str],
         beacon_blocked: Optional[int] = None,
+        beacons_blocked_for_sender: bool = False,
     ) -> Tuple[str, str]:
         """Create beacon report page and return footer HTML + report URL."""
         subject = metadata.get("original subject", "Unknown")
@@ -4892,6 +4894,11 @@ Scanned: {scanned_at} | GURI: {html.escape(guri)}</div>
         ok_style = "color:#90EE90;font-weight:bold;"
         bad_style = "color:#FF4444;font-weight:bold;"
         blocked = int(beacon_blocked or 0)
+        # The scan often runs before Outlook strips the image, so the export
+        # still says blocked=0. If this sender is covered by beacon blocking,
+        # every detected beacon counts as blocked.
+        if beacons_blocked_for_sender and beacon_count > blocked:
+            blocked = int(beacon_count)
         if blocked > 0:
             status = f'<span style="{bad_style}">{blocked} Blocked</span>'
         else:

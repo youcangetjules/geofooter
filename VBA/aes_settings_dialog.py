@@ -219,14 +219,23 @@ def _read_log_tail(path: Path, max_lines: int = 500) -> str:
 
 def _resolve_logo_path() -> Path | None:
     """Prefer the Smart Ass / Aliniant brand mark."""
-    candidates = [
-        Path(r"C:\GeoFooter\smart-ass.svg"),
-        Path(__file__).resolve().parent.parent / "smart-ass.svg",
-        Path(__file__).resolve().parent / "smart-ass.svg",
-        Path(r"C:\GeoFooter\AES.png"),
-        Path(__file__).resolve().parent.parent / "AES.png",
-        Path(__file__).resolve().parent / "AES.png",
-    ]
+    candidates: list[Path] = []
+    try:
+        from geofooter_paths import brand_path
+
+        for name in ("smart-ass.svg", "smart-ass-email.svg", "AES.png"):
+            candidates.append(brand_path(name))
+    except Exception:
+        pass
+    parent = Path(__file__).resolve().parent
+    candidates.extend(
+        [
+            parent.parent / "assets" / "brand" / "smart-ass.svg",
+            parent.parent / "assets" / "brand" / "AES.png",
+            parent / "smart-ass.svg",
+            parent / "AES.png",
+        ]
+    )
     for path in candidates:
         if path.is_file():
             return path

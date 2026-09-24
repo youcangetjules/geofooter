@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — Tidy root: scripts/tests/docs/assets; drop Old/_archive
+- Moved migrators/launchers → `scripts/`, ad-hoc tests → `tests/`, feature docs → `docs/`, brand/icons/forms/data → `assets/`.
+- Removed tracked `Old/` and `_archive/` from the repo (gitignored going forward).
+- Removed stale root `aes_classify_dialog.py` / `aes_diagnostics_dialog.py` (canonical under `VBA\`).
+- Follow-up: none for layout; VBA re-import still needed for `MSCANPaths` if not done yet.
+
 ### 2026-09-24 — Move suite icons to assets/icons
 - Corrected accidental `assets/icons_tmp` path from prior commit; icons live at `assets/icons/` (`geofooter_paths.icons_dir`).
 

@@ -561,14 +561,41 @@ class _InboxSearchBridge(QObject):
     finished = Signal(object, str)  # payload dict or None, error
 
 
-GURI_LOGO_PATH = r"C:\GeoFooter\smart-ass-email.svg"
-GURI_APP_ICON_PATH = r"C:\GeoFooter\abyitself.ico"
+def _guri_logo_path() -> str:
+    try:
+        from geofooter_paths import brand_path
+
+        for name in ("smart-ass-email.svg", "smart-ass.svg"):
+            p = brand_path(name)
+            if p.is_file():
+                return str(p)
+    except Exception:
+        pass
+    return ""
+
+
+def _guri_app_icon_path() -> str:
+    try:
+        from geofooter_paths import brand_path
+
+        for name in ("abyitself.ico", "abyitself.svg", "AES.png"):
+            p = brand_path(name)
+            if p.is_file():
+                return str(p)
+    except Exception:
+        pass
+    return ""
+
+
+# Legacy names kept for call sites that still import the constants.
+GURI_LOGO_PATH = _guri_logo_path()
+GURI_APP_ICON_PATH = _guri_app_icon_path()
 
 
 def _load_guri_logo_pixmap(height: int = 72, width: Optional[int] = None) -> Optional[QPixmap]:
     """Load the GURI brand SVG at a given height (native aspect)."""
-    path = GURI_LOGO_PATH
-    if not os.path.isfile(path):
+    path = _guri_logo_path() or GURI_LOGO_PATH
+    if not path or not os.path.isfile(path):
         return None
     try:
         from PySide6.QtCore import QRectF
@@ -2843,6 +2870,34 @@ class GURIViewerGUI(QMainWindow):
         )
         root.addWidget(head)
 
+        # Install root — all suite-relative paths hang off this folder.
+        paths_group = QGroupBox("Install root")
+        paths_layout = QGridLayout(paths_group)
+        paths_hint = QLabel(
+            "Suite code, assets, datastore, debuglog, and crashlogs are relative "
+            "to this folder. VBA and Python read it from "
+            "%LOCALAPPDATA%\\GeoFooter\\install_root.txt (no hard-coded drive letters)."
+        )
+        paths_hint.setWordWrap(True)
+        paths_hint.setStyleSheet(f"color: {PALETTE['muted']};")
+        paths_layout.addWidget(paths_hint, 0, 0, 1, 3)
+        paths_layout.addWidget(QLabel("Root:"), 1, 0)
+        try:
+            from geofooter_paths import get_install_root
+
+            _root_default = str(get_install_root())
+        except Exception:
+            _root_default = r"C:\GeoFooter"
+        self.install_root_edit = QLineEdit(_root_default)
+        paths_layout.addWidget(self.install_root_edit, 1, 1)
+        browse_root = QPushButton("Browse…")
+        browse_root.clicked.connect(self._browse_install_root)
+        paths_layout.addWidget(browse_root, 1, 2)
+        save_root = QPushButton("Save root")
+        save_root.clicked.connect(self._save_install_root)
+        paths_layout.addWidget(save_root, 2, 1, 1, 1)
+        root.addWidget(paths_group)
+
         self.db_browser_hint = QLabel(
             "PostgreSQL is the supported engine. MySQL and SQLite are deprecated."
         )
@@ -2956,6 +3011,39 @@ class GURIViewerGUI(QMainWindow):
                 self.notebook.setCurrentIndex(i)
                 self._refresh_database_browser()
                 return
+
+    def _browse_install_root(self) -> None:
+        start = ""
+        if hasattr(self, "install_root_edit"):
+            start = self.install_root_edit.text().strip()
+        folder = QFileDialog.getExistingDirectory(
+            self, "Select GeoFooter install root", start or str(Path.home())
+        )
+        if folder and hasattr(self, "install_root_edit"):
+            self.install_root_edit.setText(folder)
+
+    def _save_install_root(self) -> None:
+        if not hasattr(self, "install_root_edit"):
+            return
+        raw = self.install_root_edit.text().strip()
+        if not raw:
+            QMessageBox.warning(self, "Install root", "Enter a folder path.")
+            return
+        try:
+            from geofooter_paths import set_install_root
+
+            root = set_install_root(raw)
+            self.install_root_edit.setText(str(root))
+            self.status_bar.showMessage(f"Install root saved: {root}")
+            QMessageBox.information(
+                self,
+                "Install root",
+                f"Install root saved.\n\n{root}\n\n"
+                "VBA will pick this up from %LOCALAPPDATA%\\GeoFooter\\install_root.txt "
+                "(re-import MSCANPaths.bas if Outlook was already open).",
+            )
+        except Exception as exc:
+            QMessageBox.critical(self, "Install root", f"Could not save:\n{exc}")
 
     def _refresh_database_browser(self) -> None:
         if not hasattr(self, "db_info_label"):
@@ -3138,7 +3226,13 @@ class GURIViewerGUI(QMainWindow):
         source_layout.addWidget(src_sqlite)
 
         sqlite_row = QHBoxLayout()
-        sqlite_path_edit = QLineEdit(r"C:\GeoFooter\guri_records.db")
+        sqlite_path_edit = QLineEdit("")
+        try:
+            from geofooter_paths import datastore_path
+
+            sqlite_path_edit.setText(str(datastore_path("guri_records.db")))
+        except Exception:
+            sqlite_path_edit.setText(r"datastore\guri_records.db")
         sqlite_browse = QPushButton("Browse…")
         sqlite_row.addWidget(sqlite_path_edit, stretch=1)
         sqlite_row.addWidget(sqlite_browse)
@@ -12686,6 +12780,20 @@ def main():
     already running, bring it to the foreground and exit; otherwise start it.
     ``--aura`` opens the Aura (data-broker removal) tab.
     """
+    try:
+        from geofooter_paths import get_install_root, set_install_root, user_data_dir
+
+        # Persist discovered root so VBA / ribbon can resolve relative paths.
+        root = get_install_root()
+        pointer = user_data_dir() / "install_root.txt"
+        if not pointer.is_file():
+            set_install_root(root)
+        from aes_crashlog import install_sys_excepthook
+
+        install_sys_excepthook(prefix="guri")
+    except Exception:
+        pass
+
     from PySide6.QtNetwork import QLocalServer, QLocalSocket
 
     instance_key = "GeoFooter_GURI_GUI_v1"

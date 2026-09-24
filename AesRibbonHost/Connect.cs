@@ -289,7 +289,7 @@ namespace Aliniant.AesRibbonHost
             if (!launched && !hadWindow)
             {
                 System.Windows.Forms.MessageBox.Show(
-                    "Could not open " + productLabel + ".\n\nCheck that C:\\GeoFooter\\guri_gui.py and Python are installed." +
+                    "Could not open " + productLabel + ".\n\nSet Install root in GURI (Database tab) and ensure Python is installed." +
                     "\nOptionally re-import MSCANToolbar so the Add-ins AES bar includes " + productLabel + ".",
                     "Aliniant AES",
                     System.Windows.Forms.MessageBoxButtons.OK,
@@ -344,12 +344,18 @@ namespace Aliniant.AesRibbonHost
 
             if (string.IsNullOrEmpty(raw))
             {
-                foreach (var path in new[]
+                var root = InstallRoot();
+                var paths = new System.Collections.Generic.List<string>
                 {
                     Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Ribbon.xml"),
-                    @"C:\GeoFooter\AesRibbonHost\Ribbon.xml",
-                    @"C:\GeoFooter\VBA\MSCAN_Ribbon.xml",
-                })
+                };
+                if (!string.IsNullOrEmpty(root))
+                {
+                    paths.Add(Path.Combine(root, "AesRibbonHost", "Ribbon.xml"));
+                    paths.Add(Path.Combine(root, "VBA", "MSCAN_Ribbon.xml"));
+                    paths.Add(Path.Combine(root, "assets", "outlook", "MSCAN_Ribbon.xml"));
+                }
+                foreach (var path in paths)
                 {
                     if (File.Exists(path))
                     {
@@ -631,13 +637,52 @@ namespace Aliniant.AesRibbonHost
         private static string[] IconDirs()
         {
             var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            return new[]
+            var root = InstallRoot();
+            var list = new System.Collections.Generic.List<string>();
+            if (!string.IsNullOrEmpty(local))
+                list.Add(Path.Combine(local, "GeoFooter", "icons"));
+            if (!string.IsNullOrEmpty(root))
             {
-                Path.Combine(local, "GeoFooter", "icons"),
-                @"C:\GeoFooter\VBA\icons",
-                @"C:\GeoFooter\icons",
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icons"),
-            };
+                list.Add(Path.Combine(root, "assets", "icons"));
+                list.Add(Path.Combine(root, "VBA", "icons"));
+            }
+            list.Add(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icons"));
+            return list.ToArray();
+        }
+
+        /// <summary>
+        /// Suite install root from %LOCALAPPDATA%\GeoFooter\install_root.txt
+        /// (written by GURI Database tab). Falls back to discovering guri_gui.py.
+        /// </summary>
+        private static string InstallRoot()
+        {
+            try
+            {
+                var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                var pointer = Path.Combine(local, "GeoFooter", "install_root.txt");
+                if (File.Exists(pointer))
+                {
+                    var line = (File.ReadAllText(pointer).Split('\n')[0] ?? "").Trim().Trim('"');
+                    if (!string.IsNullOrEmpty(line) && Directory.Exists(line))
+                        return line;
+                }
+            }
+            catch { }
+
+            try
+            {
+                var env = (Environment.GetEnvironmentVariable("GEOFOOTER_ROOT") ?? "").Trim().Trim('"');
+                if (!string.IsNullOrEmpty(env) && Directory.Exists(env))
+                    return env;
+            }
+            catch { }
+
+            // Last-resort legacy folder if still present
+            if (Directory.Exists(@"C:\GeoFooter") &&
+                (File.Exists(@"C:\GeoFooter\VERSION") || Directory.Exists(@"C:\GeoFooter\VBA")))
+                return @"C:\GeoFooter";
+
+            return null;
         }
 
         private void ExecuteVbaButton(string tag, string onActionHint)
@@ -755,22 +800,23 @@ namespace Aliniant.AesRibbonHost
             {
                 string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
                 string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                string root = InstallRoot() ?? "";
 
-                string[] pyCandidates =
+                var pyList = new System.Collections.Generic.List<string>();
+                if (!string.IsNullOrEmpty(root))
                 {
-                    @"C:\GeoFooter\.venv\Scripts\pythonw.exe",
-                    @"C:\Python313\pythonw.exe",
-                    Path.Combine(userProfile, @"AppData\Local\Programs\Python\Python313\pythonw.exe"),
-                    Path.Combine(local, @"Programs\Python\Python313\pythonw.exe"),
-                    @"C:\GeoFooter\.venv\Scripts\python.exe",
-                    @"C:\Python313\python.exe",
-                };
+                    pyList.Add(Path.Combine(root, @".venv\Scripts\pythonw.exe"));
+                    pyList.Add(Path.Combine(root, @".venv\Scripts\python.exe"));
+                }
+                pyList.Add(Path.Combine(userProfile, @"AppData\Local\Programs\Python\Python313\pythonw.exe"));
+                pyList.Add(Path.Combine(local, @"Programs\Python\Python313\pythonw.exe"));
+                string[] pyCandidates = pyList.ToArray();
 
-                string[] scriptCandidates =
-                {
-                    @"C:\GeoFooter\guri_gui.py",
-                    Path.Combine(local, @"GeoFooter\guri_gui.py"),
-                };
+                var scriptList = new System.Collections.Generic.List<string>();
+                if (!string.IsNullOrEmpty(root))
+                    scriptList.Add(Path.Combine(root, "guri_gui.py"));
+                scriptList.Add(Path.Combine(local, @"GeoFooter\guri_gui.py"));
+                string[] scriptCandidates = scriptList.ToArray();
 
                 string py = null;
                 foreach (var p in pyCandidates)
@@ -800,7 +846,7 @@ namespace Aliniant.AesRibbonHost
                     Arguments = args,
                     UseShellExecute = false,
                     CreateNoWindow = true,
-                    WorkingDirectory = Path.GetDirectoryName(script) ?? @"C:\GeoFooter",
+                    WorkingDirectory = Path.GetDirectoryName(script) ?? (InstallRoot() ?? Environment.CurrentDirectory),
                 };
                 Process.Start(psi);
                 HostLog.Write("LaunchGuriGuiDirect: " + py + " " + args);

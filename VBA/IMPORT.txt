@@ -20,21 +20,29 @@ Before importing
 
 Import order (File > Import File for each)
 ------------------------------------------
-  C:\GeoFooter\VBA\MSCANModLogging.bas
-  C:\GeoFooter\VBA\MSCANModQueueManager.bas
-  C:\GeoFooter\VBA\MSCANModWatchers.bas
-  C:\GeoFooter\VBA\MSCANModStatus.bas
-  C:\GeoFooter\VBA\MSCANSettings.bas
-  C:\GeoFooter\VBA\MSCANAppBootstrap.bas
-  C:\GeoFooter\VBA\MSCANClassificationDialog.bas
-  C:\GeoFooter\VBA\MSCANReadNotify.bas
-  C:\GeoFooter\VBA\MSCANToolbar.bas
-  C:\GeoFooter\VBA\MSCANModSenderRules.bas
-  C:\GeoFooter\VBA\MSCANModule1.bas
-  C:\GeoFooter\VBA\MSCANCore.bas
-  C:\GeoFooter\VBA\MSCANEventHandlers.bas
-  C:\GeoFooter\VBA\MSCANDiagnostics.bas
-  C:\GeoFooter\VBA\MSCANEmailWatcher.cls
+  VBA\MSCANPaths.bas
+  VBA\MSCANModLogging.bas
+  VBA\MSCANModQueueManager.bas
+  VBA\MSCANModWatchers.bas
+  VBA\MSCANModStatus.bas
+  VBA\MSCANSettings.bas
+  VBA\MSCANAppBootstrap.bas
+  VBA\MSCANClassificationDialog.bas
+  VBA\MSCANReadNotify.bas
+  VBA\MSCANToolbar.bas
+  VBA\MSCANModSenderRules.bas
+  VBA\MSCANModule1.bas
+  VBA\MSCANCore.bas
+  VBA\MSCANEventHandlers.bas
+  VBA\MSCANDiagnostics.bas
+  VBA\MSCANEmailWatcher.cls
+
+Install root (no hard-coded C:\GeoFooter)
+----------------------------------------
+Set the suite folder in GURI → Database → Install root (Save root).
+That writes %LOCALAPPDATA%\GeoFooter\install_root.txt for VBA + Python.
+All suite-relative paths (VBA\, assets\, datastore\, debuglog\, crashlogs\)
+resolve from that root. Optional override: environment variable GEOFOOTER_ROOT.
 
 Classification dialog (Python UI)
 ---------------------------------

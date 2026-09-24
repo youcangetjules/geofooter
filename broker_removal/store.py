@@ -28,7 +28,17 @@ def data_dir() -> Path:
 
 
 def db_path() -> Path:
-    return data_dir() / "broker_removal.sqlite"
+    """SQLite file under GeoFooter/datastore/ (migrates legacy flat path once)."""
+    store = data_dir() / "datastore"
+    store.mkdir(parents=True, exist_ok=True)
+    path = store / "broker_removal.sqlite"
+    legacy = data_dir() / "broker_removal.sqlite"
+    if not path.is_file() and legacy.is_file():
+        try:
+            legacy.replace(path)
+        except Exception:
+            pass
+    return path
 
 
 def _now_iso() -> str:

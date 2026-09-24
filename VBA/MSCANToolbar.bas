@@ -368,8 +368,8 @@ Private Function ResolveIconPath(ByVal fileName As String) As String
 
     paths = Array( _
         Environ$("LOCALAPPDATA") & "\GeoFooter\icons\" & fileName, _
-        "C:\GeoFooter\VBA\icons\" & fileName, _
-        "C:\GeoFooter\icons\" & fileName)
+        MSCANPaths.GetAssetsIconsDir() & "\" & fileName, _
+        MSCANPaths.InstallPath("VBA", "icons") & "\" & fileName)
 
     Set fso = CreateObject("Scripting.FileSystemObject")
     For Each p In paths
@@ -754,33 +754,35 @@ Public Sub ShowGuriGui()
 
     py = ""
     paths = Array( _
-        "C:\GeoFooter\.venv\Scripts\pythonw.exe", _
-        "C:\Python313\pythonw.exe", _
+        MSCANPaths.GetVenvPythonw(), _
         Environ$("USERPROFILE") & "\AppData\Local\Programs\Python\Python313\pythonw.exe", _
         Environ$("LOCALAPPDATA") & "\Programs\Python\Python313\pythonw.exe", _
-        "C:\GeoFooter\.venv\Scripts\python.exe", _
-        "C:\Python313\python.exe")
+        MSCANPaths.GetVenvPython())
     For Each p In paths
-        If fso.FileExists(CStr(p)) Then
-            py = CStr(p)
-            Exit For
+        If Len(CStr(p)) > 0 Then
+            If fso.FileExists(CStr(p)) Then
+                py = CStr(p)
+                Exit For
+            End If
         End If
     Next p
 
     script = ""
     paths = Array( _
-        "C:\GeoFooter\guri_gui.py", _
+        MSCANPaths.GetGuriGuiScript(), _
         Environ$("LOCALAPPDATA") & "\GeoFooter\guri_gui.py")
     For Each p In paths
-        If fso.FileExists(CStr(p)) Then
-            script = CStr(p)
-            Exit For
+        If Len(CStr(p)) > 0 Then
+            If fso.FileExists(CStr(p)) Then
+                script = CStr(p)
+                Exit For
+            End If
         End If
     Next p
 
     If Len(py) = 0 Or Len(script) = 0 Then
         MSCANModLogging.WriteLog "ShowGuriGui: python or guri_gui.py not found (py=" & py & " script=" & script & ")."
-        MSCANModStatus.ShowStatus "GURI GUI not found — install Python / check C:\GeoFooter\guri_gui.py"
+        MSCANModStatus.ShowStatus "GURI GUI not found — set Install root in GURI Database tab"
         Exit Sub
     End If
 
@@ -813,33 +815,35 @@ Public Sub ShowAuraGui()
 
     py = ""
     paths = Array( _
-        "C:\GeoFooter\.venv\Scripts\pythonw.exe", _
-        "C:\Python313\pythonw.exe", _
+        MSCANPaths.GetVenvPythonw(), _
         Environ$("USERPROFILE") & "\AppData\Local\Programs\Python\Python313\pythonw.exe", _
         Environ$("LOCALAPPDATA") & "\Programs\Python\Python313\pythonw.exe", _
-        "C:\GeoFooter\.venv\Scripts\python.exe", _
-        "C:\Python313\python.exe")
+        MSCANPaths.GetVenvPython())
     For Each p In paths
-        If fso.FileExists(CStr(p)) Then
-            py = CStr(p)
-            Exit For
+        If Len(CStr(p)) > 0 Then
+            If fso.FileExists(CStr(p)) Then
+                py = CStr(p)
+                Exit For
+            End If
         End If
     Next p
 
     script = ""
     paths = Array( _
-        "C:\GeoFooter\guri_gui.py", _
+        MSCANPaths.GetGuriGuiScript(), _
         Environ$("LOCALAPPDATA") & "\GeoFooter\guri_gui.py")
     For Each p In paths
-        If fso.FileExists(CStr(p)) Then
-            script = CStr(p)
-            Exit For
+        If Len(CStr(p)) > 0 Then
+            If fso.FileExists(CStr(p)) Then
+                script = CStr(p)
+                Exit For
+            End If
         End If
     Next p
 
     If Len(py) = 0 Or Len(script) = 0 Then
         MSCANModLogging.WriteLog "ShowAuraGui: python or guri_gui.py not found (py=" & py & " script=" & script & ")."
-        MSCANModStatus.ShowStatus "Aura GUI not found — install Python / check C:\GeoFooter\guri_gui.py"
+        MSCANModStatus.ShowStatus "Aura GUI not found — set Install root in GURI Database tab"
         Exit Sub
     End If
 

@@ -27,16 +27,23 @@ headers/
 temp/
 input/
 Logs/
+debuglog/
+crashlogs/
 *.log
 *.log.[0-9]
 
-# Local databases and backups
+# Local databases and backups (SQLite lives under datastore/)
+datastore/
+!datastore/.gitkeep
 *.db
 *.db.backup*
 *.db.backup_*
+*.sqlite
 
-# Source backups / agent scratch
+# Source backups / agent scratch / obsolete trees
 _backup/
+_archive/
+Old/
 .cursor/
 AgentStores/
 

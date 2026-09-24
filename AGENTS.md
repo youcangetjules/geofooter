@@ -32,9 +32,15 @@ C:\GeoFooter\
   guri.py / guri_gui.py     ← GURI core + desktop app
   broker_removal\           ← data-broker catalog, profile, request store, GURI tab
   aes_action_handler.py     ← handles aes:// footer actions
-  output\                   ← banners, reports, applied footers
+  assets\                   ← brand, icons, outlook forms, sample data, pages
+  docs\                     ← feature guides (not live code)
+  scripts\                  ← one-off migrators / launchers / icon builders
+  tests\                    ← ad-hoc test scripts
+  output\                   ← banners, reports, applied footers (runtime)
   AesRibbonHost\            ← ribbon host project
 ```
+
+Do **not** keep obsolete trees (`Old\`, `_archive\`) in the published repo.
 
 Prefer **`VBA\geolocate_headers.py`** and other scripts under `VBA\` over stale root copies. Root `geolocate_headers.py` / dialogs may be archived or secondary.
 

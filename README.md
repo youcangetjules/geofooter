@@ -12,6 +12,20 @@
 **Version:** see [`VERSION`](VERSION) / [`version.py`](version.py) — currently **1.2.0**.  
 **Changes:** [`CHANGELOG.md`](CHANGELOG.md) · day-to-day notes in [`WORKLOG.md`](WORKLOG.md).
 
+## Paths
+
+Set **Install root** in GURI → **Database** (saves `%LOCALAPPDATA%\GeoFooter\install_root.txt`).
+Suite folders (`assets/`, `docs/`, `scripts/`, `tests/`, `datastore/`, `debuglog/`, `crashlogs/`, `VBA/`) are relative to that root.
+Override with env `GEOFOOTER_ROOT`. See `geofooter_paths.py` / `VBA\MSCANPaths.bas`.
+
+| Folder | Contents |
+|--------|----------|
+| `VBA/` | Canonical Outlook VBA + scan/dialog Python |
+| `assets/` | Brand, ribbon icons, Outlook forms, sample data |
+| `docs/` | Feature guides |
+| `scripts/` | Migrations, launchers, icon build helpers |
+| `tests/` | Ad-hoc test scripts |
+
 ## Requirements
 
 - Windows + Microsoft Outlook (classic)

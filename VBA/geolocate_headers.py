@@ -128,14 +128,14 @@ except ImportError as e:
 try:
     from guri import GURIDatabase, connect_guri_database
 except ImportError as e:
-    print(f"ERROR: Missing required module 'guri'. Make sure guri.py is in C:\\GeoFooter.", file=sys.stderr)
+    print(f"ERROR: Missing required module 'guri'. Make sure guri.py is on PYTHONPATH / install root.", file=sys.stderr)
     print(f"Import error: {e}", file=sys.stderr)
     sys.exit(1)
 
 try:
     from attachment_scanner import AttachmentScanner, AttachmentVerdict
 except ImportError as e:
-    print(f"ERROR: Missing required module 'attachment_scanner'. Make sure attachment_scanner.py is in C:\\GeoFooter.", file=sys.stderr)
+    print(f"ERROR: Missing required module 'attachment_scanner'. Make sure attachment_scanner.py is on PYTHONPATH / install root.", file=sys.stderr)
     print(f"Import error: {e}", file=sys.stderr)
     sys.exit(1)
 
@@ -182,16 +182,38 @@ except ImportError:
         )
         return resp, True
 
-# Set up logging at the very first step
-log_file = os.path.join(os.path.dirname(sys.argv[1]) if len(sys.argv) > 1 else "C:\\GeoFooter", "geolocate_debug.log")
-logging.basicConfig(filename=log_file, level=logging.DEBUG, 
+# Set up logging at the very first step (debug → debuglog\, crashes → crashlogs\)
+try:
+    from aes_crashlog import install_sys_excepthook, operational_log_path
+
+    install_sys_excepthook(prefix="geolocate")
+    log_file = str(operational_log_path("geolocate_debug.log"))
+except Exception:
+    try:
+        from geofooter_paths import debuglog_dir
+
+        log_file = str(debuglog_dir() / "geolocate_debug.log")
+    except Exception:
+        log_file = str(Path(__file__).resolve().parent.parent / "debuglog" / "geolocate_debug.log")
+    try:
+        os.makedirs(os.path.dirname(log_file), exist_ok=True)
+    except Exception:
+        pass
+logging.basicConfig(filename=log_file, level=logging.DEBUG,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 logging.debug("Script started with arguments: %s", sys.argv)
 
 # Configuration
+try:
+    from geofooter_paths import get_install_root as _gf_root
+
+    _BASE = str(_gf_root()).replace("\\", "/")
+except Exception:
+    _BASE = ""
+
 CONFIG = {
-    "base_path": "C:/GeoFooter",
-    "log_file": "geolocate_debug.log",
+    "base_path": _BASE,
+    "log_file": "debuglog/geolocate_debug.log",
     "log_max_bytes": 5 * 1024 * 1024,
     "log_backup_count": 5,
     "timezone": "Europe/London",
@@ -220,6 +242,29 @@ CONFIG = {
     },
     "footer_compact_default": True
 }
+
+
+def _suite_root_path() -> Path:
+    base = (CONFIG.get("base_path") or "").strip()
+    if not base:
+        try:
+            from geofooter_paths import get_install_root
+            base = str(get_install_root())
+        except Exception:
+            base = str(Path(__file__).resolve().parent.parent)
+    return Path(base)
+
+
+def _suite_output(*parts: str) -> Path:
+    p = _suite_root_path().joinpath("output", *parts)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+def _suite_file_url(*parts: str) -> str:
+    """file:// URL for a path under <install_root>/output/…"""
+    return _suite_output(*parts).resolve().as_uri()
+
 
 
 def _resolve_abuseipdb_api_key() -> str:
@@ -3697,7 +3742,7 @@ Live Safe Browsing lookups are optional and separate.</p>
 <div class="footer">(C) Aliniant Labs | Aliniant Email Scanner (AES)</div>
 </body></html>"""
             report_path.write_text(report_html, encoding="utf-8")
-            return f"file:///C:/GeoFooter/output/links/{report_name}"
+            return _suite_file_url("links", report_name)
         except Exception as exc:
             self.logger.error("Failed to write links report: %s", exc)
             return ""
@@ -4566,7 +4611,7 @@ Scanned: {scanned_at} | GURI: {html.escape(guri)}</div>
 <div class="footer">(C) Aliniant Labs | Aliniant Email Scanner (AES)</div>
 </body></html>"""
         report_path.write_text(report_html, encoding="utf-8")
-        return f"file:///C:/GeoFooter/output/attachments/{report_name}"
+        return _suite_file_url("attachments", report_name)
 
     def _parse_beacon_metadata(
         self, metadata: Dict[str, str]
@@ -4646,7 +4691,7 @@ h1{font-size:20px;margin:0 0 1em}p{font-size:14px;line-height:1.5}</style></head
         launch_name = f"beacon_open_{report_id}.html"
         report_path = beacons_dir / report_name
         launch_path = beacons_dir / launch_name
-        report_url = f"file:///C:/GeoFooter/output/beacons/{report_name}"
+        report_url = _suite_file_url("beacons", report_name)
 
         rows = ""
         entries = list(beacon_urls[:50])
@@ -5192,7 +5237,7 @@ h1 {{ font-size: 18px; color: #0f6b7c; margin: 0 0 8px 0; }}
 <div class="footer">(C) Aliniant Labs | Aliniant Email Scanner (AES) — score compiled at scan time</div>
 </div></body></html>"""
             report_path.write_text(page, encoding="utf-8")
-            return f"file:///C:/GeoFooter/output/risk_reports/{report_name}"
+            return _suite_file_url("risk_reports", report_name)
         except Exception as exc:
             self.logger.error("Failed to write risk report: %s", exc)
             return ""
@@ -5327,7 +5372,7 @@ table.aes th {{ color: #334; background: #f4f7f9; }}
 <div class="footer">(C) Aliniant Labs | Aliniant Email Scanner (AES) Deep Scan — ribbon only, never auto-run</div>
 </div></body></html>"""
             report_path.write_text(page, encoding="utf-8")
-            return f"file:///C:/GeoFooter/output/deepscan_reports/{report_name}"
+            return _suite_file_url("deepscan_reports", report_name)
         except Exception as exc:
             self.logger.error("Failed to write deep scan report: %s", exc)
             return ""
@@ -5760,7 +5805,7 @@ Sender: {sender} | Domain: {domain} | Created: {created}</div>
 <div class="footer">(C) Aliniant Labs | Aliniant Email Scanner (AES) — already calculated at scan time (no re-scan)</div>
 </div></body></html>"""
             report_path.write_text(page, encoding="utf-8")
-            return f"file:///C:/GeoFooter/output/fullscan_reports/{report_name}"
+            return _suite_file_url("fullscan_reports", report_name)
         except Exception as exc:
             self.logger.error("Failed to write full scan report: %s", exc)
             return ""
@@ -7499,7 +7544,7 @@ def main():
         )
         
         # Ensure output directory exists
-        os.makedirs('C:/GeoFooter/output', exist_ok=True)
+        _suite_output().mkdir(parents=True, exist_ok=True)
         
         # Use provided output file path or generate default one
         if output_file is None:
@@ -7509,7 +7554,7 @@ def main():
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_")
             random_suffix = str(random.randint(0, 999)).zfill(3)
             footer_filename = f"footer_{timestamp}{random_suffix}.html"
-            output_file = os.path.join('C:/GeoFooter/output', footer_filename)
+            output_file = str(_suite_output(footer_filename))
             print(f"Generated output file path: {output_file}", file=sys.stderr)
         else:
             print(f"Using provided output file path: {output_file}", file=sys.stderr)

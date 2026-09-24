@@ -11,6 +11,7 @@ import sqlite3
 import random
 import logging
 from datetime import datetime
+from pathlib import Path
 from typing import Optional, Dict, Any, Tuple, List
 
 # Try to import PostgreSQL connector
@@ -46,7 +47,7 @@ class GURIDatabase:
     def __init__(self, 
                  db_type: str = "postgres",
                  db_path: Optional[str] = None, 
-                 base_path: str = "C:/GeoFooter",
+                 base_path: Optional[str] = None,
                  pg_config: Optional[Dict[str, Any]] = None,
                  mysql_config: Optional[Dict[str, Any]] = None):
         """
@@ -60,6 +61,12 @@ class GURIDatabase:
             mysql_config: MySQL connection configuration dict (legacy / deprecated)
         """
         self.logger = logging.getLogger(__name__)
+        if not base_path:
+            try:
+                from geofooter_paths import get_install_root
+                base_path = str(get_install_root())
+            except Exception:
+                base_path = str(Path(__file__).resolve().parent)
         raw_type = (db_type or "postgres").lower()
         if raw_type in {"postgresql", "pgsql", "pg"}:
             raw_type = "postgres"
@@ -115,10 +122,31 @@ class GURIDatabase:
                 "SQLite is deprecated for GURI — configure guri_postgres_config.json"
             )
             if db_path is None:
-                base_path = os.path.abspath(base_path)
-                self.db_path = os.path.join(base_path, "guri_records.db")
+                try:
+                    from geofooter_paths import datastore_path, get_install_root
+
+                    base_path = str(get_install_root())
+                    self.db_path = str(datastore_path("guri_records.db"))
+                except Exception:
+                    base_path = os.path.abspath(base_path)
+                    store_dir = os.path.join(base_path, "datastore")
+                    os.makedirs(store_dir, exist_ok=True)
+                    self.db_path = os.path.join(store_dir, "guri_records.db")
+                legacy = os.path.join(base_path, "guri_records.db")
+                if not os.path.isfile(self.db_path) and os.path.isfile(legacy):
+                    try:
+                        os.replace(legacy, self.db_path)
+                        self.logger.info("Migrated guri_records.db → datastore/")
+                    except Exception as mig_exc:
+                        self.logger.warning("Could not migrate legacy SQLite DB: %s", mig_exc)
             else:
                 self.db_path = db_path
+                try:
+                    parent = os.path.dirname(self.db_path)
+                    if parent:
+                        os.makedirs(parent, exist_ok=True)
+                except Exception:
+                    pass
             self.logger.info(f"GURI database type: SQLite (deprecated) at {self.db_path}")
             
         else:
@@ -1436,7 +1464,7 @@ class GURIDatabase:
 
 
 def connect_guri_database(
-    base_path: str = "C:/GeoFooter",
+    base_path: Optional[str] = None,
     logger: Optional[logging.Logger] = None,
     *,
     allow_legacy_fallback: bool = False,
@@ -1453,6 +1481,12 @@ def connect_guri_database(
         Tuple of (database instance, db_type label: "postgres", "mysql", or "sqlite")
     """
     log = logger or logging.getLogger(__name__)
+    if not base_path:
+        try:
+            from geofooter_paths import get_install_root
+            base_path = str(get_install_root())
+        except Exception:
+            base_path = str(Path(__file__).resolve().parent)
     pg_config_path = os.path.join(base_path, "guri_postgres_config.json")
 
     if os.path.exists(pg_config_path):

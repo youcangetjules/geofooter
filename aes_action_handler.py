@@ -30,20 +30,44 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-LOG_PATH = Path("C:/GeoFooter/aes_action_handler.log")
-RULES_PATH = Path(os.environ.get("LOCALAPPDATA", "C:/GeoFooter")) / "GeoFooter" / "aes_sender_rules.json"
-# Prefer LocalAppData GeoFooter; also check C:\GeoFooter\mitigated_html (VBA GetBaseDir).
-MITIGATED_DIRS = [
-    Path(os.environ.get("LOCALAPPDATA", "")) / "GeoFooter" / "mitigated_html",
-    Path(r"C:\GeoFooter\mitigated_html"),
-    Path(r"C:\GeoFooter\VBA\mitigated_html"),
-]
+def _action_log_path() -> Path:
+    try:
+        from geofooter_paths import debug_log_path
 
-# Local HTML reports opened from the footer (Attachments / Beacons / Links / Full).
-_REPORT_ROOTS = [
-    Path(r"C:\GeoFooter\output"),
-    Path(os.environ.get("LOCALAPPDATA", "")) / "GeoFooter" / "output",
-]
+        return debug_log_path("aes_action_handler.log")
+    except Exception:
+        return Path("debuglog") / "aes_action_handler.log"
+
+
+LOG_PATH = _action_log_path()
+try:
+    from geofooter_paths import user_data_dir as _user_data
+
+    RULES_PATH = _user_data() / "aes_sender_rules.json"
+except Exception:
+    RULES_PATH = Path(os.environ.get("LOCALAPPDATA", "")) / "GeoFooter" / "aes_sender_rules.json"
+_REPORT_ROOTS = []
+try:
+    from geofooter_paths import get_install_root, user_data_dir
+
+    _REPORT_ROOTS = [
+        get_install_root() / "output",
+        user_data_dir() / "output",
+    ]
+except Exception:
+    _REPORT_ROOTS = [Path("output")]
+
+MITIGATED_DIRS = []
+try:
+    from geofooter_paths import get_install_root, user_data_dir
+
+    MITIGATED_DIRS = [
+        user_data_dir() / "mitigated_html",
+        get_install_root() / "mitigated_html",
+        get_install_root() / "VBA" / "mitigated_html",
+    ]
+except Exception:
+    MITIGATED_DIRS = [Path("mitigated_html")]
 
 ACTIONS = {
     "block-attachments": ("block_attachments", "Attachments from {who} will be quarantined by AES."),

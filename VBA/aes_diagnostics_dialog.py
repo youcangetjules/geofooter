@@ -747,13 +747,13 @@ def build_tests() -> List[TestDef]:
         # AES scanner (4)
         TestDef("py_exe", "Python executable", "AES scanner", "C:\\Python313\\python.exe (or current interpreter)", test_python_exe),
         TestDef("geolocate", "geolocate_headers.py", "AES scanner", "VBA or root copy present", test_geolocate_file),
-        TestDef("guri", "guri.py", "AES scanner", "C:\\GeoFooter\\guri.py", test_guri_file),
+        TestDef("guri", "guri.py", "AES scanner", "install_root/guri.py", test_guri_file),
         TestDef("aes_on", "AES automatic scanning ON", "AES scanner", "Service enabled snapshot from Outlook", test_aes_scanning_on),
         TestDef("auto_pipeline", "Auto-scan pipeline health", "Auto-scan", "Queue, watchers, last ItemAdd/NewMailEx, catch-up", test_auto_scan_pipeline),
         TestDef("acct_scan", "Account SCAN/SKIP settings", "Auto-scan", "Which mailboxes get automatic footers", test_accounts_scan_settings),
         TestDef("auto_log", "Recent auto-scan log", "Auto-scan", "Last NewMailEx / ItemAdd / queue / catch-up lines", test_recent_auto_scan_log),
         # Project venv (2)
-        TestDef("venv_up", "GeoFooter venv is up", "Python venv", "C:\\GeoFooter\\.venv runs and reports version", test_venv_up),
+        TestDef("venv_up", "GeoFooter venv is up", "Python venv", "install_root/.venv runs and reports version", test_venv_up),
         TestDef("venv_reqs", "requirements.txt loaded in venv", "Python venv", "Every package in requirements.txt installs and imports", test_venv_requirements),
         # Classification (11)
         TestDef("cls_detect1", "Detect tag1", "Classification", "Detect known classification tag", test_detect_tag1),

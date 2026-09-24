@@ -55,7 +55,7 @@ Private Function ResolveSettingsDirectory() As String
     paths = Array( _
         Environ$("LOCALAPPDATA") & "\GeoFooter", _
         Environ$("TEMP") & "\GeoFooter", _
-        "C:\GeoFooter")
+        MSCANPaths.GetInstallRoot())
 
     Set fso = CreateObject("Scripting.FileSystemObject")
     For Each p In paths
@@ -602,12 +602,10 @@ Private Function ResolveSettingsPythonExe() As String
 
     Dim paths As Variant
     paths = Array( _
-        "C:\Python313\pythonw.exe", _
-        "C:\Python313\python.exe", _
         Environ$("USERPROFILE") & "\AppData\Local\Programs\Python\Python313\pythonw.exe", _
         Environ$("LOCALAPPDATA") & "\Programs\Python\Python313\pythonw.exe", _
-        "C:\GeoFooter\.venv\Scripts\pythonw.exe", _
-        "C:\GeoFooter\.venv\Scripts\python.exe")
+        MSCANPaths.GetVenvPythonw(), _
+        MSCANPaths.GetVenvPython())
 
     Dim p As Variant
     For Each p In paths
@@ -626,8 +624,8 @@ Private Function ResolveSettingsDialogScript() As String
 
     Dim paths As Variant
     paths = Array( _
-        "C:\GeoFooter\VBA\aes_settings_dialog.py", _
-        "C:\GeoFooter\aes_settings_dialog.py", _
+        MSCANPaths.InstallPath("VBA", "aes_settings_dialog.py"), _
+        MSCANPaths.InstallPath("aes_settings_dialog.py"), _
         Environ$("LOCALAPPDATA") & "\GeoFooter\aes_settings_dialog.py")
 
     Dim p As Variant

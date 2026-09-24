@@ -15,8 +15,8 @@ Private m_NudgeWiredLogged As Boolean
 ' CONFIGURATION
 ' - These constants serve as default fallbacks.
 '===============================================================================
-Private Const PYTHON_EXE_DEFAULT As String = "C:\Python313\python.exe"
-Private Const PYTHON_SCRIPT_DEFAULT As String = "C:\GeoFooter\VBA\geolocate_headers.py"
+Private Const PYTHON_EXE_DEFAULT As String = ""  ' resolved via MSCANPaths / PATH
+' Prefer VBA\geolocate_headers.py under the configured install root.
 Private Const AES_SCANNED_PROP As String = "AESScanned"
 ' Status strip: Outlook refuses to load file:// images in a message, so the
 ' rendered PNG is attached as a hidden inline part and referenced by cid.
@@ -178,14 +178,16 @@ Private Function GetBaseDir() As String
     Dim paths As Variant: paths = Array( _
         Environ$("LOCALAPPDATA") & "\GeoFooter", _
         Environ$("TEMP") & "\GeoFooter", _
-        "C:\GeoFooter") ' C:\ is a last resort, often restricted.
+        MSCANPaths.GetInstallRoot())
         
     Dim p As Variant
     For Each p In paths
+        If Len(CStr(p)) = 0 Then GoTo NextCandidate
         If EnsureFolderExists(p) Then
             GetBaseDir = p
             Exit Function
         End If
+NextCandidate:
     Next p
     
     MSCANModLogging.WriteLog "GetBaseDir: CRITICAL - Could not create or access any base directory."
@@ -201,15 +203,19 @@ Private Function GetPythonExe() As String
     Dim fso As Object: Set fso = CreateObject("Scripting.FileSystemObject")
     
     Dim paths As Variant: paths = Array( _
-        PYTHON_EXE_DEFAULT, _
+        MSCANPaths.GetVenvPythonw(), _
+        MSCANPaths.GetVenvPython(), _
         Environ$("USERPROFILE") & "\AppData\Local\Programs\Python\Python313\python.exe", _
+        Environ$("USERPROFILE") & "\AppData\Local\Programs\Python\Python312\python.exe", _
         Environ$("ProgramFiles") & "\Python\python.exe")
         
     Dim p As Variant
     For Each p In paths
-        If fso.FileExists(p) Then
-            GetPythonExe = p
-            Exit Function
+        If Len(CStr(p)) > 0 Then
+            If fso.FileExists(p) Then
+                GetPythonExe = p
+                Exit Function
+            End If
         End If
     Next p
     
@@ -221,15 +227,17 @@ Private Function GetPythonScript() As String
     Dim fso As Object: Set fso = CreateObject("Scripting.FileSystemObject")
     
     Dim paths As Variant: paths = Array( _
-        PYTHON_SCRIPT_DEFAULT, _
-        "C:\GeoFooter\geolocate_headers.py", _
+        MSCANPaths.GetGeolocateScript(), _
+        MSCANPaths.InstallPath("VBA", "geolocate_headers.py"), _
         GetBaseDir() & "\geolocate_headers.py")
 
     Dim p As Variant
     For Each p In paths
-        If fso.FileExists(p) Then
-            GetPythonScript = p
-            Exit Function
+        If Len(CStr(p)) > 0 Then
+            If fso.FileExists(p) Then
+                GetPythonScript = p
+                Exit Function
+            End If
         End If
     Next p
     

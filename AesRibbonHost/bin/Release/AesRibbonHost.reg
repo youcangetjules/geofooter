@@ -1,14 +1,14 @@
 REGEDIT4
 
-[HKEY_CLASSES_ROOT\Record\{DA35D040-0A2C-3B62-877B-A8FB10ECE942}\1.0.0.0]
+[HKEY_CLASSES_ROOT\Record\{D690CF62-5160-3C08-893D-8EBC1E1FBA2A}\1.2.0.0]
 "Class"="Extensibility.ext_ConnectMode"
-"Assembly"="AesRibbonHost, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
+"Assembly"="AesRibbonHost, Version=1.2.0.0, Culture=neutral, PublicKeyToken=null"
 "RuntimeVersion"="v4.0.30319"
 "CodeBase"="file:///C:/GeoFooter/AesRibbonHost/bin/Release/AesRibbonHost.dll"
 
-[HKEY_CLASSES_ROOT\Record\{3A93B18A-95BA-3463-8D64-C7303707D1ED}\1.0.0.0]
+[HKEY_CLASSES_ROOT\Record\{4AEA4900-6475-3997-809F-F8E9E8049F4E}\1.2.0.0]
 "Class"="Extensibility.ext_DisconnectMode"
-"Assembly"="AesRibbonHost, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
+"Assembly"="AesRibbonHost, Version=1.2.0.0, Culture=neutral, PublicKeyToken=null"
 "RuntimeVersion"="v4.0.30319"
 "CodeBase"="file:///C:/GeoFooter/AesRibbonHost/bin/Release/AesRibbonHost.dll"
 
@@ -25,13 +25,13 @@ REGEDIT4
 @="mscoree.dll"
 "ThreadingModel"="Both"
 "Class"="Aliniant.AesRibbonHost.Connect"
-"Assembly"="AesRibbonHost, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
+"Assembly"="AesRibbonHost, Version=1.2.0.0, Culture=neutral, PublicKeyToken=null"
 "RuntimeVersion"="v4.0.30319"
 "CodeBase"="file:///C:/GeoFooter/AesRibbonHost/bin/Release/AesRibbonHost.dll"
 
-[HKEY_CLASSES_ROOT\CLSID\{A1E50001-AE51-4B0B-9C11-AE5B1BB00001}\InprocServer32\1.0.0.0]
+[HKEY_CLASSES_ROOT\CLSID\{A1E50001-AE51-4B0B-9C11-AE5B1BB00001}\InprocServer32\1.2.0.0]
 "Class"="Aliniant.AesRibbonHost.Connect"
-"Assembly"="AesRibbonHost, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
+"Assembly"="AesRibbonHost, Version=1.2.0.0, Culture=neutral, PublicKeyToken=null"
 "RuntimeVersion"="v4.0.30319"
 "CodeBase"="file:///C:/GeoFooter/AesRibbonHost/bin/Release/AesRibbonHost.dll"
 

@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.14: Footer spacing and grey slate
+- Strip background `#3f4c55`. Separators are a green dot with 5px padding each side. Second line is 13px. Button row padding reduced by 5px above and below. Footer wrapper `margin-top: 5px`.
+- Follow-up: rescan a mail. No VBA re-import.
+
 ### 2026-09-24 — 1.3.13: Max log file size
 - AES Settings → Logging stores `max_mib` in `aes_logging.json` (default 0 = unlimited).
 - `MSCANModLogging.WriteLogLevel` trims `VBA_Log.txt` to about 80% of that cap by dropping the oldest lines.

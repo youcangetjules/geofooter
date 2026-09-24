@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.14] — 2026-09-24
+
+### Changed
+
+- The footer background is a grey slate (`#3f4c55`, the previous slate at 80% over white). Facts are separated by a small green dot with 5px on each side. The second line is 2pt larger. The button row has 5px less space above and below the chips. There is 5px between the bottom of the message and the top of the footer.
+
 ## [1.3.13] — 2026-09-24
 
 ### Added

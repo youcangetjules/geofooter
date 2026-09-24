@@ -1,0 +1,3 @@
+from typing import Any
+
+def whois(domain: str) -> Any: ...

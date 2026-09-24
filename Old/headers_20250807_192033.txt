@@ -1,0 +1,70 @@
+Delivered-To: youcangetholdofjules@gmail.com
+Received: by 2002:a17:505:5829:b0:1d03:52a6:5a99 with SMTP id yn9csp1041009njb;
+        Thu, 7 Aug 2025 11:06:23 -0700 (PDT)
+X-Google-Smtp-Source: AGHT+IEECoFV3WlOUoBea/mb6HuSCSRaDHIAVtfh4muPnve2/3D61xoe8N5r8N5VfeHxXF1y2uj4
+X-Received: by 2002:a05:6a20:7f9c:b0:23d:6956:26e1 with SMTP id adf61e73a8af0-240331b3c92mr14822939637.46.1754589983377;
+        Thu, 07 Aug 2025 11:06:23 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1754589983; cv=none;
+        d=google.com; s=arc-20240605;
+        b=Gvsn4oqAXOpUg3jm8rX0gygWQA9eA/JzxuzWGhz5WsZ2Rrm7tT/0L8nGhShirAYqng
+         OEfj7r1UrHDTNlrXLNPq5SNDL9fpSOfcz3R250Vaoa8mAsUES2pPLfG1VGWJWKIRJ/Es
+         khcZMphl2Ahj54gtvODkCRkkTZzYasiK64qNwu6VtnBLKUcVC3xDd3aVWCnrMsuhveZU
+         3B4AiUz7LgEKCzza4weYuLRrGqV/mYDTlQdkySewe2dM0BH9fyBzCLPPIl1tn9L+b6Q5
+         4P+Qco+MTERfSAV46z6a6lmjUZTVvs6keLm6CWanfTcSDuOikvP+p70P1UboRkhgCHoL
+         cayA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
+        h=feedback-id:date:message-id:content-transfer-encoding:mime-version
+         :subject:to:reply-to:from:dkim-signature:dkim-signature;
+        bh=B+psHNUlRQnWbgK8/vOdZx73GGTmt1+x8A7/GMcHvss=;
+        fh=zvZvwCi25BYizXYVyYgPc1b4Jo6IoOxRlQeVOrHjUH4=;
+        b=lSN9NgXskGD9VfvTKnuOFuk4L1XUA2YsUDdNUb0bdBjaQQdj77xwLfp13C626Yxw/p
+         cg5gPA+IzWYB7QAhpHao53y8ogb3imsUMYyHdQGbscsLsdt+3RnkXAMn4IYYN8FGuNhQ
+         nT+KNdnqZJ81/wZBKrZ1vTmjJJkXq/rNiPSPvOI2sK/a36lvbqYVhADoef6pHKEARrOz
+         uTO1wBzsHvvPToWDjYJ/rI9OkVG0WWjVNyczdn4UbpeRDQC1N3DSm1dva24+FIH2HSon
+         xIee5GLZTkRkHhd12kd+9grrXyvQvu/FpYTXsV8/XNVlZcw+N3HGtkSMWEd7cXvzs4CS
+         dcyQ==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@groundnewsletter.com header.s=rikuwnxtuazboeyiibkrhjae7dgqk5uq header.b=Hqluy7ty;
+       dkim=pass header.i=@amazonses.com header.s=gdwg2y3kokkkj5a55z2ilkup5wp5hhxx header.b=TJpAaUTl;
+       spf=pass (google.com: domain of 0101019885b67032-9176eab4-9b33-41a9-b26b-c7f2076da98c-000000@us-west-2.amazonses.com designates 54.240.27.198 as permitted sender) smtp.mailfrom=0101019885b67032-9176eab4-9b33-41a9-b26b-c7f2076da98c-000000@us-west-2.amazonses.com;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=groundnewsletter.com
+Return-Path: <0101019885b67032-9176eab4-9b33-41a9-b26b-c7f2076da98c-000000@us-west-2.amazonses.com>
+Received: from a27-198.smtp-out.us-west-2.amazonses.com (a27-198.smtp-out.us-west-2.amazonses.com. [54.240.27.198])
+        by mx.google.com with ESMTPS id 41be03b00d2f7-b422bb2c5a6si18225536a12.839.2025.08.07.11.06.23
+        for <youcangetholdofjules@gmail.com>
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Thu, 07 Aug 2025 11:06:23 -0700 (PDT)
+Received-SPF: pass (google.com: domain of 0101019885b67032-9176eab4-9b33-41a9-b26b-c7f2076da98c-000000@us-west-2.amazonses.com designates 54.240.27.198 as permitted sender) client-ip=54.240.27.198;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@groundnewsletter.com header.s=rikuwnxtuazboeyiibkrhjae7dgqk5uq header.b=Hqluy7ty;
+       dkim=pass header.i=@amazonses.com header.s=gdwg2y3kokkkj5a55z2ilkup5wp5hhxx header.b=TJpAaUTl;
+       spf=pass (google.com: domain of 0101019885b67032-9176eab4-9b33-41a9-b26b-c7f2076da98c-000000@us-west-2.amazonses.com designates 54.240.27.198 as permitted sender) smtp.mailfrom=0101019885b67032-9176eab4-9b33-41a9-b26b-c7f2076da98c-000000@us-west-2.amazonses.com;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=groundnewsletter.com
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple;
+	s=rikuwnxtuazboeyiibkrhjae7dgqk5uq; d=groundnewsletter.com;
+	t=1754589983;
+	h=From:Reply-To:To:Subject:MIME-Version:Content-Type:Content-Transfer-Encoding:Message-ID:Date;
+	bh=B+psHNUlRQnWbgK8/vOdZx73GGTmt1+x8A7/GMcHvss=;
+	b=Hqluy7tyfJE8EZ1O+nvhthvH5SGcJDyeo9WRVrXA28n7O1wjrUGsIXwmax7XZx4r
+	fUckZDKRO+rc3YY8ULa/kirubnTr5p0CQ0FooOhqmBkjuo6FGVVsTFtmAnzIaRdwY1d
+	wNT4SIo/QYUrxjkPyN6AtQMxea5ooqI6c9nuBkp4=
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple;
+	s=gdwg2y3kokkkj5a55z2ilkup5wp5hhxx; d=amazonses.com; t=1754589983;
+	h=From:Reply-To:To:Subject:MIME-Version:Content-Type:Content-Transfer-Encoding:Message-ID:Date:Feedback-ID;
+	bh=B+psHNUlRQnWbgK8/vOdZx73GGTmt1+x8A7/GMcHvss=;
+	b=TJpAaUTlw9V97NdDupisKu1yHIsDsu85z52s0UCnagg6MkBmohj6coU9BUWLT809
+	+0Y3OJHvtwOzTOHmHVZ6+inGWAeXzyQJWVellC9c35RTh3BKc6Q57iCEW1mKScFxcsJ
+	iZzNBdbCeqqSm7lwW9ZyJUXXgmJRYWY63L2pNMSw=
+From: Ground News <daily@groundnewsletter.com>
+Reply-To: feedback@ground.news
+To: youcangetholdofjules@gmail.com
+Subject: The Daily Ground Aug 7th
+MIME-Version: 1.0
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+Message-ID: <0101019885b67032-9176eab4-9b33-41a9-b26b-c7f2076da98c-000000@us-west-2.amazonses.com>
+Date: Thu, 7 Aug 2025 18:06:22 +0000
+Feedback-ID: ::1.us-west-2.yHck1KeL4q+RUOfSONwqw0IZtM0hv/tOr+y5oXH6MiI=:AmazonSES
+X-SES-Outgoing: 2025.08.07-54.240.27.198
+

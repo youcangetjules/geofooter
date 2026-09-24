@@ -1,0 +1,76 @@
+Delivered-To: julian.garrett@aliniant.com
+Received: by 2002:a05:7300:f10c:b0:172:2d20:1e40 with SMTP id tn12csp563429dyb;
+        Thu, 5 Jun 2025 16:25:12 -0700 (PDT)
+X-Google-Smtp-Source: AGHT+IFk3a+crn3O0YdAyw3qJb/Pm9w932IpaRic9VHXZORBf8H9q2AgmL1DrYMwDyAXZMCyOhNT
+X-Received: by 2002:a05:600c:34d2:b0:43e:bdf7:7975 with SMTP id 5b1f17b1804b1-452014375b8mr11763555e9.32.1749165912624;
+        Thu, 05 Jun 2025 16:25:12 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1749165912; cv=none;
+        d=google.com; s=arc-20240605;
+        b=EZ1D/bKbqKdOUzfpGDt1b+qTcCLfSBOFntmnrGcJncv8MqQOduQpbqe2vRx2nzinQ3
+         Z7Y11rOSayyKkwn13W+bordQ3MczJ2n2x8k/Lr7MA+vrCARWAZCYOwv0t67TkhNEGQru
+         vSS6rABqYTpqU039pqINRAaa1rDvAS7Ejve7GYgIt5KOkEfuLPEPJixqre9UdZPd663A
+         Fvfoby0y8NpPe19yOOPvqHLmJIMlcu2t0dN00X2LRyg2eeNeRBx28qT6AewqF8SBP7D2
+         ICpv9MB15jY6d7IV8DY/sPtdmi4LjQ+PPnvYtF2HBu0UByLwXRX5+PHzRQtS07cIAChq
+         Hg2g==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
+        h=subject:date:to:from:mime-version:feedback-id:list-unsubscribe
+         :list-unsubscribe-post:message-id:errors-to:dkim-signature;
+        bh=9XEseZZSc3Qdy4/exeCHBWl09y7r2nW+YxSu04Mdsfc=;
+        fh=+zrrTd9oNkHhr0cY7oYaDPcona7dOrASiWAMl1Jr48E=;
+        b=en1EjNT20lMooO0ra9CqQFGbKr2Htrm0QozuXNg4Uo/GZow4rwYnjxB5ljyx4fSdCZ
+         bZ4LSJ8dY2poPLpIePB+KFkuZpuxKB594xUDuQ8HHBKFigRIguYLu8+uP7ItGf95hIsk
+         8Naz3fwMENQtRGdBm9vPTSADcT6K5GbjMemoE9YO+dxWQUZzFXuPWBVspSHd+qpqWz80
+         BhXA4XV1wZl9a59UVmFzHsx6fS2s9gjb5UMvNC6bdZYkv40Dy/HIfD26IO/uS/C+TzFI
+         xzSwXXF+4u3Brp+j51y3v9rxKDtMTc6XUo0LU8+I5VinjNLcDwCTNT9xU8+nVz0zXzJQ
+         k9qA==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@email.jobleads.com header.s=0 header.b=XxSpibtP;
+       spf=pass (google.com: domain of careerservice@email.jobleads.com designates 62.27.116.129 as permitted sender) smtp.mailfrom=careerservice@email.jobleads.com;
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=jobleads.com
+Return-Path: <careerservice@email.jobleads.com>
+Received: from mta116129.email.jobleads.de (mta116129.email.jobleads.de. [62.27.116.129])
+        by mx.google.com with ESMTPS id 5b1f17b1804b1-4526e155454si2924795e9.41.2025.06.05.16.25.12
+        for <julian.garrett@aliniant.com>
+        (version=TLS1_2 cipher=ECDHE-ECDSA-AES128-GCM-SHA256 bits=128/128);
+        Thu, 05 Jun 2025 16:25:12 -0700 (PDT)
+Received-SPF: pass (google.com: domain of careerservice@email.jobleads.com designates 62.27.116.129 as permitted sender) client-ip=62.27.116.129;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@email.jobleads.com header.s=0 header.b=XxSpibtP;
+       spf=pass (google.com: domain of careerservice@email.jobleads.com designates 62.27.116.129 as permitted sender) smtp.mailfrom=careerservice@email.jobleads.com;
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=jobleads.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; s=0; d=email.jobleads.com;
+ h=X-CSA-Complaints:Message-ID:List-Unsubscribe-Post:List-Unsubscribe:
+ MIME-Version:From:To:Date:Subject:Content-Type;
+ i=careerservice@email.jobleads.com;
+ bh=9XEseZZSc3Qdy4/exeCHBWl09y7r2nW+YxSu04Mdsfc=;
+ b=XxSpibtP/9e2RdobD1AgY1Xu1P0t9cq0zKKBeduu2/FZc8k+yQDikUltRuB4vfc04BiiFyzFdK2/
+   nCmI8zYIVlFjS6gZvvoz2wnmnYNONUMcoKu2UUyltEP4xLbVFL//dmd5+S6TGWJUJN06NlEwihFK
+   fKLH/Y2R0Jo7ZsrMKeY=
+Received: by mta116129.email.jobleads.de id h88jlg2bs1k7 for <julian.garrett@aliniant.com>; Thu, 5 Jun 2025 23:25:12 +0000 (envelope-from <careerservice@email.jobleads.com>)
+X-CSA-Complaints: csa-complaints@eco.de
+Errors-to: careerservice@email.jobleads.com
+Return-Path: careerservice@email.jobleads.com<rp-1a88b4456f86dd4ca5d96b08190d14f48ae15038cd42fd2dfc15ddca472dcf3c@email.jobleads.com>
+Message-ID: <100046.3718020880.202506052325121367964.0000317234@email.jobleads.com>
+List-Unsubscribe-Post: List-Unsubscribe=One-Click
+List-Unsubscribe: <https://l.email.jobleads.com/rts/unsub.aspx?tp=i-16CV-Q1e-C8AM-43cR4i-1ukhk-lBvajEmwtY-2C0CMi&pi=dv1umk3s15PW8xZ4HHn7XE6YuUeCUYxLxGBQZv95vHs>,<mailto:unsubscribe-1a88b4456f86dd4ca5d96b08190d14f48ae15038cd42fd2dfc15ddca472dcf3c@email.jobleads.com?subject=Unsubscribe>
+X-Mailer: XyzMailer
+X-Xyz-cr: 100046
+X-Xyz-cn: 2891330
+X-Xyz-bcn: 2891316
+X-Xyz-md: 100
+X-Xyz-mg: 3718020880
+X-Xyz-et: 204
+X-Xyz-pk: 28302240
+X-Xyz-ct: 9598115
+X-Xyz-bct: 9598081
+Feedback-ID: 100046.2891330:ChtahDgtlMsEU
+X-Xyz-inst: true
+MIME-Version: 1.0
+From: "JobLeads" <careerservice@email.jobleads.com>
+To: "Julian Garrett" <julian.garrett@aliniant.com>
+Date: 5 Jun 2025 23:25:12 +0000
+Subject: =?utf-8?B?U2VuaW9yIEV4cGVydCDigJMgNUcgUkFOIFN0YW5kYXJkaXphdGlvbiDigJMgTGV04oCZcyBnZXQgc3RhcnRlZCE=?= 
+Content-Type: multipart/alternative;
+ boundary=--boundary_316879_2db26991-a44f-41d7-a69f-ee885fc2e6c1
+

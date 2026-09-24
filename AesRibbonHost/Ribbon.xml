@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="OnRibbonLoad">
+  <ribbon>
+    <tabs>
+      <!-- __TAB_IDMSO__ replaced at runtime for Explorer / Compose / Read -->
+      <tab idMso="__TAB_IDMSO__">
+        <group id="AESHomeGroup" label="Aliniant Email Scanner">
+          <button id="AESActivateDeactivate"
+                  size="large"
+                  getLabel="GetServiceLabel"
+                  getImage="GetServiceImage"
+                  getScreentip="GetServiceScreentip"
+                  getSupertip="GetServiceSupertip"
+                  onAction="OnToggleService"/>
+          <button id="AESShortScan"
+                  label="Short Scan"
+                  size="large"
+                  getImage="GetShortScanImage"
+                  onAction="OnShortScan"
+                  screentip="Short Scan"
+                  supertip="Append the compact two-line Aliniant Email Scanner footer to selected email(s)."/>
+          <button id="AESFullScan"
+                  label="Full Scan"
+                  size="large"
+                  getImage="GetFullScanImage"
+                  onAction="OnFullScan"
+                  screentip="Full Scan"
+                  supertip="Run the full Aliniant Email Scanner security analysis on selected email(s)."/>
+          <button id="AESDeepScan"
+                  label="Deep Scan"
+                  size="large"
+                  getImage="GetDeepScanImage"
+                  onAction="OnDeepScan"
+                  screentip="Deep Scan"
+                  supertip="Manual deep analysis — opens a report; does not change the email. Never runs automatically."/>
+          <button id="AESGuri"
+                  label="GURI"
+                  size="large"
+                  getImage="GetGuriImage"
+                  onAction="OnGuri"
+                  screentip="GURI"
+                  supertip="Bring the GURI Database Viewer to the foreground. Starts GURI if it is not already running."/>
+          <button id="AESAura"
+                  label="Aura"
+                  size="large"
+                  getImage="GetAuraImage"
+                  onAction="OnAura"
+                  screentip="Aura"
+                  supertip="Aura (Aliniant Universal Removal Application) — open data-broker opt-out / erasure tracking."/>
+          <button id="AESDiagnostics"
+                  label="Diagnostics"
+                  size="normal"
+                  getImage="GetDiagnosticsImage"
+                  onAction="OnDiagnostics"
+                  screentip="Diagnostics"
+                  supertip="Open the interactive Aliniant Email Scanner diagnostics dialog."/>
+          <button id="AESSettings"
+                  label="Settings"
+                  size="normal"
+                  imageMso="AdvancedFileProperties"
+                  onAction="OnSettings"
+                  screentip="Settings"
+                  supertip="Choose which email accounts Aliniant Email Scanner watches automatically."/>
+          <button id="AESViewLogs"
+                  label="View Logs"
+                  size="normal"
+                  getImage="GetViewLogsImage"
+                  onAction="OnViewLogs"
+                  screentip="View Logs"
+                  supertip="Open the Aliniant Email Scanner VBA log in Notepad."/>
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>

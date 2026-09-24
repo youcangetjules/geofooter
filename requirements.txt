@@ -1,0 +1,18 @@
+# GURI Database Viewer & Manager Requirements
+
+# Core dependencies
+PySide6>=6.6.0   # GURI GUI + AES Settings / Diagnostics dialogs
+Pillow>=10.0.0  # For image display in Welcome tab + toolbar icon generation
+pywin32>=306    # Outlook COM checks in aes_diagnostics_dialog.py
+pytz>=2023.3    # For timezone support in geolocate_headers
+
+# Email security analysis (geolocate_headers.py)
+dnspython>=2.4.0
+python-whois>=0.8.0
+requests>=2.31.0
+pycountry>=24.0.0
+ipwhois>=1.2.0
+
+# Optional dependencies
+psycopg2-binary>=2.9.0  # For PostgreSQL database support (optional, SQLite is default)
+mysql-connector-python>=8.0.0  # Optional: only needed to migrate data from an existing MySQL GURI DB

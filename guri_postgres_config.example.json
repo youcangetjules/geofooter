@@ -1,0 +1,7 @@
+{
+    "host": "localhost",
+    "user": "postgres",
+    "password": "your_postgres_password_here",
+    "database": "guri_db",
+    "port": 5432
+}

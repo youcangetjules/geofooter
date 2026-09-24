@@ -1,0 +1,9 @@
+{
+    "host": "localhost",
+    "user": "root",
+    "password": "your_mysql_password_here",
+    "database": "guri_db",
+    "port": 3306,
+    "charset": "utf8mb4"
+}
+

@@ -1,0 +1,73 @@
+Received: from 127.0.0.1
+ by atlas-production.v2-mail-prod1-gq1.omega.yahoo.com pod-id atlas--production-gq1-fb5f4cbd-kx8c5.gq1.yahoo.com with HTTP; Thu, 7 Aug 2025 17:45:40 +0000
+Return-Path: <msprvs1=20314v3iSDKXM=bounces-364957-3@sparkpostmail2.com>
+X-Originating-Ip: [156.70.72.238]
+Received-SPF: pass (domain of sparkpostmail2.com designates 156.70.72.238 as permitted sender)
+Authentication-Results: atlas-production.v2-mail-prod1-gq1.omega.yahoo.com;
+ dkim=pass header.i=@buy1toallgoods.com header.s=scph0725 arc_overridden_status=NOT_OVERRIDDEN;
+ dkim=pass header.i=@sparkpostmail2.com header.s=ssp0116 arc_overridden_status=NOT_OVERRIDDEN;
+ spf=pass smtp.mailfrom=sparkpostmail2.com arc_overridden_status=NOT_OVERRIDDEN;
+ dmarc=pass(p=REJECT,sp=REJECT) header.from=buy1toallgoods.com arc_overridden_status=NOT_OVERRIDDEN;
+X-Apparently-To: youcangetholdofjules@yahoo.com; Thu, 7 Aug 2025 17:45:40 +0000
+X-YMailISG: KiFBQL0WLDsNcmWVIsqD_lu3JfOyVRVqtnXDT7dCrM.biksH
+ Jc2BEnr57BHF2Lvx.DF_kezLmh7_GBC8F3GwVdyGNVcUSVw1rdDJm3kaz6Vt
+ cnxXOt_wEuDXqcWvG2Uq2bXqAw_PGbH3_gYsIyx2RBVyy16XMamQeTlyYQep
+ dwe43aUPuflW7m49C3EaGkPdRk4lsgeV9bePL_Ur_d8CT8RpkEJ6GURcbvf8
+ Cz1hd_9aDwKi7xKTarGbr0_8sDHKpi2Ti7_8Oi43lhb2s0bY5LzXhiZ_4LVu
+ GsNl2oVy6KByN3pty9sACokCv3sZaFiLGdeEyia.TmyiKiGuomqtsqEDi0N_
+ QYKLALk0CyBt3PLkBucZCD4FgRuJ8xa220oPruvT4r9WP7Z.h.wBu.IAZiv6
+ 5A7MV_y.g4t7rggHPZOvnc4iACP83RH_AYQXugZM6P6ZcqgjiN5.cFodDT0C
+ w2_4F_kXDCvxwX.OA10_JwJQfn_MWjeHR1BarVz5T.Fhqxsd.96GXmjtrWxQ
+ 9WCOl0wexFJO8.nrQZJDYdQ6HwKXVG3utmP2OyaO3jCCapIkliux4zmXjnLi
+ TLI2srHKlYNLA_sJ6UJacB3070gfFk9k7lqFWt8dCUAFqmmGXw.OnOYu1b0j
+ FhIR.Or_PHGQxLgMAEzIF7Svg8bOlOxCbGELwtG2CKPAoSbdI8hsYER.fe8p
+ _i3DIuxGfUxvRLQIsq6o5._DUQxfD8gIWbKukCmHUx5PQB1rQG6v03QlygWI
+ MB3Xo.ShN7umTb4Vc523Y3QizifY9ZGzRDY.Qbpyzj75OKMBNSSJqcyIwl8L
+ frqILDWDm6ttylS4ykG6Y85QP2TGklJb8ZQaopxrF.bLvlYZGBiz0KsPBoQw
+ C8m5Ue1Fg03TcIBIE_CbS2nmmBTfmttSBsJUcpITVqIOCchCo5NZ4NALFFQm
+ Hz27f5dGmcNUZ1prp8jrcy_xegDJuX0u03MFjnku45mE2roAyStLDCHrAwHM
+ X.QwAtMBdwNwk3AQkc9ECDBoBJYx9oP7aq7UvF4DwfpyF2F1vzP7A4xuos8y
+ J8ID30oi19P5wLbYXBmoSDJBUXIZ5iqeutkFMAmHBYblYGUV8Aw7mSvw__zs
+ _apEk_u6DSjRXwAIZvTcqwwDJyHUCVjfyfFWsS5bVtyjK75cH6QHOtqIEGyg
+ DHmvUEbFYj720WBU_I7848_FYk.w6mipEPfIGl1DgMp1Hxr1tZIa1PbPI7iO
+ T_c78PZTnbXobEdVfT8_3cSwC9GgFDTNEmOQ_NFsk8cXt35TiSVGt3KbAgN2
+ otxOJVsZXEqtWx87FzF8jqeDcutiaTCmhMkbgVq_tQfT7w8nfdk7hnr85s2r
+ uHCujQsIFG2Y9RqIAyog0pGwNb3tZCtkhrXNdemO0sResx2OINmZG7iYXbLD
+ nY_wal7vhLvGdHZbQQx5nfU7Y.vyX6B_GfoG0oHHQu8d70BESABKVkBdwv_q
+ WjvamfLItEv42YTD.AvSMKsSqeJZBPUGrHtKFPqNU7T2tpGKpkWmHsreUBJD
+ R.0HqneHpzIuCCiJKMIs9TJRzrA3IHM-
+Received: from 156.70.72.238 (EHLO mta-70-72-238.sparkpostmail.com)
+ by 10.214.154.149 with SMTPs
+ (version=TLS1_2 cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256);
+ Thu, 07 Aug 2025 17:45:40 +0000
+X-MSFBL: Kk8aP1DojRZdOL8jvulyT25JGrbos11VTptUgyGDf88=|eyJtZXNzYWdlX2lkIjo
+	iNjg5MjQwZTY5NDY4NTBiNjA4MzAiLCJjdXN0b21lcl9pZCI6IjM2NDk1NyIsInI
+	iOiJ5b3VjYW5nZXRob2xkb2ZqdWxlc0B5YWhvby5jb20iLCJzdWJhY2NvdW50X2l
+	kIjoiMyIsInRlbmFudF9pZCI6InNwYyJ9
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=buy1toallgoods.com;
+	s=scph0725; t=1754588736; i=@buy1toallgoods.com;
+	bh=HTAVUVGntWPevr3gi4OKRw0lBOLZKDw93AoppEQpMtY=;
+	h=Message-ID:To:Date:Content-Type:Subject:From:From:To:Cc:Subject;
+	b=ddJclZbQ7hMPYFdxYik2y8wx0pzRJ+ycaUArKtjFjhqJQ68WcGeYOnNe8PkpeQ2Vk
+	 QUSiuqd9OJoH8Fopl4lKgiSqrzHf3+ZIJ1t8krLpKQaDFlQAmXL4iRSe48tmCLiaMt
+	 3zwl9Wnt6ZlscxAeAQjNie/MwmmbBnu4TtUWAPag=
+DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple; d=sparkpostmail2.com;
+	s=ssp0116; t=1754588736; i=@sparkpostmail2.com;
+	bh=aKNQVpVMw5j7CV6Py5Qsy2ND9BECAS2qcgYxrMN/mIU=;
+	h=Message-ID:To:Date:Content-Type:Subject:From:From:To:Cc:Subject;
+	b=CIffsPzFiBcH1hzmM+BPwhrKJtUIi49PsmOqKFJfeWI0D8ZEYOlxg5J9GdhsXaCPV
+	 iQRl61L78dikTuQ40Hv+a7nvAuzWOLGc3tHbbkijIXn+UmVyldW2gq6R3aUugiXy+S
+	 CZZJxnAsRu8626OQcRQfvJ2GHNL45xskHrCiQT/8=
+Received: from [10.90.1.248] ([10.90.1.248])
+	by i-0827558d4089d5ed4.mta1vrest.sd.prd.sparkpost (ecelerity 5.1.0.74578 r(msys-ecelerity:tags/5.1.0.3)) with REST
+	id 03/88-29873-046E4986; Thu, 07 Aug 2025 17:45:36 +0000
+Message-ID: <13.9.9.C2J.3YV0LZTKOFRQH6I.91754588662@mta-2d56749f.ip4.emarsys.us>
+To: youcangetholdofjules@yahoo.com
+Date: Thu, 07 Aug 2025 17:45:35 +0000
+Mime-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="35cfeabfe61a3ace5c8d2292e8c42ac49a3e4ceb64e35ffd5f4407184d09"
+Subject: Save $250 on your 1-Day Fat Removal Procedure
+From: Liposuction by SonoBello <reply@buy1toallgoods.com>
+Content-Length: 96056
+

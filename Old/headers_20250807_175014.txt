@@ -1,0 +1,74 @@
+Received: from 10.197.33.75
+ by atlas306.free.mail.bf1.yahoo.com pod-id NONE with HTTPS; Thu, 7 Aug 2025 16:35:29 +0000
+Return-Path: <msprvs1=203145XSM-hqT=bounces-1898-726@bounce.jacksflightclub.com>
+X-Originating-Ip: [137.22.229.197]
+Received-SPF: pass (domain of bounce.jacksflightclub.com designates 137.22.229.197 as permitted sender)
+Authentication-Results: atlas306.free.mail.bf1.yahoo.com;
+ dkim=pass header.i=@content.jacksflightclub.com header.s=scph0323 arc_overridden_status=NOT_OVERRIDDEN;
+ dkim=pass header.i=@eu.spmailtechno.com header.s=ssp0516 arc_overridden_status=NOT_OVERRIDDEN;
+ spf=pass smtp.mailfrom=bounce.jacksflightclub.com arc_overridden_status=NOT_OVERRIDDEN;
+ dmarc=pass(p=REJECT,sp=REJECT) header.from=content.jacksflightclub.com arc_overridden_status=NOT_OVERRIDDEN;
+X-Apparently-To: youcangetholdofjules@yahoo.com; Thu, 7 Aug 2025 16:35:29 +0000
+X-YMailISG: f.HYdJEWLDtyJc.r.nZK_kQ8lFVAp3_CEcEO5WdTIxLzxWid
+ P5CvGuMdhp_Yhs_6GTxDEcc87AQ..gT_.i5NS19oAYJL7bGTCe2ebthriY5s
+ MbCKM2yEUorFoVjSBYTo3tz5owo6MHEKHg53j_y6i28.OP9fdH3.zdSx84J8
+ EHTk1Btir1jwWvlzhrf_8tb96yzA0JItjfthQgMdQwaLqC_O1bd6LLp0j1tl
+ n.Zx4KIMGvp.ODHYi_9UxUA..9ng4il75OppFK0TynhxNH.hLVeEUQKejQH4
+ L8E07R23HvkK2X_hDR32m.dORSoJMiwyD20royoMErgVyC1g7lyJRs9NvtDp
+ uLKBMd3Bsvu1oC66fhyvKh8zvDn2H7ybjIE61Ufd4m3qDigjuhmMqH06LjbW
+ vSmvDp2y4c1aQUfcPwEo4XK8.EW9.3J8m9lhriRR4DVqKdQgD.Kjb0BYdyDf
+ _386GCIfBSrYvqAuVHFiFw7siIn5wNJhgg7g9uoI2Umldhn0_uo.uxr6QTbk
+ FAyjwxu.V_uQEeP0ieBAw8WuHfgqXRy7cu9aeFECuKqi6CgMC_YciMiQ6cC6
+ L8s.zEWRV8EVkGri9H3ecrj5mzGbjXFF0rbzOOoBrLsFRAxMTzD46QzkM1p8
+ QZelHlSnNOUJSU8IQyeE_GLaYusq78rzsUXGpg4LtRUdXoVbLBn6W2Y9pyRc
+ mCsWkDggzNChG95Ilbzt5b_LlAitJd8e36cMBja7ulHcpXJqvvaQiJJelz6Z
+ MyAvjOweWiY1ir71qb8J2oxQT3YNAej.mtbOp.WlnciCtBPQwqeMz4yQSfQO
+ .zexJFVGYGRWMvYI6vUmsgqni1xhdEp.u4pmgNV6OfsJvMmPVhSmNhh2iX8T
+ UbE.wnmNSTP2YOdiS2pzmOEB0tVUvfRjGaq8IkCF6xChY1JL5UsKqB5zclIg
+ l80GKZQXsHmSA61p9zNBQL3.IKyJPmTOkKuns1pr6sIgDrSclyDJCgOc0q4N
+ 99fQ5NeVh9jt16S4GWeoV2gu.QjrzWSvwNNjsNna7QEhZ5JSas3DFhv4QXxg
+ _WHDGYcA48YiseIYyJSeGATygGa56w5jVBy5Tpn2yuYKo2JSoAbbiw3V3pzx
+ ploaLR4tq.hk1TCoFf5yIBriGcqJvOR64EQzBxScZDeEAH_gXzh.WiK37Eyd
+ T04C7wfvic85_uxowUNJQLZ09MivLzAHP4AYo57BYt1S6UfIJzDmtA788heS
+ J4KnTn3K74aqkAtOdyTG8FajqgcohmODXqhfxZbs
+Received: from 137.22.229.197 (EHLO ajpdgwot.content.jacksflightclub.com)
+ by 10.197.33.75 with SMTPs
+ (version=TLS1_2 cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256);
+ Thu, 07 Aug 2025 16:35:29 +0000
+X-MSFBL: w9Ll1Z2kdPxv29w32Z5pvbK4CYUGTepU7WRuU2g5FYw=|eyJjdXN0b21lcl9pZCI
+	6IjE4OTgiLCJtZXNzYWdlX2lkIjoiNjg5MWNlZDU5NDY4MWRmZDY3ZDgiLCJ0ZW5
+	hbnRfaWQiOiJzcGNldSIsInN1YmFjY291bnRfaWQiOiI3MjYiLCJyIjoieW91Y2F
+	uZ2V0aG9sZG9manVsZXNAeWFob28uY29tIn0=
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+	d=content.jacksflightclub.com; s=scph0323; t=1754584526;
+	i=@content.jacksflightclub.com;
+	bh=DyT+fEvcgmn97+Ds0eOJYZPFcyYkEjmXgw2waKR+s5s=;
+	h=From:Message-ID:List-Unsubscribe:Subject:List-Unsubscribe-Post:To:
+	 Date:Content-Type:From:To:Cc:Subject;
+	b=KkOUNZn9PMAhP8qKL8x+BwNa0N4LNlW2CzyuyNYO5Tk7qnhkes+2W47rwLZt53Gvz
+	 +/AhtqLn9dgKJIgg3fkBlwlxynKxRNsAGb1HJ/hjFAI14ME2JlJ0aAxx4z29+LDo2B
+	 E6L0CmMwLkv8/jCMOxTYVTPYrCMwld/IeGEedgdU=
+DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple; d=eu.spmailtechno.com;
+	s=ssp0516; t=1754584526; i=@eu.spmailtechno.com;
+	bh=uyLXDTHhWK6oXrmUuIbbVL2OTHvN1f447uf0eOMHkyA=;
+	h=From:Message-ID:List-Unsubscribe:Subject:List-Unsubscribe-Post:To:
+	 Date:Content-Type:From:To:Cc:Subject;
+	b=WIvr1b/sddx6OKBNgOhzsPuOhGN6wh9RYk2S2T8f1kKDC0RxI3M70Cw7//Qh8/oE7
+	 ndvsxuJRpM7H0v6YI1iY1b/XUjdth/+NC2nA9kUago6I27kD0e2/rcW/thb6j+yXEB
+	 SDhobGtQPnVTN+w1QLB3iU3RAD52fiwX4zUh/hv8=
+Received: from [10.95.202.188] ([10.95.202.188])
+	by i-0edeb1dda41100002.mta3vrest.sd.prd.sparkpost (ecelerity 5.1.0.74587 r(msys-ecelerity:tags/5.1.0.5)) with REST
+	id 8D/76-07257-EC5D4986; Thu, 07 Aug 2025 16:35:26 +0000
+From: "Jack's Flight Club" <jack@content.jacksflightclub.com>
+Message-ID: <8D.76.07257.EC5D4986@i-0edeb1dda41100002.mta3vrest.sd.prd.sparkpost>
+List-Unsubscribe: <https://jacksflightclub.com/api/webhook/one-click-unsubscribe?id=643486233d8302a516eff4c7&sg=1fd1a1a1-bad2-4dbd-af21-b54a5d07fee3>
+Subject: =?utf-8?B?S2V5IFdlc3QgJiBQdWVydG8gUmljbyBpbiDCozQ3MHMtwqM0OTBz?=
+	=?utf-8?B?IHJldHVybiBpbiBTZXB0ZW1iZXItTWFyY2ggKGpldEJsdWUsIFNreVRlYW0p?=
+List-Unsubscribe-Post: List-Unsubscribe=One-Click
+To: youcangetholdofjules@yahoo.com
+Date: Thu, 07 Aug 2025 16:35:26 +0000
+Content-Type: multipart/alternative; boundary="_----nmkONe7Nzw39N1RgJo0FpQ===_E9/76-07257-EC5D4986"
+MIME-Version: 1.0
+Reply-To: jack@jacksflightclub.com
+Content-Length: 70255
+

@@ -1,0 +1,160 @@
+Received: from GV3P280MB0625.SWEP280.PROD.OUTLOOK.COM (2603:10a6:150:14::5) by
+ GV3P280MB1324.SWEP280.PROD.OUTLOOK.COM with HTTPS; Thu, 7 Aug 2025 16:47:32
+ +0000
+Received: from SJ0PR13CA0092.namprd13.prod.outlook.com (2603:10b6:a03:2c5::7)
+ by GV3P280MB0625.SWEP280.PROD.OUTLOOK.COM (2603:10a6:150:14::5) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.9009.16; Thu, 7 Aug
+ 2025 16:47:28 +0000
+Received: from BY1PEPF0001AE18.namprd04.prod.outlook.com
+ (2603:10b6:a03:2c5:cafe::f4) by SJ0PR13CA0092.outlook.office365.com
+ (2603:10b6:a03:2c5::7) with Microsoft SMTP Server (version=TLS1_3,
+ cipher=TLS_AES_256_GCM_SHA384) id 15.20.9031.8 via Frontend Transport; Thu, 7
+ Aug 2025 16:47:26 +0000
+Authentication-Results: spf=pass (sender IP is 209.85.208.52)
+ smtp.mailfrom=aliniant.com; dkim=pass (signature was verified)
+ header.d=aliniant-com.20230601.gappssmtp.com;dmarc=bestguesspass action=none
+ header.from=aliniant.com;compauth=pass reason=109
+Received-SPF: Pass (protection.outlook.com: domain of aliniant.com designates
+ 209.85.208.52 as permitted sender) receiver=protection.outlook.com;
+ client-ip=209.85.208.52; helo=mail-ed1-f52.google.com; pr=C
+Received: from mail-ed1-f52.google.com (209.85.208.52) by
+ BY1PEPF0001AE18.mail.protection.outlook.com (10.167.242.100) with Microsoft
+ SMTP Server (version=TLS1_3, cipher=TLS_AES_256_GCM_SHA384) id 15.20.9009.8
+ via Frontend Transport; Thu, 7 Aug 2025 16:47:26 +0000
+X-IncomingTopHeaderMarker:
+ OriginalChecksum:86AA09DCC2570740BE905ACBE75EA8CE1C441204137E6FE3C644149BAE356BAD;UpperCasedChecksum:8914F47222A5166D7D8CDCA9D4A53177B3CBDD1E42BC4D8A71AB5888CC695C9E;SizeAsReceived:3389;Count:19
+Received: by mail-ed1-f52.google.com with SMTP id 4fb4d7f45d1cf-61571192ba5so1998978a12.2
+        for <youcangetholdofjules@hotmail.com>; Thu, 07 Aug 2025 09:47:26 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=aliniant-com.20230601.gappssmtp.com; s=20230601; t=1754585245; x=1755190045; darn=hotmail.com;
+        h=content-language:thread-index:mime-version:message-id:date:subject
+         :to:from:from:to:cc:subject:date:message-id:reply-to;
+        bh=cS1LhlvJaYZrqr1zjFhwEPV5fe8KQEp89b58xonbhuw=;
+        b=CZZZcVh+IuRM64RKDvlqyxMJzSxOoibcSGgv6y7dVlQWAPEto3KrF+qF0StK6fhFIX
+         6w4/6WQXKgl6bZTCj5AoDbrfcAJHYjfUpu8phmEK8eloON/mJycFL58kFdCIs2TbJ9Ab
+         cq5bjJhHyV3/wIgcgt8USD3bF7modiBagTsxFehJgM9HcjcwuLY8H2YXHSHxz4v33Gpj
+         rKL+89HyLrBdw84UFr22qjgjA6ecGZPE/krKDEYrvzDFlkbEi+ERWV58nqiwU47RAw8y
+         GbO6U7D3OexrohIpt62pwcVUIxGqi0sifdGq7AsXvTuz6Enyo6bQYXO8yGD2qP9a55yW
+         cQNw==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20230601; t=1754585245; x=1755190045;
+        h=content-language:thread-index:mime-version:message-id:date:subject
+         :to:from:x-gm-message-state:from:to:cc:subject:date:message-id
+         :reply-to;
+        bh=cS1LhlvJaYZrqr1zjFhwEPV5fe8KQEp89b58xonbhuw=;
+        b=m/TM02f+ZtelrXlXK4JXl7WFHHFb3hwxbbuX1pTSD5T+9Lu8HfFn5cohZxS+hnSalX
+         O83F45zZXWHBQrULrh8FjatKEjYhdd7soh7SJfu4Mn9642yXrbybRwtjBldzFHpw7hza
+         i24TcCA4cPcIJ7ochpZRB1Pq0jWrdCpX927RJCN6Fz4ph8ltG8CJktAEGFa07Y4p40Ge
+         gXwDvY7VBhNIaWbvNWHQrE5qzfa07ezvKo7bhFIf1CyJoE74kJp2jkmXvAZwnuc9ZbaF
+         scuVIkuAvY0HP4wo1d1dAykcSAlpW1r42dci8toEy8Tm1ZzwYWRhuX5/2y9XtPBLRIZy
+         jkzg==
+X-Gm-Message-State: AOJu0Yz0oEcKroo88IDWh6UKZ2Bxp+DmKgIf2LvBC6pCnB3iY5lBLrSp
+	Ln7UtuIaMUpIHskZSm93KZwKxI+/ia2pxfcfqC58BfPr8C3OXCuixG4za0k0MQOoOLKzo8EKXnS
+	fnshJ
+X-Gm-Gg: ASbGnctKi06agK3u+C7sApZomBjsU86W7l4BUZeoQq/VyK/Wdpawope+8RPAuTXDGTU
+	bVsd/lyhSo/JVpYeYwc9mUmfaT+HXEYbRV7ZIeNLfAyrJu1QABMQFDBTKTIFnbHQEAmxC6Fg4wd
+	2hEvILQDUa4aMOsLXUFpEwJxboHs4FAxPqqZFlmHv4NyP+nwv7eJWH8HTp0yvbsqhlk6YXl4I72
+	cZHnEjy/IgPWa0A7dVsCjGL0H2SLdxi7LjamPzqyrsJkqlSydcGmaavTCNMSNqoF54bYYVU7jhQ
+	h10xbcQDR5sdL4qQXSaiEqGMw00I95H7cAJXZBTiqwESaIzi+uKJ0d8k9XpmfaKw/Wr53t9rSJ4
+	jI8IMH3PftvW9+8bW7dp1IdZj7ot4YHLVrg==
+X-Google-Smtp-Source: AGHT+IGprPW3M1ZA4TleMDPA650wlLJvweS5fkAdm+96xPsNEVg38rGJvSsKLQd9IaIHEL0ZxXDhTQ==
+X-Received: by 2002:a05:6402:2110:b0:617:d43a:5a84 with SMTP id 4fb4d7f45d1cf-617dc37b1b7mr454367a12.11.1754585245157;
+        Thu, 07 Aug 2025 09:47:25 -0700 (PDT)
+Return-Path: julian.garrett@aliniant.com
+Received: from M1 ([51.179.206.60])
+        by smtp.gmail.com with ESMTPSA id 4fb4d7f45d1cf-615e1d9c409sm9059044a12.45.2025.08.07.09.47.23
+        for <youcangetholdofjules@hotmail.com>
+        (version=TLS1_2 cipher=ECDHE-ECDSA-AES128-GCM-SHA256 bits=128/128);
+        Thu, 07 Aug 2025 09:47:24 -0700 (PDT)
+From: <julian.garrett@aliniant.com>
+To: "Jules Garrett" <youcangetholdofjules@hotmail.com>
+Subject: [SEC2:(C)CiC/UNENCRYPTED] ;'#l#
+Date: Thu, 7 Aug 2025 17:47:23 +0100
+Message-ID: <00a401dc07ba$f32c7200$d9855600$@aliniant.com>
+MIME-Version: 1.0
+Content-Type: multipart/related;
+	boundary="----=_NextPart_000_00A5_01DC07C3.54F19D50"
+X-Mailer: Microsoft Outlook 16.0
+Thread-Index: AdwHuvKvAFrD7uxTRYOqFM4SDiayiQ==
+Content-Language: en-gb
+X-IncomingHeaderCount: 19
+X-MS-Exchange-Organization-ExpirationStartTime: 07 Aug 2025 16:47:26.5494
+ (UTC)
+X-MS-Exchange-Organization-ExpirationStartTimeReason: OriginalSubmit
+X-MS-Exchange-Organization-ExpirationInterval: 1:00:00:00.0000000
+X-MS-Exchange-Organization-ExpirationIntervalReason: OriginalSubmit
+X-MS-Exchange-Organization-Network-Message-Id:
+ c2d78dcc-9ce1-41f5-388f-08ddd5d21732
+X-EOPAttributedMessage: 0
+X-EOPTenantAttributedMessage: 84df9e7f-e9f6-40af-b435-aaaaaaaaaaaa:0
+X-MS-Exchange-Organization-MessageDirectionality: Incoming
+X-MS-PublicTrafficType: Email
+X-MS-TrafficTypeDiagnostic:
+ BY1PEPF0001AE18:EE_|GV3P280MB0625:EE_|GV3P280MB1324:EE_
+X-MS-Exchange-Organization-AuthSource:
+ BY1PEPF0001AE18.namprd04.prod.outlook.com
+X-MS-Exchange-Organization-AuthAs: Anonymous
+X-MS-UserLastLogonTime: 8/7/2025 4:47:09 PM
+X-MS-Office365-Filtering-Correlation-Id: c2d78dcc-9ce1-41f5-388f-08ddd5d21732
+X-MS-Exchange-EOPDirect: true
+X-Sender-IP: 209.85.208.52
+X-SID-PRA: JULIAN.GARRETT@ALINIANT.COM
+X-SID-Result: PASS
+X-MS-Exchange-AtpMessageProperties: SA
+X-MS-Exchange-Organization-SCL: 1
+X-Microsoft-Antispam:
+ BCL:0;ARA:1444111002|10300799035|84100799003|461199028|33080799003|32080799003|9020799016|6092099016|3217299011|9400799033|13082799006|4302099013|3412199025|440099028|17072799003|1360799030|1370799030|1380799030|1602099012|56899033;
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 07 Aug 2025 16:47:26.5083
+ (UTC)
+X-MS-Exchange-CrossTenant-Network-Message-Id: c2d78dcc-9ce1-41f5-388f-08ddd5d21732
+X-MS-Exchange-CrossTenant-Id: 84df9e7f-e9f6-40af-b435-aaaaaaaaaaaa
+X-MS-Exchange-CrossTenant-AuthSource:
+ BY1PEPF0001AE18.namprd04.prod.outlook.com
+X-MS-Exchange-CrossTenant-AuthAs: Anonymous
+X-MS-Exchange-CrossTenant-FromEntityHeader: Internet
+X-MS-Exchange-CrossTenant-RMS-PersistedConsumerOrg:
+ 00000000-0000-0000-0000-000000000000
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: GV3P280MB0625
+X-MS-Exchange-Transport-EndToEndLatency: 00:00:05.6902984
+X-MS-Exchange-Processed-By-BccFoldering: 15.20.9009.009
+X-Message-Delivery: Vj0xLjE7dXM9MDtsPTA7YT0wO0Q9MTtHRD0xO1NDTD0tMQ==
+X-Microsoft-Antispam-Mailbox-Delivery:
+	ucf:0;jmr:0;ex:0;auth:1;dest:I;ENG:(5062000311)(920221119095)(90000117)(920221120095)(90011020)(91015020)(91040095)(9050020)(9060121)(9081003)(9100341)(944500132)(2008001181)(4810010)(4910033)(9930004)(9545005)(10172021)(9320005)(120001);
+X-Microsoft-Antispam-Message-Info:
+	=?us-ascii?Q?4tRE4IrD6fwuLOUBBHewP7ukan/Uv5FaL4JFvtv8tqV7KdzjWMLQG4Z68HCb?=
+ =?us-ascii?Q?rbL16vebw8iSR9Ga7Xq4xTQvCUkG1s0ZIO/9378T1Su0qmNh+ObmeoO0ify4?=
+ =?us-ascii?Q?F3vyx/6BqrZ5aOc8tTYn5S6ncnfC7qYYWm5ITCwr9LUiPOfGDCOp7lAZeDWS?=
+ =?us-ascii?Q?hI/ef4h64aPdWwU1i77dTQi/NCEr40MdVe8y8tNCqDM+Ytfu5EpjVvuYQ3ej?=
+ =?us-ascii?Q?Eqlgm2EV55+EYVnCTPN5PwDLfxhqSEbTfAwKOzRxMzLo1dleFudBXXKRF9sD?=
+ =?us-ascii?Q?o6EtYOfxbBP+LP9KWgKm7RjCIP/3WfdpsSdww4llxU818ejkkURX246/uvyN?=
+ =?us-ascii?Q?ogysP6VLcG7UPCHoXTfs9GOD5wfUxYdzNTZ/zjm9qf1Dc2PJj1cOtkdSvNdt?=
+ =?us-ascii?Q?3CDfOcS4RNIaBmCFXZEqml2nithJ2WjFpx2Z3GBzrnj9+izu8Yb603kRvvCw?=
+ =?us-ascii?Q?yFmYveWIqZ/7DQqQsvbA5sam57afid8A1FTT2+c4gJSulBNsJGb1N8cwSijZ?=
+ =?us-ascii?Q?ERUUayCqd/t5ldoTt9S5FnbC8thv18nOdWUQ+lEK0B1iMr9fY5P3I7nHCuTS?=
+ =?us-ascii?Q?55kMXosew/wBA3yRTNA3dNzbOH8eFn3DNaOPyoLNnDU9fKDocEAlEKugeXU8?=
+ =?us-ascii?Q?NpITWkImdUpMRY9bd0VCmE96K7m0IvPiJn5ABowZFOK3DFZ7CB6moltujHsP?=
+ =?us-ascii?Q?43bnaARVV8t+EkjS3UC5gNyA7EoW292KW2djBR9QlR6P+Y8gO8p4LXX9YPrU?=
+ =?us-ascii?Q?nySypChyc9Eo1+qlvAHIH+yQLnYF3hovwTCPWDgqWjfj1I/xq2y55gB8nRjZ?=
+ =?us-ascii?Q?EpF+Z1DGGPysWjT4ERn2cVnfyAt6gPWTRhHAWR+Jjr9mdC+QWeJ6ZHHsjteb?=
+ =?us-ascii?Q?4kfo4JUI8i4mfU4YOtg/LbLO50H0dovLH5iNSVrE0Vd6Zq9cf/8XM6M0iDpg?=
+ =?us-ascii?Q?6dcWka21uIVR8a/2J4WthyW9iHClBnhM/4YW8qYq7/7XuBz5QcAb9A0UNbLf?=
+ =?us-ascii?Q?y62TxuLf6d8/Xf0C2g3M1cznsc5wORYXmJzRGxRexYqtoSmwHkMBUbGUGKr0?=
+ =?us-ascii?Q?t17/pKvkf8M5OmYp7+txkf1IKJQ6Q3g5Sq9ml7gPnqqHymegghrjefh3Prlc?=
+ =?us-ascii?Q?Or3pLP80asMj6+AMHiLfPZSAQumv2V4aO5fQVi9Kt7+ObUvUSuJIESVrLH6X?=
+ =?us-ascii?Q?qq8lA2gTIJtVDv988OEXRYiWh5yU7chFgI7UFF6Ipib8htGpqcNPKaNEuuqE?=
+ =?us-ascii?Q?XmORv7thSj7FvdAzjsJECUKEASdo4XXL3oIlSAaxKgjYVPemk+f2HnoK5PUc?=
+ =?us-ascii?Q?3zg0sfqorms+j4nUGjXTKvmNKQhd0TpwAnW6Bar6z8ZK9Gkm/qYkrj6t42zi?=
+ =?us-ascii?Q?FU91N+qpQOpv8fw6ULE0efpeLHNkUEMgxCrzeH3u9o48gCu6JHg0G/Yui5Nt?=
+ =?us-ascii?Q?x2F6Z3/0lB5ZLEucPbyd1NEAESK3ggqX2NFfdvxhSgvHbhXMd19dstbwFvx/?=
+ =?us-ascii?Q?UYMFhGoqQduYexXn6wxiYuq+wdz42uZWkFVc+I6Svbgxg3yvZ2Ka5icNoJsg?=
+ =?us-ascii?Q?fhPsO4S0979ubv5gmuosMI7qt0vTzg0k7bPCZwD6uqpGXraKHCbxoWaAfXuJ?=
+ =?us-ascii?Q?2irfFJQ0p/kjXv/HfoWMrjJn6osD2VJpNEH94u2f/hD7AyMfYSRL5UjSVAnd?=
+ =?us-ascii?Q?PAYL3ar8wpOHLAEj1PUKBRmkdRBB4bI5nmnkPnebmjjQ1Dd04lu1Ez7blOAe?=
+ =?us-ascii?Q?/QSYre47Qoaq/5FPRTL6DlP7hQk9PzRmTKQj3cpEzuwC/T3ZN6fB+x6gCM/s?=
+ =?us-ascii?Q?KgxGQ+10JLwsv9i9Ml51bQ5eMR0NkWRa8Nad3P55Pochir/k8bnnXbFRMH3Y?=
+ =?us-ascii?Q?55pwmzN/zmaqdkNkCL5Vvq0vTK2D2sqXtJz+ESOYbICLyGDMMudVwNIfuBBr?=
+ =?us-ascii?Q?gBzKplxZqDlrJ9iKJW3UN84NSIM1Bnenf3AZr6JMKwTcnLZV5AS8Ki+Md/oz?=
+ =?us-ascii?Q?01j+uOiwUX5RLo+/YGeo2wFC5Gv4EL9+sf5eovkpNEo4+JNOmRYRmLNYi+Oe?=
+ =?us-ascii?Q?fdFAGyZgThQDG2rVMVLSCDpnmBtptd6fjf5YL0XxrzBbXm1gUZ2dxeHvapIZ?=
+ =?us-ascii?Q?68NSNHvfOR4Zy3kEIGglwSIR34pkKU786w=3D=3D?=

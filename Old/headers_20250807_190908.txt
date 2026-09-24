@@ -1,0 +1,132 @@
+Received: from GVYP280MB0924.SWEP280.PROD.OUTLOOK.COM (2603:10a6:150:eb::18)
+ by GVYP280MB1333.SWEP280.PROD.OUTLOOK.COM with HTTPS; Thu, 7 Aug 2025
+ 18:08:57 +0000
+Received: from MN2PR20CA0015.namprd20.prod.outlook.com (2603:10b6:208:e8::28)
+ by GVYP280MB0924.SWEP280.PROD.OUTLOOK.COM (2603:10a6:150:eb::18) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.9009.16; Thu, 7 Aug
+ 2025 18:08:55 +0000
+Received: from BN1PEPF00004682.namprd03.prod.outlook.com
+ (2603:10b6:208:e8:cafe::19) by MN2PR20CA0015.outlook.office365.com
+ (2603:10b6:208:e8::28) with Microsoft SMTP Server (version=TLS1_3,
+ cipher=TLS_AES_256_GCM_SHA384) id 15.20.9009.16 via Frontend Transport; Thu,
+ 7 Aug 2025 18:08:53 +0000
+Authentication-Results: spf=pass (sender IP is 95.128.218.90)
+ smtp.mailfrom=lists.juno.co.uk; dkim=pass (signature was verified)
+ header.d=lists.juno.co.uk;dmarc=pass action=none
+ header.from=lists.juno.co.uk;compauth=pass reason=100
+Received-SPF: Pass (protection.outlook.com: domain of lists.juno.co.uk
+ designates 95.128.218.90 as permitted sender)
+ receiver=protection.outlook.com; client-ip=95.128.218.90;
+ helo=smtp-relay1.operationssupportcentre.com; pr=C
+Received: from smtp-relay1.operationssupportcentre.com (95.128.218.90) by
+ BN1PEPF00004682.mail.protection.outlook.com (10.167.243.88) with Microsoft
+ SMTP Server (version=TLS1_3, cipher=TLS_AES_256_GCM_SHA384) id 15.20.9009.8
+ via Frontend Transport; Thu, 7 Aug 2025 18:08:53 +0000
+X-IncomingTopHeaderMarker:
+ OriginalChecksum:0002ECC4BAFBDA614075C8C2668B170D15CC3D8C0EFF79EC2AC129AE354E3834;UpperCasedChecksum:83C18C28067A01575B752DE3A0E43B32FF8CBE557B9DE1FA21038A7BEE51E99E;SizeAsReceived:1561;Count:17
+Received: from lists.juno.co.uk ([193.104.92.130])
+	by smtp-relay1.operationssupportcentre.com (8.15.2/8.15.2/Debian-10) with ESMTP id 577I8jtL019132
+	for <youcangetholdofjules@hotmail.com>; Thu, 7 Aug 2025 19:08:52 +0100
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=lists.juno.co.uk;
+	s=operationssupportcentre.com; t=1754590132;
+	bh=4c4cNUasvcvzfifyw5jN72bfcjGr4X3yppOtcAwQQgs=;
+	h=Date:From:Subject:To:Reply-To:List-Unsubscribe;
+	b=FTbpz/0EsA9IOS1TmHZW08/H3pA5c2YUmURMMlO+xW2aejpXuqqibAlxFhC+DseJo
+	 CIXWMx8um8WAn3oP4qzsKBr1LQzLuv6ih2505VEl0fMvytNZGDw40Ewi4v4VfymvSr
+	 OHGQAzNK2Rdo4LvRzdPWnsqoz3KBp6IZl1/KGl+a/lpLit9tTlnenQZ+lSs18Zhy6V
+	 0RCcvaQkEK82Rqf7cwKlgM+XOcjaq72huTW6rHzWohEMkMUM2o/CXEZbLPxpQV1/Fy
+	 jlKukiUCa/8mSfDiC6HuTRUmgonFFtjnZ3Y0w4Uc9Lan2pFMgokyS4a5vBjwggJcGr
+	 OC3LpMDkwdsAQ==
+Date: Thu, 07 Aug 2025 19:08:52 +0100
+From: "Juno Records" <subscriptions@lists.juno.co.uk>
+Subject: New vinyl & CD releases | Thursday 7 August 2025
+To: youcangetholdofjules@hotmail.com
+Sender: "Juno Records" <subscriptions@lists.juno.co.uk>
+Reply-To: "No replies" <no-reply@lists.juno.co.uk>
+Precedence: list
+Content-type: text/html; charset=utf-8
+List-Unsubscribe-Post: List-Unsubscribe=One-Click
+MIME-Version: 1.0 (produced by SubMailer 1.0)
+Message-ID: <sm.1754590125.html@lists.juno.co.uk>
+Errors-To: "Bounce" <subscriptions@lists.juno.co.uk>
+List-Unsubscribe: <https://www.juno.co.uk/unsubscribe/newreleases/39571290-82DF-4A58-9ADF-310161F0D1F5::3906>
+Content-ID: <sm.1754590125.html@lists.juno.co.uk>
+X-Bulkmail: 3.12
+X-IncomingHeaderCount: 17
+Return-Path: subscriptions@lists.juno.co.uk
+X-MS-Exchange-Organization-ExpirationStartTime: 07 Aug 2025 18:08:53.7964
+ (UTC)
+X-MS-Exchange-Organization-ExpirationStartTimeReason: OriginalSubmit
+X-MS-Exchange-Organization-ExpirationInterval: 1:00:00:00.0000000
+X-MS-Exchange-Organization-ExpirationIntervalReason: OriginalSubmit
+X-MS-Exchange-Organization-Network-Message-Id:
+ b9c1ff94-4ec1-4d20-efeb-08ddd5dd7838
+X-EOPAttributedMessage: 0
+X-EOPTenantAttributedMessage: 84df9e7f-e9f6-40af-b435-aaaaaaaaaaaa:0
+X-MS-Exchange-Organization-MessageDirectionality: Incoming
+X-MS-PublicTrafficType: Email
+X-MS-TrafficTypeDiagnostic:
+ BN1PEPF00004682:EE_|GVYP280MB0924:EE_|GVYP280MB1333:EE_
+X-MS-Exchange-Organization-AuthSource:
+ BN1PEPF00004682.namprd03.prod.outlook.com
+X-MS-Exchange-Organization-AuthAs: Anonymous
+X-MS-UserLastLogonTime: 8/7/2025 5:57:33 PM
+X-MS-Office365-Filtering-Correlation-Id: b9c1ff94-4ec1-4d20-efeb-08ddd5dd7838
+X-MS-Exchange-EOPDirect: true
+X-Sender-IP: 95.128.218.90
+X-SID-PRA: SUBSCRIPTIONS@LISTS.JUNO.CO.UK
+X-SID-Result: PASS
+X-MS-Exchange-AtpMessageProperties: SA
+X-MS-Exchange-Organization-SCL: 1
+X-Microsoft-Antispam:
+ BCL:2;ARA:1444111002|1680799057|9400799033|21080799006|9000799050|10300799035|68400799013|29080799003|461199028|56899033|1602099012|1370799030|1360799030|1380799030|4302099013|440099028|3412199025|2406899039;
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 07 Aug 2025 18:08:53.4636
+ (UTC)
+X-MS-Exchange-CrossTenant-Network-Message-Id: b9c1ff94-4ec1-4d20-efeb-08ddd5dd7838
+X-MS-Exchange-CrossTenant-Id: 84df9e7f-e9f6-40af-b435-aaaaaaaaaaaa
+X-MS-Exchange-CrossTenant-AuthSource:
+ BN1PEPF00004682.namprd03.prod.outlook.com
+X-MS-Exchange-CrossTenant-AuthAs: Anonymous
+X-MS-Exchange-CrossTenant-FromEntityHeader: Internet
+X-MS-Exchange-CrossTenant-RMS-PersistedConsumerOrg:
+ 00000000-0000-0000-0000-000000000000
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: GVYP280MB0924
+X-MS-Exchange-Transport-EndToEndLatency: 00:00:03.9993469
+X-MS-Exchange-Processed-By-BccFoldering: 15.20.9009.009
+X-Message-Delivery: Vj0xLjE7dXM9MDtsPTA7YT0wO0Q9MTtHRD0xO1NDTD0z
+X-Microsoft-Antispam-Mailbox-Delivery:
+	ucf:0;jmr:0;ex:0;auth:1;dest:I;ENG:(5062000311)(920221119095)(90000117)(920221120095)(90012020)(91020020)(91040095)(9050020)(9095020)(9100341)(944500132)(4810010)(4910033)(9575002)(10195002)(9320005)(120001);
+X-Microsoft-Antispam-Message-Info:
+	=?us-ascii?Q?kERXhfTtqny/LPCrA6rG9HufTuY+IkBAKossY1jBS8HCig2GpU4aiHyrdpu9?=
+ =?us-ascii?Q?9FVQJhGU9tyx1L1y7e359zgKauuq2kGezSPqZi6kDaomcjTANU7b9d9+5Ilu?=
+ =?us-ascii?Q?S1J8d+8/hsRf3jb4ACHH80bhb9BnkIOtwtxkXecghip2WfyN15PVQdFhoyy9?=
+ =?us-ascii?Q?SPWdaK+ITs2aCDH9y4waCP0fPtaLj2DocOQdDs5MH82CtFK49QaWzLVQODK5?=
+ =?us-ascii?Q?uUiR6535cKURXteEQbw4Hds2sXyoQBzV5uN1mgz+fA5FOPfpnCdgj3CH2Mw7?=
+ =?us-ascii?Q?Xqsn64yf0qJ7fYII+VY6+D2JpKRHyvBr9YKCOLY5QcSIGh1rHZDyJYKCcMEp?=
+ =?us-ascii?Q?op+ffBSMRmSYLpq85eVrDY53rnLWmHhrBFURpDegKgm1ECQBEKNQ9Ikqvacd?=
+ =?us-ascii?Q?nk6uTpBPc7Ya/tarYV/HK3JA/XiKKj0Pzfa3bZR0kguvvnRnUnAPSIK3dKnh?=
+ =?us-ascii?Q?qHWuyQ15zGT+FvdZzVX8dr2NVM5Bd/3qL0VmyL0iNF9zupZYc49y3V1IrCEs?=
+ =?us-ascii?Q?JTJysOG2oanGK/S9lRSzulOwUcz2cJQZWHoew87QAbJ4Uyu+bbb0Bs7qsLfl?=
+ =?us-ascii?Q?uxis5hVtJXgkkmCOMt02fN4gKQLEJPmF8eYG3c/bhD0L9nvdJqcL1qOw4Q8X?=
+ =?us-ascii?Q?QCdUBIGHtPnKt8CZYR4HfnYf2fqydh7CR1K1iEQdX9t3/oT1N7dKwk7Qgx07?=
+ =?us-ascii?Q?XTpcg7s34eZ63vE1gXtnzecMNY0Rh7OC4dvLnDQ2ZEv4ldY89KvHDgJwPENV?=
+ =?us-ascii?Q?8UXNhvU8geIRpEfPJWarOQa+CIASRRjO4jM7nh/4uWyLKB8F411SfYoUA10f?=
+ =?us-ascii?Q?i3P/V1Obs/XinUsfoG1EFoogJMNJYA8dy11aoN4Ptf8kVmhqh3xvhPMAVUKa?=
+ =?us-ascii?Q?EAMar5GkhA8RNDlKLnhWSGZnv9fCLpU4s3wh41q0JOLqbEt24RMqpxbFfuGT?=
+ =?us-ascii?Q?ya5g8k78UdR1OsHS5eMrmU4V73RzvzORmxMAtq/tcD5EXb9IVxliENml8mwr?=
+ =?us-ascii?Q?xvYU2iA+SshJvoX5Nm7JuuVeBQk07DIo+YeDtM+5b6J4hYiLHq/I42F7Y4Vl?=
+ =?us-ascii?Q?2w2jefDsSJFNPBnFXpeGasjMr188XPWj0ZuzyGEqJUP724OUVavEu3QF4zEU?=
+ =?us-ascii?Q?iUO9F170FVXnaeJFKcyZbVzkBvkcKoFiRVjD3SwPAeLZEhOjbBLhY8xJyvRq?=
+ =?us-ascii?Q?SIqzc+ze728LajKh3J6F8aOUpo6tESB0P+5Sy7p+0yKJKfqxABATlmZ1XGVZ?=
+ =?us-ascii?Q?GQWtRtX+GwnZ19MgjnEy7S4g7d8Depf7gzHXRD4Kv1ZBh6va22u1NU6EHZAB?=
+ =?us-ascii?Q?WfXI7v5gJe/l6d5JAyCEapzF7fbLhD7SJt8DzNdG/E4kwa1NEZh1kE0+WUkP?=
+ =?us-ascii?Q?1je33XLmMFzXDI7/ttu9iE3hKOda4iBop26+1KzNaisO1Cq0NnCvEAFzFgBi?=
+ =?us-ascii?Q?NInXy3F0Q7LK0lVpjoKW2u1cSyCIm5LdnSAG6O/KYc+W5szaZH1RbjwC8WcL?=
+ =?us-ascii?Q?4Mr2TXOD05u86R6KKAnxzdywn+8AI7oi7xwSWtuk7nw6fAcp3pyDFklom3St?=
+ =?us-ascii?Q?5JBtFdducjFs0Kk4J9zoNSXkWNyKY2t8l6CyGrmfk61y5gfm2Ujh/kvLEgCx?=
+ =?us-ascii?Q?jNaxVQ3pkcV8MRTyQwZRo7tvkYoxLp/gGwm7lsa05rXZvonAGeTpOvN2pVLm?=
+ =?us-ascii?Q?kdGxsQi5O1QrNtGAbNuc+LLoNW1vUdtlECQtHIstP9K5FdUEBUpF6nXd09H7?=
+ =?us-ascii?Q?OC3hDRsVbgdD9uTjuU+T3Ad3ed7quZDEMzxTndQKgGu0Pj9YspJ+RrgXan8z?=
+ =?us-ascii?Q?Tha0aZYaQsbEJWDxwXSYTPrMt2nnckHEkMz2T6n7tl5FKtO1mxrv72s1VFJB?=
+ =?us-ascii?Q?n6KwVrLM4K7ubE66EaFonGpOGVN/mOywjaWiuirq5xQSzCT4BzjvLoP1iHfe?=

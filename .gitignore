@@ -1,0 +1,63 @@
+# Python environment
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Secrets & local credentials — NEVER commit real values
+guri_postgres_config.json
+guri_mysql_config.json
+*.dpapi
+.env
+.env.*
+!.env.example
+
+# Generated scan artefacts / runtime
+output/
+headers/
+temp/
+input/
+Logs/
+*.log
+*.log.[0-9]
+
+# Local databases and backups
+*.db
+*.db.backup*
+*.db.backup_*
+
+# Source backups / agent scratch
+_backup/
+.cursor/
+AgentStores/
+
+# Outlook macro project binary export
+*.otm
+
+# .NET build intermediates (keep Release DLL for install convenience)
+AesRibbonHost/obj/
+AesRibbonHost/bin/**/*.pdb
+AesRibbonHost/bin/**/*.xml
+*.user
+*.suo
+
+# OS / editor
+Thumbs.db
+Desktop.ini
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Local temp helpers
+_tmp_*.py

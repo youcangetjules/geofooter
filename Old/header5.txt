@@ -1,0 +1,142 @@
+Received: from DU0PR08MB7543.eurprd08.prod.outlook.com (2603:10a6:10:314::16)
+ by DU5PR08MB10440.eurprd08.prod.outlook.com with HTTPS; Mon, 7 Jul 2025
+ 08:22:51 +0000
+Received: from DUZPR01CA0065.eurprd01.prod.exchangelabs.com
+ (2603:10a6:10:3c2::8) by DU0PR08MB7543.eurprd08.prod.outlook.com
+ (2603:10a6:10:314::16) with Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.8901.22; Mon, 7 Jul
+ 2025 08:22:43 +0000
+Received: from DB1PEPF000509F5.eurprd02.prod.outlook.com
+ (2603:10a6:10:3c2:cafe::63) by DUZPR01CA0065.outlook.office365.com
+ (2603:10a6:10:3c2::8) with Microsoft SMTP Server (version=TLS1_3,
+ cipher=TLS_AES_256_GCM_SHA384) id 15.20.8901.27 via Frontend Transport; Mon,
+ 7 Jul 2025 08:22:53 +0000
+Authentication-Results: spf=pass (sender IP is 2607:f8b0:4864:20::82f)
+ smtp.mailfrom=gmail.com; dkim=pass (signature was verified)
+ header.d=gmail.com;dmarc=pass action=none header.from=gmail.com;compauth=pass
+ reason=100
+Received-SPF: Pass (protection.outlook.com: domain of gmail.com designates
+ 2607:f8b0:4864:20::82f as permitted sender) receiver=protection.outlook.com;
+ client-ip=2607:f8b0:4864:20::82f; helo=mail-qt1-x82f.google.com; pr=C
+Received: from mail-qt1-x82f.google.com (2607:f8b0:4864:20::82f) by
+ DB1PEPF000509F5.mail.protection.outlook.com (2603:10a6:18:3::697) with
+ Microsoft SMTP Server (version=TLS1_3, cipher=TLS_AES_256_GCM_SHA384) id
+ 15.20.8901.15 via Frontend Transport; Mon, 7 Jul 2025 08:22:43 +0000
+Received: by mail-qt1-x82f.google.com with SMTP id d75a77b69052e-4a9741b513eso65490601cf.1;
+        Mon, 07 Jul 2025 01:22:43 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20230601; t=1751876562; x=1752481362; darn=coleago.com;
+        h=to:subject:message-id:date:from:in-reply-to:references:mime-version
+         :from:to:cc:subject:date:message-id:reply-to;
+        bh=7+Sd/CKQKcFDCrQViKgEswKnpCQf+w5e3yCPXeHZPvQ=;
+        b=DqidpRWmApCSAFGRnHSdHCiNkBmffH6Oq52tzg7B+EMgado8dDKi6UrdxRQRWlu4YF
+         LARlre6s+r4BKzoXDA5iTLDEI4wFlyM8jSMtKDxCcAgV0xrF9exCPH0DDqytFwBuygAG
+         0VzT6wQRn4++vLMiQ42MfcDCypFq5C0f2VHWT7FYZGza59HSDMKb1es5EV/cT7NSWWyT
+         b1p3d7e7TJpSWXUCcHiyvUQpjgTc6COya3kOfIF3o0/nRjjpN/DyzOO2DIvYx57yicPr
+         5W8iY9mGEoOVzm7xfFkzxRA4AE13WvNHUUfOzFaJLC89NqyebJfjNR7u4QVnvxxQ3Rk8
+         tl3Q==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20230601; t=1751876562; x=1752481362;
+        h=to:subject:message-id:date:from:in-reply-to:references:mime-version
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to;
+        bh=7+Sd/CKQKcFDCrQViKgEswKnpCQf+w5e3yCPXeHZPvQ=;
+        b=IRJPcHmQ3bcnfQsVKEIznPZq9xTe/WWzOk12y0NUjOYXAiWPOwfofcNoo9t1FHRcAn
+         imd9DCXK7yMUhUXj4akNgtWBMpyafAHznvcfYksFCTgDemJW4CuDBn56DkR8b1C+FffQ
+         +bRf3BoiShwWaJ9S2pXP4K/5aSQboxDrl1DDjv5CYCG6w9ylclEU04xlFVMbkzrREADV
+         j24MdGub2SPhL5UqeMYpQgaUKOjcDpJ2aOg9J1EN5gxoNqN6jzOSqEqWui4PYASj+/MD
+         UfTqxVqJuvPqvG+InuPiU9zYiCcIhvix/S8BdAbOEjFQTfdS5JmnNdaosSbJswcD+Gr8
+         eGHQ==
+X-Forwarded-Encrypted: i=1; AJvYcCUTI07yj2XsMfByfIAX+kVFWz/F99HG8zfFHh17pZfOiJyTV1l0lbtLfT1REWPjThxwPbjNdw9yruKwSBU=@coleago.com
+X-Gm-Message-State: AOJu0Ywg0468MitUE5eK64KS3jNWenfBw8uTUZpJY3m9WqR6psd34EpL
+	5MuNXTKinVi5589JqUrnr1mSuhgwIq0/FzZVRtLsYghikbPdgJ45i9GmVZGnQ4OPL0kiD6qQCGg
+	U3SXnvxkSRsdHQdqPfvAv6lMtyZl+g53Xt4lb
+X-Gm-Gg: ASbGnctbZbScSDXtRu7JviGKUk7pQANu90QqpIr7nA8/IbnQwbYVcs1mLnLP9e/qCA4
+	4/GwxJ4j/+pckKbDe1TL7DGYCEu+nstc16/DurdxOjl0rLHgJ98U/POnPdG4WRIKtxzvrtK83+V
+	GWm0nScgtR48ZfKI+c8CqrOj0NIP30c6TjD1/29hPEhw==
+X-Google-Smtp-Source: AGHT+IE3IkRbgsHUhP9ZCSzrnlqKnEe7C3/OeyGMf5zqMT2YfF8J7cuSXWAK0qTDJpFi8g6NdY34rrFpYVaJnbk9HxY=
+X-Received: by 2002:a05:622a:4a89:b0:4a8:24fa:67db with SMTP id
+ d75a77b69052e-4a9a68c185amr152578901cf.1.1751876561659; Mon, 07 Jul 2025
+ 01:22:41 -0700 (PDT)
+MIME-Version: 1.0
+References: <DU5PR08MB1044056E01E7068D887DFBAA48143A@DU5PR08MB10440.eurprd08.prod.outlook.com>
+ <AM9PR08MB68339307C1BEE11B2AB69334F843A@AM9PR08MB6833.eurprd08.prod.outlook.com>
+ <GVXPR08MB106138BC634C4F6C51AD8DF26F343A@GVXPR08MB10613.eurprd08.prod.outlook.com>
+ <VI0PR08MB10445824726A0CE40C48CAE438143A@VI0PR08MB10445.eurprd08.prod.outlook.com>
+In-Reply-To: <VI0PR08MB10445824726A0CE40C48CAE438143A@VI0PR08MB10445.eurprd08.prod.outlook.com>
+From: Stefano Nicoletti <stefano.nicoletti@gmail.com>
+Date: Mon, 7 Jul 2025 09:22:30 +0100
+X-Gm-Features: Ac12FXyJ_ZQ3NhTKJBPiDBeymsb-S49MEj-yS7i5twfenYtrSSp2VKW2DPegs3k
+Message-ID: <CAPcm4JR6APguxSpjZV45v7NoNsE-xq2pWa4VSFX5uw09uD2M2A@mail.gmail.com>
+Subject: Re: Lesotho RFP - DRAFT response
+To: Julian Garrett <julian.garrett@coleago.com>, Sarah Cullen <sarah.cullen@coleago.com>
+Content-Type: multipart/alternative; boundary="00000000000025ec530639528c6d"
+Return-Path: stefano.nicoletti@gmail.com
+X-MS-Exchange-Organization-ExpirationStartTime: 07 Jul 2025 08:22:43.7064
+ (UTC)
+X-MS-Exchange-Organization-ExpirationStartTimeReason: OriginalSubmit
+X-MS-Exchange-Organization-ExpirationInterval: 1:00:00:00.0000000
+X-MS-Exchange-Organization-ExpirationIntervalReason: OriginalSubmit
+X-MS-Exchange-Organization-Network-Message-Id:
+ 52f0a282-c6d7-404f-d842-08ddbd2f7268
+X-EOPAttributedMessage: 0
+X-EOPTenantAttributedMessage: 66f0e7e4-ccc2-4f05-832a-10d041b195ce:0
+X-MS-Exchange-Organization-MessageDirectionality: Incoming
+X-MS-PublicTrafficType: Email
+X-MS-TrafficTypeDiagnostic:
+ DB1PEPF000509F5:EE_|DU0PR08MB7543:EE_|DU5PR08MB10440:EE_
+X-MS-Exchange-Organization-AuthSource:
+ DB1PEPF000509F5.eurprd02.prod.outlook.com
+X-MS-Exchange-Organization-AuthAs: Anonymous
+X-MS-Office365-Filtering-Correlation-Id: 52f0a282-c6d7-404f-d842-08ddbd2f7268
+X-MS-Exchange-Organization-SCL: 1
+X-Microsoft-Antispam:
+ BCL:0;ARA:13230040|7093399015|8096899003|13003099007|7053199007;
+X-Forefront-Antispam-Report:
+ CIP:2607:f8b0:4864:20::82f;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:mail-qt1-x82f.google.com;PTR:mail-qt1-x82f.google.com;CAT:NONE;SFS:(13230040)(7093399015)(8096899003)(13003099007)(7053199007);DIR:INB;
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 07 Jul 2025 08:22:43.2650
+ (UTC)
+X-MS-Exchange-CrossTenant-Network-Message-Id: 52f0a282-c6d7-404f-d842-08ddbd2f7268
+X-MS-Exchange-CrossTenant-Id: 66f0e7e4-ccc2-4f05-832a-10d041b195ce
+X-MS-Exchange-CrossTenant-AuthSource: DB1PEPF000509F5.eurprd02.prod.outlook.com
+X-MS-Exchange-CrossTenant-AuthAs: Anonymous
+X-MS-Exchange-CrossTenant-FromEntityHeader: Internet
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: DU0PR08MB7543
+X-MS-Exchange-Transport-EndToEndLatency: 00:00:08.1308788
+X-MS-Exchange-Processed-By-BccFoldering: 15.20.8901.023
+X-Microsoft-Antispam-Mailbox-Delivery:
+	ucf:0;jmr:0;auth:0;dest:I;ENG:(910005)(944506478)(944626604)(920097)(930097)(140003);
+X-Microsoft-Antispam-Message-Info:
+	=?us-ascii?Q?gG11pkOavK0/GyZ+n9G7Ct0H0eBJz7V2zU/pD5J6mXmyKQwgOn5zE/YrSp//?=
+ =?us-ascii?Q?m99+OHUks+1aYuJ+ujrTi3YHckrPtDmtE18USeOpqoq51rWybu3rh/ZG8nEW?=
+ =?us-ascii?Q?gEhqzhtzLEPw+mOHM+5wO3nRcRMTKBx/+ZFvNkZGEG6Qn1PhM1wpbi2vFaiH?=
+ =?us-ascii?Q?i6ByaH7F3tDAC/pKJwJYN05IYEa/ydz3N1mhN9kSIFtGLXHdVyQiNpGt25k5?=
+ =?us-ascii?Q?sLSbxsvG8rJbXnKPRp7tzxNFhd3ZpLtGWfV7vrC4o1UoQJVSOddJOZ/bXB4w?=
+ =?us-ascii?Q?KFGMzCRdYOpY/Y102YlXOt4IaMbuieHmhn8b0sngXawB9xIwuDPPFOZa2uOj?=
+ =?us-ascii?Q?3KR9PmK22U1Z8bhnfvvnBXmBC3q6MSVif6LWuwYCeSUVVHLfU23Golv1oA9L?=
+ =?us-ascii?Q?Y27anJjlRaxNB75mFulwDECeYxB5F7tSOgLGQ76wRawWHvxsGLw/f8fVQzal?=
+ =?us-ascii?Q?T5Vo+q55Cmi27RjIKU4MnOZnOsQoRopL+60u7F6mZITUet9gzGCaD/BGJFDo?=
+ =?us-ascii?Q?vU4m47fzE5dwiO9cLjPbVBHydRKIQ9K+NCrvVCNolwOo/WbYMg1R2SYJac5x?=
+ =?us-ascii?Q?vo6kE2J6LEIfEanMzeRWfTD1hqSsWbtt5GxXQkdTU+779j2uMzWOWTvx6Poi?=
+ =?us-ascii?Q?zr7qO4CdCNbDoWiLTtV4Ulf8EXf9Z9iw6UTDrkeeCBapuH1forUQBja5IJXU?=
+ =?us-ascii?Q?EuEeADnEAfR9G3yeKXwJ7bUFrY2q/6+dLJaL/PzyGjXdjCsaK4w0C7Hlb0oM?=
+ =?us-ascii?Q?yr96rPFx4QryCdGQLLU89gRWUZEJS/0b4UCAzvtx2g5icMiJN7CAMH6j4+rn?=
+ =?us-ascii?Q?dmUkkKzZNTdIYaREHoQpudtvqggD2OWHWW48fhW8aEwUMATgS4dYGpFAUFre?=
+ =?us-ascii?Q?9NXiFS4HnYTvb5cmyx5qyVpgsjUV/+CsF1H3Hor9qjA+u+UrijOUVKGDFkaN?=
+ =?us-ascii?Q?832tLEcGpyeZYTb42/F+pyxjVYrYuzHawTSP9R/R/Mj66fcq2yyZTIVFG22H?=
+ =?us-ascii?Q?DGEdYCNKKcoMGVUzedpbNYJoxDUT22PUJfc+aPg+r67MhCZdMfaGmYV4HHqO?=
+ =?us-ascii?Q?/XSA9s3VmS3Dr1MPUkG95D9HiT6RXbWW9sihvEihWlkiNwlN30eQP8/bq104?=
+ =?us-ascii?Q?bIV5aVyxp8RtJgF4Ve0u0zbXOInxiMWuH+3oBNugL23cY4ea8crdA/itJMUi?=
+ =?us-ascii?Q?PJJ6EhkGyj31uKw7XzJECuGSy8yrfIwjTR+0EvCych7KCW9Z5etP0LL3p/lE?=
+ =?us-ascii?Q?Rxu8JEz3SNoyaUk9THKWoDM+UIDahAxZUhsmGWOiJPkfr9U31NDfkPlr9/t8?=
+ =?us-ascii?Q?csKEpJmFFreQue03O5TvhbEb9rBI+z7Puj80bi1G0jQIhDv9uh6UXmJGvpLd?=
+ =?us-ascii?Q?+90cXSIDSVHouo6bNXsZiNqJzWr4NyUQUcWTy/Uy/XrsfA2TbVPgds0l5G94?=
+ =?us-ascii?Q?Soius+WO1Aku8EWn26rMB7lClD1zV7e5TZh6sohrLYUlV+TqRqkqBzjrIaGh?=
+ =?us-ascii?Q?oOqh4CaCdLypKFS13CtbGDaYAtW4o3PShzKAq/5WWq3e0ddISBobsZh5n8m3?=
+ =?us-ascii?Q?etZg6Oveo16CgwkuDEB0fvYB/LCzGOEBa8oClol92QsDHN3lVPlqGnIx0Erv?=
+ =?us-ascii?Q?N0zmqbqS1AA0Wf04NDcXws6a8UtTtd+kpQdpLXcy59acw1DFHSS8CzdzHntJ?=
+ =?us-ascii?Q?vWQVsqed20Ldj8aZybUxfAacv00NJlVnBTExkXVGCQh4Iv2Gp3QcJa5SUyRh?=
+ =?us-ascii?Q?QEjrMjoIxttWbbOzMOxKOw/6lgNicUn1hE/GV0h8hyLuk/wIFcnHR0+0UMUM?=
+ =?us-ascii?Q?qBpm0PRHKJxN7WTzAp0uZBXfcSSIgi7oAvmXbRrsVjBRFMJnnKKm1V9axf9i?=
+ =?us-ascii?Q?HwQHHdurhEAwSYQ/jr/kFvqnPMFsc0jsmhcQDIQtMF6MQnBPu6zm7EGQVLiz?=
+ =?us-ascii?Q?QrHikBXs3/ODwPwoEcE+U+ECtiHEBvQTmjQbd8YNm/Bd20/xldlTx88X5o0s?=
+ =?us-ascii?Q?75gqEzcD/hnKB12eE5rVBrTnSw=3D=3D?=

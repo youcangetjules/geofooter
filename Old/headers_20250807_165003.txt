@@ -1,0 +1,81 @@
+Delivered-To: youcangetholdofjules@gmail.com
+Received: by 2002:a17:505:5829:b0:1d03:52a6:5a99 with SMTP id yn9csp955917njb;
+        Thu, 7 Aug 2025 08:45:37 -0700 (PDT)
+X-Google-Smtp-Source: AGHT+IGPPvLK4pUErtjyxMe/PrhTzm5orCJiaUtLnukSyGZqOnbs1ZyULlgSflWGcHQB6REHsLCY
+X-Received: by 2002:a05:620a:5ecd:b0:7e7:fd72:e53b with SMTP id af79cd13be357-7e814e1c8b8mr847177185a.23.1754581537521;
+        Thu, 07 Aug 2025 08:45:37 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1754581537; cv=none;
+        d=google.com; s=arc-20240605;
+        b=Vcmfte8iZuQ1MPNtgOtDUP8wPtsiW2g4JtKNwvT/UUncSq+GQUrp5lQkUWcwYFd65+
+         Qvicb9N09IHqaeKBKHskvhNOY/wv2LT88qxgbA9pvIg7qbJ3D3mBlNrwTikK/TzIBWuJ
+         v3KiIDYt+na+AoMs9i9qyTFJzLOzzPTniKEBxS3/S++87agN5b44JErD1agsOF5rjc1D
+         /DCBWpRpPql5w3zMg2fSgOoYK6jDOtkKp+43ggX8PPv6zlJP/z5Qb1m5NgvpmCXQ5dI0
+         Qp/TBc17C3Jud/OmTRmSivQPNwOnwFr1YmEXWsMSU7b+2sDKK4vA+AiAxSpzrAl1uuzn
+         15UA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
+        h=list-unsubscribe:list-unsubscribe-post:precedence:mime-version
+         :subject:message-id:to:from:date:dkim-signature:dkim-signature;
+        bh=mwEDFzjuMem8Z+cIJTNXXVHsKXYQ6ZC7OFOurz9r1+c=;
+        fh=zvZvwCi25BYizXYVyYgPc1b4Jo6IoOxRlQeVOrHjUH4=;
+        b=iS98OU4BzUjjijLeZ5roHm7HhzLFQHmCOscyyQSvQ8HowVNdNbdIDBLGgiiVDZoL1j
+         cZcmwPu2yZbISxbPuOTySrqcJCmgu229j9+XMvbydTiHYeguoOMVakTFiOpldLBx1Qzw
+         MUxgiAu5kOSkEdc7R1Jl0m/czqwLsb3U8n5JJlUdB6+zQMc9FYlvAuz6GDxAK1bMR56D
+         jhcn5iC+yafqpQ9xjXtG+t5zu3gdD+6suZB+GjOh0s4lNSdYDpBga0BJLZfPCtu9aIPw
+         05/at68jddnHEuzBmUn8gK2DwvqYvK3whPKO3nQerWcF84d9+VW4OlGfAhLSXc2w0SCg
+         dY+g==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@theatlantic.com header.s=sailthru header.b=Hv2vuEfi;
+       dkim=pass header.i=@pmta.sailthru.com header.s=mt header.b=e8UUHRaF;
+       spf=pass (google.com: domain of delivery_20250807114536.41040366.48336@bouncest.theatlantic.com designates 192.64.238.49 as permitted sender) smtp.mailfrom=delivery_20250807114536.41040366.48336@bouncest.theatlantic.com;
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=theatlantic.com
+Return-Path: <delivery_20250807114536.41040366.48336@bouncest.theatlantic.com>
+Received: from mta238-49.sailthru.com (mta238-49.sailthru.com. [192.64.238.49])
+        by mx.google.com with ESMTPS id af79cd13be357-7e7fbe801b2si536523085a.231.2025.08.07.08.45.37
+        for <youcangetholdofjules@gmail.com>
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Thu, 07 Aug 2025 08:45:37 -0700 (PDT)
+Received-SPF: pass (google.com: domain of delivery_20250807114536.41040366.48336@bouncest.theatlantic.com designates 192.64.238.49 as permitted sender) client-ip=192.64.238.49;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@theatlantic.com header.s=sailthru header.b=Hv2vuEfi;
+       dkim=pass header.i=@pmta.sailthru.com header.s=mt header.b=e8UUHRaF;
+       spf=pass (google.com: domain of delivery_20250807114536.41040366.48336@bouncest.theatlantic.com designates 192.64.238.49 as permitted sender) smtp.mailfrom=delivery_20250807114536.41040366.48336@bouncest.theatlantic.com;
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=theatlantic.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; s=sailthru; d=theatlantic.com;
+ h=Date:From:To:Message-ID:Subject:MIME-Version:Content-Type:
+ List-Unsubscribe-Post:List-Unsubscribe; i=email@theatlantic.com;
+ bh=mwEDFzjuMem8Z+cIJTNXXVHsKXYQ6ZC7OFOurz9r1+c=;
+ b=Hv2vuEfirWhxU32aBe2RJMmlfCA2U414E+ZBVJ+1WspGN/kSbBAVPxvokspeEufRhqO0VAAPrwy9
+   9nN9L+inrpKaYbI230KcDqWOe99EdsmkQ80yiejV9RUs5AUvyNiiaUOofHoFmkhN3PXjQV0NlnXR
+   wywb0JnC1RFOQBL3l+4=
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; s=mt; d=pmta.sailthru.com;
+ h=Date:From:To:Message-ID:Subject:MIME-Version:Content-Type:
+ List-Unsubscribe-Post:List-Unsubscribe;
+ bh=mwEDFzjuMem8Z+cIJTNXXVHsKXYQ6ZC7OFOurz9r1+c=;
+ b=e8UUHRaFSbs6csGWFAFOrPj/zJN7sgdfxmU/I/MSPyW8GaD8eN+mWwPdDN5ZT+e+GgPRnrhS9iri
+   6aqUHjPD374XQkKo+5QmuHIJxfdszF+4RvL1Voc3OYAJh5HDhRwbLEcQfcdilQuVwnpy1aXbZUQa
+   MKP6Q5KwPYn8c2vlwwI=
+Received: from aws1-mta-relay2.sailthru.cloud (10.55.73.49) by pmta11.sailthru.com id hij5223791s5 for <youcangetholdofjules@gmail.com>; Thu, 7 Aug 2025 10:45:36 -0500 (envelope-from <delivery_20250807114536.41040366.48336@bouncest.theatlantic.com>)
+Date: Thu, 7 Aug 2025 11:45:36 -0400 (EDT)
+From: The Atlantic <email@theatlantic.com>
+To: youcangetholdofjules@gmail.com
+Message-ID: <20250807114536.41040366.48336@sailthru.com>
+Subject: Arthur C. Brooks and Jeffrey Goldberg in conversation. Join us.
+MIME-Version: 1.0
+Content-Type: multipart/alternative; 
+	boundary="----=_Part_5204902_1182656120.1754581536267"
+Precedence: bulk
+x-job: 8662-41040366-20250807
+X-Feedback-ID: 8662:41040366:campaign:sailthru
+X-TM-ID: 20250807114536.41040366.48336
+X-Info: Message sent by sailthru.com customer The Atlantic
+X-Info: We do not permit unsolicited commercial email
+X-Info: Please report abuse by forwarding complete headers to
+X-Info: abuse@sailthru.com
+X-Mailer: sailthru.com
+X-JMailer: aws-campaign-mailer-17.sailthru.cloud
+List-Unsubscribe-Post: List-Unsubscribe=One-Click
+X-Unsubscribe-Web: https://link.theatlantic.com/oc/65f75dea82b5ca5be304b375ofmy6.11ao/f5621812
+List-Unsubscribe: <https://link.theatlantic.com/oc/65f75dea82b5ca5be304b375ofmy6.11ao/f5621812>,<mailto:unsubscribe_20250807114536.41040366.48336@mx.sailthru.com>
+X-rpcampaign: stmve41040283
+

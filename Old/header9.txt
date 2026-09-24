@@ -1,0 +1,201 @@
+Delivered-To: julian.garrett@aliniant.com
+Received: by 2002:a05:7300:8c85:b0:180:7d45:e9f9 with SMTP id y5csp927799dyr;
+        Wed, 9 Jul 2025 05:53:17 -0700 (PDT)
+X-Google-Smtp-Source: AGHT+IEEMQ10rE46GzbAhgn4UVXQbSXiKGWb+w4ba1axFmUfWPHf1SOB/gdrbkSTgmhps0ZrtoA6
+X-Received: by 2002:a05:6000:2409:b0:3a6:f328:22b9 with SMTP id ffacd0b85a97d-3b5e456346bmr1969789f8f.51.1752065596885;
+        Wed, 09 Jul 2025 05:53:16 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1752065596; cv=none;
+        d=google.com; s=arc-20240605;
+        b=Hwe3ghAuCCAsoGaq7Vk2rxqjLFSESdr7xcBgTtG+wxFyno8gEsPlUlIh1vQpEt2zo7
+         bDtJFcn/bDpQpr1Vhk6BUeijwq9r0pwJWtT5TBiDcB748TxgyEgHvKQbGw7o0Q1V7VUw
+         IE+dKNuVFA3hQOZbVbVowsRBkrcfHFJxHRjn0hzL7EdYMcrFZOVtm4qlyv4j4n51Vg3d
+         LIo+HVpM8gNQYR0WIelJ27t0jebuubIohn0gW3wstyhzYKhgqQEewSzi/eEKpsr6ky1E
+         rqaItxpILmzRbJUZaavzhqvzCH3J9unSclZDCtnSseeO9+e5rRegU8P7KWvMb9es9WWx
+         hPMg==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
+        h=content-language:mime-version:authentication-results-original
+         :msip_labels:accept-language:in-reply-to:references:message-id:date
+         :thread-index:thread-topic:subject:to:from:dkim-signature;
+        bh=0XXu9HbVLLE/9pA20/uowEJo/BxZVWRd/sOZSPBv5ss=;
+        fh=EMKIIN62eQItJL7Fh61Ch2Q8nGIoYPD9qD+u/dWEF1Y=;
+        b=QItbYavHtXcUCECBgjkbcEe94nWdZ1pseOZYt58WfuTTT5AiqNEEUT0bvAjLvc2/cM
+         UAdy6WZCmbMmQuDz/gztJARxdtcXWhhi0IRTNTk4cBNx/uwwn7JcSb5K7ugz0WkkesIN
+         cNwJ5XaZoQZRHtzlbhwmZslVvbtKQyIE/qiHr9GYj2B1iIDWMGIFu2oyeckxYQwGujMO
+         HRq3zZS1ic4ibxo4hLtUxT/4SPECKuckRo/LcTUXmdzkokYl6HwRPzoTP8kdxlqCKB3O
+         QNPUcYxa/BVMQyquXqHoi07ga0S7/ggzy+mjVUST5CpA8xHmrsFmeklKiWvRuds0vUaZ
+         HhGg==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@boldyn.com header.s=mimecast20230322 header.b=ifslBr6J;
+       spf=pass (google.com: domain of rebecca.empey@boldyn.com designates 185.58.85.122 as permitted sender) smtp.mailfrom=rebecca.empey@boldyn.com;
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=boldyn.com
+Return-Path: <rebecca.empey@boldyn.com>
+Received: from eu-smtp-delivery-122.mimecast.com (eu-smtp-delivery-122.mimecast.com. [185.58.85.122])
+        by mx.google.com with ESMTPS id 5b1f17b1804b1-454d4fff1fasi11304085e9.4.2025.07.09.05.53.16
+        for <julian.garrett@aliniant.com>
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Wed, 09 Jul 2025 05:53:16 -0700 (PDT)
+Received-SPF: pass (google.com: domain of rebecca.empey@boldyn.com designates 185.58.85.122 as permitted sender) client-ip=185.58.85.122;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@boldyn.com header.s=mimecast20230322 header.b=ifslBr6J;
+       spf=pass (google.com: domain of rebecca.empey@boldyn.com designates 185.58.85.122 as permitted sender) smtp.mailfrom=rebecca.empey@boldyn.com;
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=boldyn.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=boldyn.com;
+	s=mimecast20230322; t=1752065596;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type:
+	 in-reply-to:in-reply-to:references:references;
+	bh=0XXu9HbVLLE/9pA20/uowEJo/BxZVWRd/sOZSPBv5ss=;
+	b=ifslBr6JGzCyh/M6hBA538WSMgJxlYdo9Q146FXNczAKjvUJqU1FajW3HVALDKQitY6W5O
+	Jn9JQJOg0gAVOyEgf8EzloFmjaZK2IMzCul+ZKHFvKZKXMu6jD+/cAkk5La8oy3c3i4ux5
+	htjWXVtLFquzLpp4agcg9uO/s4lmvss=
+Received: from CWXP265CU009.outbound.protection.outlook.com
+ (mail-ukwestazon11021115.outbound.protection.outlook.com [52.101.100.115])
+ by relay.mimecast.com with ESMTP with STARTTLS (version=TLSv1.3,
+ cipher=TLS_AES_256_GCM_SHA384) id uk-mta-44-ry9kpGl2MgaKAcpML1retg-1; Wed,
+ 09 Jul 2025 13:53:13 +0100
+X-MC-Unique: ry9kpGl2MgaKAcpML1retg-1
+X-Mimecast-MFC-AGG-ID: ry9kpGl2MgaKAcpML1retg_1752065593
+Received: from LO4P265CA0064.GBRP265.PROD.OUTLOOK.COM (2603:10a6:600:2af::20)
+ by LO2P265MB3262.GBRP265.PROD.OUTLOOK.COM (2603:10a6:600:161::6) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.8901.28; Wed, 9 Jul
+ 2025 12:53:09 +0000
+Received: from LO1PEPF000028CC.GBRP265.PROD.OUTLOOK.COM
+ (2603:10a6:600:2af:cafe::7) by LO4P265CA0064.outlook.office365.com
+ (2603:10a6:600:2af::20) with Microsoft SMTP Server (version=TLS1_3,
+ cipher=TLS_AES_256_GCM_SHA384) id 15.20.8922.20 via Frontend Transport; Wed,
+ 9 Jul 2025 12:53:09 +0000
+X-MS-Exchange-Authentication-Results: spf=pass (sender IP is 51.140.37.132)
+ smtp.mailfrom=boldyn.com; dkim=none (message not signed)
+ header.d=none;dmarc=pass action=none header.from=boldyn.com
+Received: from uk1.smtp.exclaimer.net (51.140.37.132) by
+ LO1PEPF000028CC.mail.protection.outlook.com (10.167.240.36) with Microsoft
+ SMTP Server (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
+ 15.20.8922.22 via Frontend Transport; Wed, 9 Jul 2025 12:53:08 +0000
+Received: from LO2P265CU024.outbound.protection.outlook.com (40.93.67.29) by
+	 uk1.smtp.exclaimer.net (51.140.37.132) with Exclaimer Signature Manager
+	 ESMTP Proxy uk1.smtp.exclaimer.net (tlsversion=TLS12,
+	 tlscipher=TLS_DIFFIEHELLMAN_WITH_AES256_NONE); Wed, 9 Jul 2025 12:53:08
+	 +0000
+X-ExclaimerHostedSignatures-MessageProcessed: true
+X-ExclaimerProxyLatency: 5989275
+X-ExclaimerImprintLatency: 2392910
+X-ExclaimerImprintAction: 985c29814209415e8acec3f2bf346121
+Received: from LO9P265MB7475.GBRP265.PROD.OUTLOOK.COM (2603:10a6:600:3a0::12)
+ by LO0P265MB3290.GBRP265.PROD.OUTLOOK.COM (2603:10a6:600:168::10) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.8901.29; Wed, 9 Jul
+ 2025 12:53:03 +0000
+Received: from LO9P265MB7475.GBRP265.PROD.OUTLOOK.COM
+ ([fe80::9263:8f36:aba1:f90e]) by LO9P265MB7475.GBRP265.PROD.OUTLOOK.COM
+ ([fe80::9263:8f36:aba1:f90e%7]) with mapi id 15.20.8901.024; Wed, 9 Jul 2025
+ 12:53:03 +0000
+From: Rebecca Empey <rebecca.empey@boldyn.com>
+To: "julian.garrett@aliniant.com" <julian.garrett@aliniant.com>
+Subject: Private & Confidential - P11d
+Thread-Topic: Private & Confidential - P11d
+Thread-Index: AdvwzuFw7MMdUnOhRTK8jMf4CWBKLwAAF+EQAAA0AbA=
+Date: Wed, 9 Jul 2025 12:53:03 +0000
+Message-ID: <LO9P265MB7475264CEC227EC71E2F9B819C49A@LO9P265MB7475.GBRP265.PROD.OUTLOOK.COM>
+References: <LO9P265MB7475B3823AA693C7B3CE683E9C49A@LO9P265MB7475.GBRP265.PROD.OUTLOOK.COM>
+ <LO9P265MB747518A31A4140A980DB0F219C49A@LO9P265MB7475.GBRP265.PROD.OUTLOOK.COM>
+In-Reply-To: <LO9P265MB747518A31A4140A980DB0F219C49A@LO9P265MB7475.GBRP265.PROD.OUTLOOK.COM>
+Accept-Language: en-GB, en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+msip_labels: MSIP_Label_3d17b65e-1230-45ad-8444-f12a742e28e3_Enabled=True;MSIP_Label_3d17b65e-1230-45ad-8444-f12a742e28e3_SiteId=b6d20314-e399-4fde-8ab1-a9da4f204984;MSIP_Label_3d17b65e-1230-45ad-8444-f12a742e28e3_SetDate=2025-07-09T12:40:52.0000000Z;MSIP_Label_3d17b65e-1230-45ad-8444-f12a742e28e3_Name=Protected;MSIP_Label_3d17b65e-1230-45ad-8444-f12a742e28e3_ContentBits=3;MSIP_Label_3d17b65e-1230-45ad-8444-f12a742e28e3_Method=Standard
+Authentication-Results-Original: dkim=none (message not signed)
+ header.d=none;dmarc=none action=none header.from=boldyn.com
+x-ms-traffictypediagnostic: LO9P265MB7475:EE_|LO0P265MB3290:EE_|LO1PEPF000028CC:EE_|LO2P265MB3262:EE_
+X-MS-Office365-Filtering-Correlation-Id: 5fe0b29f-1464-445d-29d0-08ddbee78e2f
+X-MS-Exchange-SenderADCheck: 1
+X-MS-Exchange-AntiSpam-Relay: 0
+X-Microsoft-Antispam-Untrusted: BCL:0;ARA:13230040|366016|376014|1800799024|4053099003|8096899003|38070700018
+X-Microsoft-Antispam-Message-Info-Original: =?us-ascii?Q?RURGUDWipQEKPz9Fbjw+L26hmv7+L16JxSbQX5JRtD052+f0VrB7PgNJ3Wiw?=
+ =?us-ascii?Q?fp9AjfAromO+8qjn2HW0KDIqpwj26h/qAmRF5ukl9Qn1YVcIxdjK+eCd9dQv?=
+ =?us-ascii?Q?iml78vViWFZw5mcGKnFv11kecRdRsLqt3nF9c07A9GnaKUbyXsSdyI9KjFzd?=
+ =?us-ascii?Q?WqzcHoq57A/CTtG3t382IoBGp8Lp/PrHubzgV2hm+ehrc2IBOsOFJTcRH1t4?=
+ =?us-ascii?Q?51bCAsUCkpJ7lsNKSYAW4VZ6+wN4UvvqRf+lyiQAQAEisuR/zCmCBbqBTWMc?=
+ =?us-ascii?Q?S/g7ppLijHb6D2YxlEYvn7918xypE90d7wotxKw/9610Lxs0Fa+ZWKE6u5zt?=
+ =?us-ascii?Q?0S36RmlcADKyJaorwQ/qMY5yJl4Lv87c6E/rRVYJLI1xKZ2b3s4vc03poWpN?=
+ =?us-ascii?Q?KOEnHwjbhpstai1qAVKoyAANQAylMbOhr3gHGfQUgvX/cmFGeNgPviZAI10A?=
+ =?us-ascii?Q?hjR3qvXeHKSNEaTWvb2Q7B894TlGJWRs6izNt+aOwg5C6PSCFdazCZu2FEPZ?=
+ =?us-ascii?Q?x01IHKT4pPX8AS4J/D85hQiIPFPk2x2c606Nb1NTfDG7k0nhQT4LzBav2CZD?=
+ =?us-ascii?Q?M/YkkTNnLLPdAcwxQAK8P0J+UJUNqGNQOS0PyN90VPHquFB8nxobSp/ZFkC5?=
+ =?us-ascii?Q?oG7Ro8k6RiU40Ho+NHzIrauDePz6mWD0q0OnuVLUJ2DUk16ko00ofaj2TrqM?=
+ =?us-ascii?Q?Uap1L4/Wodhy9GL5BGIC4/8E73V1BHnFIgYhJ95NqmUR5nOigTkyFrCwxNxT?=
+ =?us-ascii?Q?ENxlQvYrysaVI1Uy2IcsdA2ozhErBuxEvRUpuCNJ3QRbxyYiY9MhZH2K4o2q?=
+ =?us-ascii?Q?ssRDFs76vac85dz7pmf2+T2diuXAAnglixmmgL9EWm7Q4oaBgsMHj2V+sKJ/?=
+ =?us-ascii?Q?CIKSLFisOb2JoPAhfsbPSgqzvqGY5mjCoEtW20wW8ZSSzmVPwjkl9mZ4PMT9?=
+ =?us-ascii?Q?Vv+gnkYN+4apwfxDUjuc3xEpyikzo15qUEHGswUDA6+ATYg2MBOykw2cScyx?=
+ =?us-ascii?Q?bq3HnNy5/mQYJ55PKty3XBumnPKNZlOvbQFm2bnXeVeGtdSaARnsaQBpjgaZ?=
+ =?us-ascii?Q?fe8u2h/mhSw/Q8p1OtS+kTUwDeYWzjazt9m+zjgd6TDuLBrzP1o15O9X2MsY?=
+ =?us-ascii?Q?yj/H3PfaQ879kUODYcTxRAXFySU6oNIDwW+7n+dTHVE6ov8XRXluu3jKvVuU?=
+ =?us-ascii?Q?NfwTPcuNb5SuOxY1zYzLbF/4YFMf8pmxAUgFOjhHzBCjpIVL7Mccp24yE80j?=
+ =?us-ascii?Q?/s6+vJC6uPzyy0Qv31yR0ePZ8HekhoVyiWqiwKgJO3vuTsdWuxNL82/LI3UZ?=
+ =?us-ascii?Q?sIYligqz4GPAEWkzUnTpmpOIJErLAQGGVKsFkfJbtmiStYJ5szKsqvCibwgT?=
+ =?us-ascii?Q?8DP78x5cyqeGhSixveQFX9r7sUfMbTerkOb61I/Qpg/nIOePZESWR+GU1VMg?=
+ =?us-ascii?Q?oU2a+bbFDnQ=3D?=
+X-Forefront-Antispam-Report-Untrusted: CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:LO9P265MB7475.GBRP265.PROD.OUTLOOK.COM;PTR:;CAT:NONE;SFS:(13230040)(366016)(376014)(1800799024)(4053099003)(8096899003)(38070700018);DIR:OUT;SFP:1102
+MIME-Version: 1.0
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: LO0P265MB3290
+Return-Path: rebecca.empey@boldyn.com
+X-EOPAttributedMessage: 0
+X-MS-Exchange-Transport-CrossTenantHeadersStripped: LO1PEPF000028CC.GBRP265.PROD.OUTLOOK.COM
+X-MS-PublicTrafficType: Email
+X-MS-Office365-Filtering-Correlation-Id-Prvs: 3f3af14c-699e-427c-9ab5-08ddbee78ac8
+X-Microsoft-Antispam: BCL:0;ARA:13230040|82310400026|14060799003|376014|1800799024|35042699022|36860700013|4053099003|8096899003|13003099007
+X-Microsoft-Antispam-Message-Info: =?utf-8?B?S2U2SjNGZ1ZyU055S2p2anZXb3Y1cE4wMzg5REl5dGthaWgvVmc5dFk5YU1p?=
+ =?utf-8?B?Kzh6dEtLUmFMeTRlUFdSbG44V2xwV2hKOXNUSlNmSDJmT1VwNVRBMm1vLzlE?=
+ =?utf-8?B?QlFhVm8xSUdmbVFhK3g2WjlTRHF5RTl5WkNUVCtqV2tFTEZDTVlnK2pDY3Ar?=
+ =?utf-8?B?UzkwZzVxemw2VklVakM5am1ZNnY0KzdWWGVWZXpjZVNzZm80cnNycGtQZ0JV?=
+ =?utf-8?B?dmVWV3dkWGdlWXMyemtvMnN4aUdLSmVnWUg1Q0NieWNHaGtmajBpallRSG5Q?=
+ =?utf-8?B?KzJpcWdmVmg1Q0k5VFVPNldKeFFHOW80Zmk4VmljMWtsMGdhTkJOSUJENnhF?=
+ =?utf-8?B?K1IvdUpnNkFXZy9CVFJzcGFhaDJFL2FsNldBTmZXMFIvN2JQYlRLYUNqcjNK?=
+ =?utf-8?B?TGpaQXIyaHpuY2ZmUUpYR3N4YlJJOU9XdG5tWllyNlZ4WHFvTzBXK3l5UWNQ?=
+ =?utf-8?B?WmREbmJTTXBHZ1NLTWRFbnJPUmhhb2F3eGw1YmdSN3I3MFlWMmt5bzBHdVZw?=
+ =?utf-8?B?a2NtbXJzNmFCUE9zTzhpdjhQWTNMczlndG43WUJEdzFSd0toNGl4VU5qdTN1?=
+ =?utf-8?B?dS83OVE2WTA1VDY1SzZIRVN2WkN5Q2FGTWtpb0NDdUROQnh5TzZnNzNhL2Rm?=
+ =?utf-8?B?U3U3dGpEWnl5OGRQWVVDeFhwNGpXOSt3c2tmWmdqc0JrNGZaaWRzUldxUzho?=
+ =?utf-8?B?VWgwVWZIQ1krY0pPcHJYR0hJem9uYkZ1cUJNQUFWVGFoMWlNcnRkZHV6djZl?=
+ =?utf-8?B?RUdVazI2Q0h3WTR6RU1tUys2K2JpMnQ0TkV0WnVIRDhTekx1alNOV3V3NlBh?=
+ =?utf-8?B?aWVnNG0rb2NyVUt4UFU1citLcW4zNTRGN0s1VUdRd1k0QTF2T3BULy9jbXpp?=
+ =?utf-8?B?QmM2eWEyTG9CRE1xWGpiaHM2K1Z6VWtGNTlYL29WUTdKSnVkc2xpQllKYklY?=
+ =?utf-8?B?Zm9tSWxKSXZVVDZ1a3gwSklXd3Z5VkMyNy9haFJxOE5OK2xHYzMwNmloNmZx?=
+ =?utf-8?B?bThuVE1JS1FnODYzdm03bkM2ZG5pd1hnL1h6SVFsNVVhUlFyaDVvaTlXR3dU?=
+ =?utf-8?B?RjJnckFaOGRqNk8rajhsSW1Lc2laWDFMSXNmc2FwOTBpQ0h5SzZYWFhwTzRi?=
+ =?utf-8?B?cmw5dmE4WFJvSmt4UExWd1A0dnBJOE5FeG9CVWZkRno5N1Qrd25pNGhCTU5t?=
+ =?utf-8?B?bk5XRzNxdG8vU2kvaHMrVEg4a1Z1YnN0YmZURXpyNC9yamxNMTVIVmpmL3Z5?=
+ =?utf-8?B?LzIybDVNbFBLL09ueVRmL0NWS0FIbEZJOHRSdWV6bkUyNWpxWWhuUEtTc1Ey?=
+ =?utf-8?B?RkQ0VGhTR0htUFdKZWtvZGdJeFJudXMvL2diQTNQaE8rOXNNRDFBNmovWVBv?=
+ =?utf-8?B?NVJZck1DU2Nybit4YkJ5ZzRHUitTandiZmgyaCtVa0NsWlAySmgrR3hKT05L?=
+ =?utf-8?B?ZzgrdnVpdHRBd3R4OHpsMExVR3ROazhTVEJWWU0rZGx2UGxXd0ZiZ2ZMV1h4?=
+ =?utf-8?B?RS9mSXRITlFzOFdOS1FLZnBXVkxHdFZjdm8rVVFJeGwyRWxtdDZXemdNUmlp?=
+ =?utf-8?B?VHlFbEd3MnY3a3RoY0hJM0VyampFRXBpOFI0RlpqSC9XU3ZLRWYxSjBWcE1p?=
+ =?utf-8?B?anlSR2pHTHRoM0FjRFZIakwwMFNaZ3RBR0NaQTNtTHoyVi8xL1V4L254Mk5Z?=
+ =?utf-8?B?NW9SeVFDUmtKSnMvd0wzZVZjR3VzSHR5NjlEdjlQaUZsOGRSNnozeEdkS1Bo?=
+ =?utf-8?B?Yi9YRG9DUlBJb05KOXpwYllZeWcvUnZMUTVkVzR5YnFiN1N2Y0hpU0ppWlNy?=
+ =?utf-8?B?MVI1TUFmWVlGNE01M2pqKzcremNBR090bEdESlFWYTFXS1AvTCtjUmVzQWNJ?=
+ =?utf-8?B?YUVXandHMUM2bUxVeHJPd0ZKTU9tWml1MC9oY1hpOEp4dWFrR0hSSEMyUElR?=
+ =?utf-8?Q?4J4WzScH7Rk=3D?=
+X-Forefront-Antispam-Report: CIP:51.140.37.132;CTRY:GB;LANG:en;SCL:1;SRV:;IPV:CAL;SFV:NSPM;H:uk1.smtp.exclaimer.net;PTR:uk1.smtp.exclaimer.net;CAT:NONE;SFS:(13230040)(82310400026)(14060799003)(376014)(1800799024)(35042699022)(36860700013)(4053099003)(8096899003)(13003099007);DIR:OUT;SFP:1102
+X-MS-Exchange-AntiSpam-ExternalHop-MessageData-ChunkCount: 1
+X-MS-Exchange-AntiSpam-ExternalHop-MessageData-0: jS43wxUq60xCgsQVVdTG1pTHBimE22IJ/dm6bu5MzRVIl/hJhP/+NPNXIkhbhI2d9nSM5vvxYKm8n4mq73OYxiSxzqvZD+x5gAbG7yiI7n4eWQKA1s4HfmfOVBsM+t2sbAWHMlbCOON9N28ZcZlGcMUDXrrI3FMB1w+ciUOrlFHl1AM9CNhnB+tkQA5p4WvEhK64gtdIg4/lAXK08hVfX9g3Kj6SfHdXBvjdezZ1vupdYu0dg5A87zQOydO8PSzxa/sbAjrEOACt4JgeZtFjXIXohYWmf/PWo8kD75h0V6zrI/mZtu43IDhCa5NkKe9ujPImzezMZe8bXt98iS255W4XPntueJ1ENI5AS25zTMUIA9L9Dr/wtbq+A7IIpDWyWK4c5k07dYKL6NYvXbsAfTVAbo5r+OCwuCWK8yj8V3B0ZNGetw6/S4FBeBcBpf8Q4ab/pD5uQ0YJUoAeY4QItzMZKY3HvT1A9yANx0tQjffkbr3lsyCwNwvQNY+D/QJPnpqZECBPBOKRV3fGhZJXk2LdmU1lqYeQ6p7Im/gBYJvpZfYUrKbp22aruKq82t9M+1srXGtU1HERr5Vmx0SbyV05MKcOJOcy/eDQMFYeuyIzZ1WKWpFVDjvpTfdEab8KJ3CnAQniprHtZu9wgx208g==
+X-OriginatorOrg: boldyn.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 09 Jul 2025 12:53:08.3954
+ (UTC)
+X-MS-Exchange-CrossTenant-Network-Message-Id: 5fe0b29f-1464-445d-29d0-08ddbee78e2f
+X-MS-Exchange-CrossTenant-Id: b6d20314-e399-4fde-8ab1-a9da4f204984
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=b6d20314-e399-4fde-8ab1-a9da4f204984;Ip=[51.140.37.132];Helo=[uk1.smtp.exclaimer.net]
+X-MS-Exchange-CrossTenant-AuthSource: LO1PEPF000028CC.GBRP265.PROD.OUTLOOK.COM
+X-MS-Exchange-CrossTenant-AuthAs: Anonymous
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: LO2P265MB3262
+X-Mimecast-Spam-Score: 0
+X-Mimecast-MFC-PROC-ID: Donx_gn6YrvrqkU-tukPV3ATMFlM6gwYFUzAG3cT9r0_1752065593
+X-Mimecast-Originator: boldyn.com
+Content-Language: en-US
+Content-Type: multipart/mixed;
+	boundary="_004_LO9P265MB7475264CEC227EC71E2F9B819C49ALO9P265MB7475GBRP_"
+

@@ -1,0 +1,69 @@
+Delivered-To: youcangetholdofjules@gmail.com
+Received: by 2002:a17:505:5829:b0:1d03:52a6:5a99 with SMTP id yn9csp1013104njb;
+        Thu, 7 Aug 2025 10:16:25 -0700 (PDT)
+X-Google-Smtp-Source: AGHT+IFTYczN7Q7rgkDPMQ9gqVhYe1jdAmn/hQoSQRvd7WB8LBdhR3AcvZQ4h/hUiajZwItJN0VX
+X-Received: by 2002:a05:6902:2a42:b0:e8f:e526:fda9 with SMTP id 3f1490d57ef6-e904b5d0735mr19204276.22.1754586984953;
+        Thu, 07 Aug 2025 10:16:24 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1754586984; cv=none;
+        d=google.com; s=arc-20240605;
+        b=UFC60hpSTraJECtJdOipRDQa5hHCD+rabjDTU5/7B3r/aSiqGz2AKKkw4w67zYTN6O
+         FXK2sIRCR2kn0NkrQhyUb2YDF0iYCnwlCTeAQ/et3NAN6m59p+IU9muG2jFO585c3MMg
+         dJvT5Qa48H9NGd+Bpu3KEZ/q4leE5ecFGhBklyimC0GsTINE9E8MHbGjWIjxY+6qtX4h
+         3jTRQvEkwELBzQyLd619/XmdKyLmIXwNLCIRoCtWz3X6U6h4LQK+CTPsQagzyl2JL88j
+         t05ugSHYpKyvs6mVrfNExpWkX6+nCezl7et0XK4TgfMU2j1QSMpV7WHsWhcch1dwWV4U
+         os6w==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
+        h=feedback-id:subject:from:reply-to:mime-version:date:message-id:to
+         :dkim-signature;
+        bh=8lGYhi0OSez+Q88wN0uOK4TU4KwCP9G9/MYNXpXFGgE=;
+        fh=zvZvwCi25BYizXYVyYgPc1b4Jo6IoOxRlQeVOrHjUH4=;
+        b=dL3X70wNLOkXB9vjUY87BbXOcasp1TZJqxtRl5SwGYR9+MatUwzqTe9jlpMJkKNygJ
+         RWaEeCxLhQDRi21rMZZiwE8YA4ix7tmuYbrmGnIKNBOQcdhF8jIgr/PDZoibcTGWAEPq
+         FWGLAwprJi0ANdQr/VBfKDrlmjLe50AJz3DxMFSPDsQf5NZ/WAiKVsvo/xkOk9mfdTIj
+         EIpwDbpi9H9kjrfs/zPukio8r0UxITqGUCfK3tQs1FYbSVqu1laRRrUBpW0Os5uRfssq
+         NQW7K2VF8LWojT8OaVvBRTG786HqZE7eN3VdXjMoshHZyuxWY3usrqBJplISJ0EOllRC
+         wS1g==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@info.withplum.com header.s=scph1120 header.b="VBN/gYeo";
+       spf=pass (google.com: domain of msprvs1=20314b8gxx0z1=bounces-280172-69@bounce.withplum.com designates 192.174.87.116 as permitted sender) smtp.mailfrom="msprvs1=20314b8gXX0z1=bounces-280172-69@bounce.withplum.com";
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=withplum.com
+Return-Path: <msprvs1=20314b8gXX0z1=bounces-280172-69@bounce.withplum.com>
+Received: from mta-174-87-116.smtp-out.sparkpostmail.com (mta-174-87-116.smtp-out.sparkpostmail.com. [192.174.87.116])
+        by mx.google.com with ESMTPS id 3f1490d57ef6-e8ff79a5645si7438881276.313.2025.08.07.10.16.24
+        for <youcangetholdofjules@gmail.com>
+        (version=TLS1_2 cipher=ECDHE-ECDSA-AES128-GCM-SHA256 bits=128/128);
+        Thu, 07 Aug 2025 10:16:24 -0700 (PDT)
+Received-SPF: pass (google.com: domain of msprvs1=20314b8gxx0z1=bounces-280172-69@bounce.withplum.com designates 192.174.87.116 as permitted sender) client-ip=192.174.87.116;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@info.withplum.com header.s=scph1120 header.b="VBN/gYeo";
+       spf=pass (google.com: domain of msprvs1=20314b8gxx0z1=bounces-280172-69@bounce.withplum.com designates 192.174.87.116 as permitted sender) smtp.mailfrom="msprvs1=20314b8gXX0z1=bounces-280172-69@bounce.withplum.com";
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=withplum.com
+Return-Path: <msprvs1=20314b8gXX0z1=bounces-280172-69@bounce.withplum.com>
+X-MSFBL: ndBLdDZz5eLdq3A39OpqAJl2U1eYPOgO0t9pMSyPjvs=|eyJzdWJhY2NvdW50X2l
+	kIjoiNjkiLCJtZXNzYWdlX2lkIjoiNjg5MjY4ZGY5NDY4NDQzMjEyMmUiLCJyIjo
+	ieW91Y2FuZ2V0aG9sZG9manVsZXNAZ21haWwuY29tIiwiY3VzdG9tZXJfaWQiOiI
+	yODAxNzIiLCJ0ZW5hbnRfaWQiOiJzcGMifQ==
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=info.withplum.com;
+	s=scph1120; t=1754586984; i=@info.withplum.com;
+	bh=8lGYhi0OSez+Q88wN0uOK4TU4KwCP9G9/MYNXpXFGgE=;
+	h=To:Message-ID:Date:Content-Type:From:Subject:From:To:Cc:Subject;
+	b=VBN/gYeo4hyq0PZwC0xMdrKfRCJWa7y+9T6LPPyeQEcAtsHImOosBHQ/TeC+aYvOY
+	 IhQZKko3X/v+MyKzwPoVQtoOiLrS7b6Id7gJZezSB6ThwR+2hAyPqo8zKluHIfB2tT
+	 sP/4Za/tPJpeipHQ3ByLNFCH0HGGdq+fA600Fn+8=
+Received: from [10.90.28.253] ([10.90.28.253])
+	by i-0dfd13c3942ad3099.mta1vrest.sd.prd.sparkpost (ecelerity 5.1.0.74578 r(msys-ecelerity:tags/5.1.0.3)) with REST
+	id E2/29-38575-86FD4986; Thu, 07 Aug 2025 17:16:24 +0000
+To: youcangetholdofjules@gmail.com
+Message-ID: <E2.29.38575.86FD4986@i-0dfd13c3942ad3099.mta1vrest.sd.prd.sparkpost>
+Date: Thu, 07 Aug 2025 17:16:24 +0000
+Content-Type: multipart/alternative; boundary="_----td/PHImq3IhgmSe3bohcrA===_62/29-38575-86FD4986"
+MIME-Version: 1.0
+Reply-To: help@withplum.com
+X-Campaign-ID: 14507984
+From: "Plum" <hello@info.withplum.com>
+Subject: Update to your Cash ISA, effective tomorrow
+X-Message-ID: 329671dc60364084ac5a8b31c94d30c5
+X-Feedback-ID: 18925650:14507984:37369:iterable
+Feedback-ID: 18925650:14507984:37369:iterable
+

@@ -1,0 +1,82 @@
+Received: from GV1PR08MB11028.eurprd08.prod.outlook.com (::1) by
+ VI0PR08MB10445.eurprd08.prod.outlook.com with HTTPS; Wed, 9 Jul 2025 10:34:35
+ +0000
+Authentication-Results: dkim=none (message not signed)
+ header.d=none;dmarc=none action=none header.from=coleago.com;
+Received: from AS8PR08MB8610.eurprd08.prod.outlook.com (2603:10a6:20b:564::5)
+ by GV1PR08MB11028.eurprd08.prod.outlook.com (2603:10a6:150:1ee::15) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.8901.26; Wed, 9 Jul
+ 2025 10:34:30 +0000
+Received: from AS8PR08MB8610.eurprd08.prod.outlook.com
+ ([fe80::b3a6:db3e:dd89:52fe]) by AS8PR08MB8610.eurprd08.prod.outlook.com
+ ([fe80::b3a6:db3e:dd89:52fe%6]) with mapi id 15.20.8901.024; Wed, 9 Jul 2025
+ 10:34:30 +0000
+Content-Type: application/ms-tnef; name="winmail.dat"
+Content-Transfer-Encoding: binary
+From: Graham Friend <graham.friend@coleago.com>
+To: Julian Garrett <julian.garrett@coleago.com>
+CC: Andrew Gorton <andrew.gorton@coleago.com>, stefano.nicoletti
+	<stefano.nicoletti@gmail.com>, Raymond Bouwman <raymond.bouwman@coleago.com>
+Subject: RE: Lesotho proposal
+Thread-Topic: Lesotho proposal
+Thread-Index:
+ AdvuhKx/eRm5htMjSXi0uf1whRqGgwBbTcTQAAgbu4AAAWP1oAABvr4gAAaIrLAAEMfmcAAJY9eAAAbLAdA=
+Date: Wed, 9 Jul 2025 10:34:29 +0000
+Message-ID:
+ <AS8PR08MB8610002BED4FD0DB3446156AF549A@AS8PR08MB8610.eurprd08.prod.outlook.com>
+References:
+ <AS8PR08MB8610566F0F518C1CD423C3B9F54CA@AS8PR08MB8610.eurprd08.prod.outlook.com>
+ <VI0PR08MB10445CF0245016F475B6E8693814EA@VI0PR08MB10445.eurprd08.prod.outlook.com>
+ <AS8PR08MB8610BDCFB6083212F2019DCEF54EA@AS8PR08MB8610.eurprd08.prod.outlook.com>
+ <VI0PR08MB10445B79DAAB79D2C3CB826A8814EA@VI0PR08MB10445.eurprd08.prod.outlook.com>
+ <AS8PR08MB8610F6644FBBBC9F01758157F54EA@AS8PR08MB8610.eurprd08.prod.outlook.com>
+ <VI0PR08MB10445BE1CB70F2DB4275380F9814EA@VI0PR08MB10445.eurprd08.prod.outlook.com>
+ <AS8PR08MB8610DAA3DE08AF512C7D2413F549A@AS8PR08MB8610.eurprd08.prod.outlook.com>
+ <VI0PR08MB10445BB08BD5F95B87809DFF58149A@VI0PR08MB10445.eurprd08.prod.outlook.com>
+In-Reply-To:
+ <VI0PR08MB10445BB08BD5F95B87809DFF58149A@VI0PR08MB10445.eurprd08.prod.outlook.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-Exchange-Organization-SCL: 1
+X-MS-TNEF-Correlator:
+ <AS8PR08MB8610002BED4FD0DB3446156AF549A@AS8PR08MB8610.eurprd08.prod.outlook.com>
+MIME-Version: 1.0
+X-MS-Exchange-Organization-MessageDirectionality: Originating
+X-MS-Exchange-Organization-AuthSource: AS8PR08MB8610.eurprd08.prod.outlook.com
+X-MS-Exchange-Organization-AuthAs: Internal
+X-MS-Exchange-Organization-AuthMechanism: 04
+X-MS-Exchange-Organization-Network-Message-Id:
+ fa7bbcb7-64f5-4d79-cd58-08ddbed42fc6
+X-MS-PublicTrafficType: Email
+X-MS-TrafficTypeDiagnostic:
+ AS8PR08MB8610:EE_|GV1PR08MB11028:EE_|VI0PR08MB10445:EE_
+Return-Path: graham.friend@coleago.com
+X-MS-Exchange-Organization-ExpirationStartTime: 09 Jul 2025 10:34:30.8016
+ (UTC)
+X-MS-Exchange-Organization-ExpirationStartTimeReason: OriginalSubmit
+X-MS-Exchange-Organization-ExpirationInterval: 1:00:00:00.0000000
+X-MS-Exchange-Organization-ExpirationIntervalReason: OriginalSubmit
+X-MS-Office365-Filtering-Correlation-Id: fa7bbcb7-64f5-4d79-cd58-08ddbed42fc6
+X-LD-Processed: 66f0e7e4-ccc2-4f05-832a-10d041b195ce,ExtAddr
+X-Microsoft-Antispam:
+ BCL:0;ARA:13230040|366016|4013099003|13003099007|8096899003|7053199007|3613699012|41050700001;
+X-Forefront-Antispam-Report:
+ CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:AS8PR08MB8610.eurprd08.prod.outlook.com;PTR:;CAT:NONE;SFS:(13230040)(366016)(4013099003)(13003099007)(8096899003)(7053199007)(3613699012)(41050700001);DIR:INT;
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 09 Jul 2025 10:34:29.9415
+ (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-CrossTenant-Id: 66f0e7e4-ccc2-4f05-832a-10d041b195ce
+X-MS-Exchange-CrossTenant-AuthSource: AS8PR08MB8610.eurprd08.prod.outlook.com
+X-MS-Exchange-CrossTenant-AuthAs: Internal
+X-MS-Exchange-CrossTenant-Network-Message-Id: fa7bbcb7-64f5-4d79-cd58-08ddbed42fc6
+X-MS-Exchange-CrossTenant-MailboxType: HOSTED
+X-MS-Exchange-CrossTenant-UserPrincipalName: OH7yTpTI8zGHLh3Z/1EdJcyLFr08mqdEhDZ0+w12J6slmeKEqHCwov1u59HnZ2DVZE5Z3sgAT+k1h3l3MjuUlU0uKUeYPtXAjWvwLbjagUg=
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: GV1PR08MB11028
+X-MS-Exchange-Transport-EndToEndLatency: 00:00:05.1524291
+X-MS-Exchange-Processed-By-BccFoldering: 15.20.8901.023
+X-Microsoft-Antispam-Mailbox-Delivery:
+	ucf:0;jmr:0;auth:0;dest:I;ENG:(910005)(944506478)(944626604)(920097)(425001)(930097)(140003);
+X-Microsoft-Antispam-Message-Info:
+	ne8C0E6VWwot9nxFjW7z1Yc+9wt9pOgpmw/qh7TuIc/jmI7oP7FnCAcBqzLfA1XggIhnXdp7J3aDXbviqng28XvVUMMjnmUxblvZqdzfn5SiRkfp+ecY2b9mBvji0wMv2rX+9GdEwRnsJhloGap0ZF1NtbLd4//bfaLhkB7QzEBOhJdr+g5R5unRCkyjfkyrBUMCSmUDWTYUVwN+X/OBLsLgTCtewIH/tjnW8VYbXsoIrbSjUyvpeYXoDCunIm74zOjfqvhqcKHEawpHsaoc36kGL/XWehXTQql3/NJxJTL7E/+eduasXMGBDtEk745gj9Yd4WRVPYlqxjXHA5Y5b4LBRpSdBxIsqhQe60SdhIRHteBM/PaRWS1i0FfjZTq1u6rLXPNeqgm9xtQnrgSkIaWVL/1/MNnjOdVHOVxVEHMJSMGxqJiYEu5yFVlwEEzBAtbg5azdzoF8l9n+Ix3nmqwQX8TiK4j4YiAjZGJBxsLmRPGV+D3HnJyz89LoiomRYcUh9jHUJe4Xglk2n3jAH8LuLQTUdQOOUfPFShpnDSPpq8T0mJ9xolOVP1nrKiv1IB5+yqltfA1y9gaREu+MuLvOPhFNsSzoPNljRY5TXKbNnxmgzXuDUXvHwJ4OS1GbN8vsnVK6CrHOWZ3UI2+Frk6FyLVTl2dja9qQZKEm5+uYK6rs+axHoUTXAVancZsGxhu8vOrlptB52ySoY9uzSf8vkKyuOCoIOgSPL7toYXTByR4X6qVcm4W+zylJHwV5c0q9CugRtJ29d8qu1A6ozw==

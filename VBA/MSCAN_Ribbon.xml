@@ -1,0 +1,114 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="MSCANAppBootstrap.OnRibbonLoad">
+  <ribbon>
+    <tabs>
+      <!-- Home (Mail): large ON/OFF + Short + Full; stacked Diagnostics / Settings / Logs -->
+      <tab idMso="TabMail">
+        <group id="AESHomeGroup" label="Aliniant Email Scanner">
+          <button id="AESActivateDeactivate"
+                  size="large"
+                  getLabel="MSCANAppBootstrap.GetServiceToggleLabel"
+                  getImage="MSCANAppBootstrap.GetServiceToggleImage"
+                  getImageMso="MSCANAppBootstrap.GetServiceToggleImageMso"
+                  getScreentip="MSCANAppBootstrap.GetServiceToggleScreentip"
+                  getSupertip="MSCANAppBootstrap.GetServiceToggleSupertip"
+                  onAction="MSCANAppBootstrap.OnServiceToggleClick"
+                  screentip="AES scanning on/off"
+                  supertip="Turn automatic AES inbox scanning on or off. Label shows AES ON or AES OFF."/>
+          <button id="AESShortScan"
+                  label="AES Short Scan"
+                  size="large"
+                  imageMso="MailMergeGoToFirstRecord"
+                  onAction="MSCANAppBootstrap.OnShortScanClick"
+                  screentip="AES Short Scan"
+                  supertip="Append the compact two-line AES footer to selected email(s). Skips messages that already have an AES footer."/>
+          <button id="AESFullScan"
+                  label="AES Full Scan"
+                  size="large"
+                  imageMso="ReviewAcceptAll"
+                  onAction="MSCANAppBootstrap.OnFullScanClick"
+                  screentip="AES Full Scan"
+                  supertip="Run the full AES security analysis on selected email(s) and insert the expanded footer."/>
+          <button id="AESDeepScan"
+                  label="AES Deep Scan"
+                  size="large"
+                  imageMso="ZoomPrintPreviewExcel"
+                  onAction="MSCANAppBootstrap.OnDeepScanClick"
+                  screentip="AES Deep Scan"
+                  supertip="Manual deep analysis — opens a report; does not change the email. Never runs automatically."/>
+          <button id="AESDiagnostics"
+                  label="Diagnostics"
+                  size="normal"
+                  imageMso="HappyFace"
+                  onAction="MSCANAppBootstrap.OnDiagnosticsClick"
+                  screentip="Diagnostics"
+                  supertip="Open the interactive AES diagnostics dialog."/>
+          <button id="AESSettings"
+                  label="Settings"
+                  size="normal"
+                  imageMso="AdvancedFileProperties"
+                  onAction="MSCANAppBootstrap.OnSettingsClick"
+                  screentip="AES Settings"
+                  supertip="Choose which email accounts AES scans automatically."/>
+          <button id="AESViewLogs"
+                  label="View Logs"
+                  size="normal"
+                  imageMso="FileDocument"
+                  onAction="MSCANAppBootstrap.OnViewLogsClick"
+                  screentip="View Logs"
+                  supertip="Open the AES VBA log in Notepad."/>
+        </group>
+        <group id="MSCANGroup" label="MSCAN">
+          <button id="WatcherStatus"
+                  size="large"
+                  getLabel="MSCANAppBootstrap.GetWatcherStatusLabel"
+                  getImage="MSCANAppBootstrap.GetWatcherStatusImage"
+                  onAction="MSCANAppBootstrap.OnWatcherButtonClick"
+                  screentip="Email Watcher Status"
+                  supertip="Shows the status of MSCAN email watchers. Click to reinitialize if stopped."/>
+        </group>
+      </tab>
+      <tab id="AESTab" label="AES">
+        <group id="AESScanningGroup" label="Scanning">
+          <button id="AESActivateDeactivateTab"
+                  size="large"
+                  getLabel="MSCANAppBootstrap.GetServiceToggleLabel"
+                  getImage="MSCANAppBootstrap.GetServiceToggleImage"
+                  getImageMso="MSCANAppBootstrap.GetServiceToggleImageMso"
+                  getScreentip="MSCANAppBootstrap.GetServiceToggleScreentip"
+                  getSupertip="MSCANAppBootstrap.GetServiceToggleSupertip"
+                  onAction="MSCANAppBootstrap.OnServiceToggleClick"/>
+          <button id="AESShortScanTab"
+                  label="AES Short Scan"
+                  size="large"
+                  imageMso="MailMergeGoToFirstRecord"
+                  onAction="MSCANAppBootstrap.OnShortScanClick"/>
+          <button id="AESFullScanTab"
+                  label="AES Full Scan"
+                  size="large"
+                  imageMso="ReviewAcceptAll"
+                  onAction="MSCANAppBootstrap.OnFullScanClick"/>
+          <button id="AESDeepScanTab"
+                  label="AES Deep Scan"
+                  size="large"
+                  imageMso="ZoomPrintPreviewExcel"
+                  onAction="MSCANAppBootstrap.OnDeepScanClick"/>
+          <button id="AESDiagnosticsTab"
+                  label="Diagnostics"
+                  size="normal"
+                  imageMso="HappyFace"
+                  onAction="MSCANAppBootstrap.OnDiagnosticsClick"/>
+          <button id="AESSettingsTab"
+                  label="Settings"
+                  size="normal"
+                  imageMso="AdvancedFileProperties"
+                  onAction="MSCANAppBootstrap.OnSettingsClick"/>
+          <button id="AESViewLogsTab"
+                  label="View Logs"
+                  size="normal"
+                  imageMso="FileDocument"
+                  onAction="MSCANAppBootstrap.OnViewLogsClick"/>
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>

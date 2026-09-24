@@ -1,0 +1,165 @@
+AES (Aliniant Email Scanner) - Outlook VBA Import Instructions
+================================================================
+
+Import all modules via File > Import File from C:\GeoFooter\VBA\
+No UserForm (.frm) import is required.
+
+ThisOutlookSession is different: Outlook keeps a built-in copy under
+"Microsoft Outlook Objects". File > Import always creates a NEW class module
+under "Modules" — it cannot replace the built-in object directly. That is normal.
+
+Before importing
+----------------
+1. Back up your Outlook macro project: File > Export File (save .OTM backup).
+2. Remove broken or duplicate items:
+   - UserForm1, frmClassification, MSCANSecurityRatingForm (if present)
+   - Old module names: MSCANmodLogging, MSCANmodQueueManager, MSCANmodWatchers,
+     MSCANclsEmailWatcher
+   - Any duplicate ThisOutlookSession1 / ThisOutlookSession2 under Modules
+   - Any other duplicate MSCAN* modules from failed imports
+
+Import order (File > Import File for each)
+------------------------------------------
+  C:\GeoFooter\VBA\MSCANModLogging.bas
+  C:\GeoFooter\VBA\MSCANModQueueManager.bas
+  C:\GeoFooter\VBA\MSCANModWatchers.bas
+  C:\GeoFooter\VBA\MSCANModStatus.bas
+  C:\GeoFooter\VBA\MSCANSettings.bas
+  C:\GeoFooter\VBA\MSCANAppBootstrap.bas
+  C:\GeoFooter\VBA\MSCANClassificationDialog.bas
+  C:\GeoFooter\VBA\MSCANReadNotify.bas
+  C:\GeoFooter\VBA\MSCANToolbar.bas
+  C:\GeoFooter\VBA\MSCANModule1.bas
+  C:\GeoFooter\VBA\MSCANCore.bas
+  C:\GeoFooter\VBA\MSCANEventHandlers.bas
+  C:\GeoFooter\VBA\MSCANDiagnostics.bas
+  C:\GeoFooter\VBA\MSCANEmailWatcher.cls
+
+Classification dialog (Python UI)
+---------------------------------
+Outgoing mail classification uses a PySide6 dialog:
+  C:\GeoFooter\VBA\aes_classify_dialog.py
+launched by MSCANClassificationDialog.bas. Requires Python + PySide6.
+If the dialog cannot start, Outlook falls back to the InputBox picker.
+
+Scan-account Settings (toolbar Settings) uses:
+  C:\GeoFooter\VBA\aes_settings_dialog.py
+with a checkbox per mailbox (All ON / All OFF / Save / Cancel).
+Falls back to the old InputBox list if Python/PySide6 is unavailable.
+
+Do NOT import frmClassification.frm — Outlook often fails with "out of memory"
+or control-class errors on UserForm import.
+
+ReadNotify (Aliniant TRACKED sends)
+-----------------------------------
+MSCANReadNotify.bas appends ReadNotify address suffixes to To/CC/BCC when:
+  - Send account is julian.garrett@aliniant.com (override via
+    %LOCALAPPDATA%\GeoFooter\aes_readnotify.ini  account=...)
+  - The classification dialog ReadNotify options are enabled
+    (Activate Tracking, Invisible, Ensured, Self-Destructing,
+     Block Print & Copy, Certified + Notarized, Translate),
+    or for already-classified mail when the tag is SEC4–SEC7
+    (default suffix .read-notify.com)
+
+Important: AES owns recipient rewriting for these sends. Leave ReadNotify
+ActiveTracker auto-track OFF when using AES classification, or addresses
+may get stamped twice.
+
+The dialog launches with pythonw.exe + hidden window style (no console flash).
+
+Test: Alt+F8 > MSCANClassificationDialog.QuickTest
+
+ThisOutlookSession (one-time setup; ~15 lines)
+-----------------------------------------------
+Outlook application events MUST live in the built-in object, not an imported class.
+
+Step 1 — Import the stub (creates a class under Modules; that is expected):
+  File > Import File > C:\GeoFooter\VBA\ThisOutlookSession.cls
+
+Step 2 — Move code into the real object:
+  a. Open: Microsoft Outlook Objects > ThisOutlookSession
+  b. Select all (Ctrl+A), Delete
+  c. Open the imported copy under Modules > ThisOutlookSession
+  d. Select from "Option Explicit" to the end (skip VERSION / Attribute lines)
+  e. Copy (Ctrl+C)
+  f. Paste into Microsoft Outlook Objects > ThisOutlookSession
+  g. Right-click the imported Modules > ThisOutlookSession > Remove (not Export)
+
+Step 3 — Verify the built-in module contains only these event stubs:
+  - Application_Startup  -> calls MSCANAppBootstrap.HandleApplicationStartup
+  - Application_Quit     -> calls MSCANAppBootstrap.HandleApplicationQuit
+  - Application_ItemSend -> calls MSCANEventHandlers.HandleItemSend
+
+Do NOT leave a second ThisOutlookSession under Modules. Only the one under
+Microsoft Outlook Objects should remain.
+
+Future updates
+--------------
+After the one-time ThisOutlookSession setup, re-import .bas / .cls files only.
+Logic changes go in MSCANAppBootstrap.bas and other modules, not in ThisOutlookSession.
+
+After import
+------------
+1. Debug > Compile VbaProject
+2. File > Save
+3. Restart Outlook
+4. Check C:\GeoFooter\Logs\VBA_Log.txt for:
+     InitializeWatchersStaggered: Complete. N watchers active.
+
+Startup performance
+-------------------
+AES attaches inbox watchers for every enabled account at startup
+(with a DoEvents yield between accounts — Outlook has no Application.OnTime).
+ItemAdd events are ignored for ~90s after attach so mailbox sync does not
+freeze the UI. Automatic footers resume after that quiet period.
+
+Toolbar buttons (automatic)
+---------------------------
+On startup, an "AES" CommandBar is created. Outlook shows it on the
+Add-ins tab as a single row of SMALL icons (Outlook limitation — VBA
+toolbars cannot use large ribbon buttons there).
+
+Live toggle captions/icons (AES ON green tick / AES OFF red cross) work
+on that Add-ins bar.
+
+Large icons on Home (like ON/OFF + Short + Full, with Diagnostics /
+Settings / View Logs stacked) require a Home custom ribbon group:
+
+  1. File → Options → Customize Ribbon
+  2. Right list: Home (Mail) → New Group (name it AES) — or edit AES (Custom)
+  3. Left: Choose commands from → Macros
+  4. Add in this order (Rename each after adding):
+       Project1.ToggleService      → AES ON/OFF
+       Project1.ShortScanEmail     → AES Short Scan
+       Project1.FullScanEmail      → AES Full Scan
+       Project1.RunDiagnostics     → Diagnostics
+       Project1.ShowSettings       → Settings
+       Project1.ViewLogs           → View Logs
+  5. OK
+
+Outlook lays out the first three as large icons and stacks the last three.
+Home custom labels/icons are STATIC (they will not flip ON↔OFF). Use the
+Add-ins AES bar for the live green tick / red cross toggle.
+
+Icons (Add-ins service button):
+  C:\GeoFooter\VBA\icons\aes_service_on.bmp
+  C:\GeoFooter\VBA\icons\aes_service_off.bmp
+
+If the Add-ins toolbar does not appear, import MSCANToolbar.bas and restart.
+Enable the Add-ins tab: File → Options → Customize Ribbon → tick Add-ins.
+
+Python script
+-------------
+Geolocation script: C:\GeoFooter\VBA\geolocate_headers.py
+Attachment scanner: C:\GeoFooter\attachment_scanner.py
+Windows Defender:  C:\GeoFooter\windows_defender.py (uses MpCmdRun / Start-MpScan when enabled)
+Supporting module:    C:\GeoFooter\guri.py (must stay in project root)
+
+Incoming email pipeline (automatic when Service is On)
+----------------------------------------------------
+1. Inbox watcher detects new mail (all accounts)
+2. MSCANModule1 exports headers and runs geolocate_headers.py
+3. HTML footer is inserted before </body> in the email
+
+Log markers: "ProcessEmail:", "RunGeolocationPythonScript: Python script succeeded",
+             "Footer inserted successfully"

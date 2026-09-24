@@ -1,0 +1,14 @@
+# GURI Database Requirements
+# Install with: pip install -r requirements_guri.txt
+
+# GUI
+PySide6>=6.6.0
+
+# Optional: PostgreSQL support
+psycopg2-binary>=2.9.0
+
+# Optional: only for migrating an existing MySQL GURI database
+mysql-connector-python>=8.0.0
+
+# Note: SQLite support is built into Python, no additional packages needed
+

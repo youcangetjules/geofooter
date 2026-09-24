@@ -1,0 +1,75 @@
+Received: from 127.0.0.1
+ by atlas-production.v2-mail-prod1-gq1.omega.yahoo.com pod-id atlas--production-gq1-fb5f4cbd-mwqhz.gq1.yahoo.com with HTTP; Thu, 7 Aug 2025 15:25:12 +0000
+Return-Path: <msprvs1=20314v3iSDKXM=bounces-364957-5@sparkpostmail2.com>
+X-Originating-Ip: [156.70.73.38]
+Received-SPF: pass (domain of sparkpostmail2.com designates 156.70.73.38 as permitted sender)
+Authentication-Results: atlas-production.v2-mail-prod1-gq1.omega.yahoo.com;
+ dkim=pass header.i=@suinsuranceclaimassist.com header.s=scph0725 arc_overridden_status=NOT_OVERRIDDEN;
+ dkim=pass header.i=@sparkpostmail2.com header.s=ssp0116 arc_overridden_status=NOT_OVERRIDDEN;
+ spf=pass smtp.mailfrom=sparkpostmail2.com arc_overridden_status=NOT_OVERRIDDEN;
+ dmarc=pass(p=REJECT,sp=REJECT) header.from=suinsuranceclaimassist.com arc_overridden_status=NOT_OVERRIDDEN;
+X-Apparently-To: youcangetholdofjules@yahoo.com; Thu, 7 Aug 2025 15:25:13 +0000
+X-YMailISG: 7C5HgRgWLDvHrG2dX.v8fdMwoQ4Y5RxWRC8.AnfEeKmTKack
+ IiLqKg9E8.oPmnx2ptDcdH5JzUDeWyxPMtJenoOqJy6K8YUGeiqfzlWL6Q4B
+ OSEHODm9E8LBAK.zs6Zx1LJ0NyxxVN_JZDWPG2LFfxeqmJmsNhR7eBLwGpak
+ vOh3fG6kGQjCKWSmpY6O6TVoqOzlF_Nppx3eUbM_HWx.HPjSDRB80.ktx7uB
+ mcGbiLAD9wYWKiQNzeB5koDtL1L6w6WcPnA6QCozvG.xXBghhC9mI7GzfsFJ
+ IQTdG23wfc94YPUf1G2tqa__yBpg6FUekoPQ0.qgrgoNxS2fn9udPsNJeoST
+ j_anexFo4fZ0gUVicNsBMzVzQHvp83c3TyC4QIUxHyk76014aZKWQgsGkFIu
+ eX3i10zjTjHP5CUjZ.a88vz1eKScL5PcK3hjP11YdcLm.RQXJ.Z2h9URyyfr
+ i0JrUxR86K53xqoDBavsmkOZJQrIt7sRw5iws0AErla675wwzpRets1ravYO
+ bu8zJv9eXR0_lHDEIjIJkcCVDVug1vsqqQEV7uVhQguJMGaNPA1k4aHAVRIb
+ MZs3NnSw_Z7pBQwFUwnPotgdsPbn_cORmOFsqbl0fCvm_wPeBzgNF5k3OO3g
+ uiYQ_9h7ccpjrGq0ifAght97NgrZwDzDBs33dUxrbyGWFxiLgLCOPd4VKM7Z
+ pcHwCfK7RDcNNEeQruNvKZDj6eZBd1LhNCsEJXPh41.FsGjh_XaODhm4ZQ0j
+ eQduU_TV2H5im.ZJtqZ7obC_npabDYqOCYlfddvjL8HFJB7bQ6nlwsPTG8T5
+ i0Q_13D8fwMLB3NvpEQ_iJhtFEX6_Yt8T.NoW8GpkcWkiqBeKECmWsaWJ6Os
+ efJen_OGe0I2Q83Ah4qzQVFuPtYlkVa5qTQSfijzFSiU7MnK9INRG6fwAGyB
+ FxPm00KqagGSTN.FVGxZdDMSm1M1Sk9EXETkoz762EcjHa3Zp_WGhGmcDbcw
+ 8.wXFtRc1DKVY2tOpYIHID33NVTsOmvssI9f3dpfKwGld1pZv9mIZqdjeGbr
+ sJeEFaGs_PhwGtL0tzB1lEiMG1XzlIevx0DmMu6_l5Cf1g4Tb9uT2zokb9.a
+ ai8ExtORcNWnP5ar8g0YgbgcYLvrpADF6GYvBOEg.hv__XvIAOH04bZidetp
+ Cw7VkK19o1plq4UpJBc4r9XJehlttwSj320Ru1MlTRCByiUEXKFBo3IFPyug
+ 5Uy7ZrgKGICV3gCt_qBQBAgQuuR0ZMiAmixZjJAWbRAcHVbT.p50MG8ed0mD
+ .Ei2doGstjpmfDtvxydrGsX7d2__zMmlHoXrUdORwrAYGMjamvnoiANioXb.
+ .BA7j69GQkxXts31c9Vg_LA1Tm2ffC7xtC3IIaKT_yzBkCjwKLgRqzw6kBlG
+ yVeM.XE4lrNRC.ROfuGP8cRMgD1Ar996ghK68LoFt.sLLSUujJ7gRo.53t6Y
+ m5TRvncMZTIg0DB3nOXWF2a_tRV1wKQWuE2NYLSzxtr8QTlrKnZp1NngF__8
+ m2Im3H8Izcz43A--
+Received: from 156.70.73.38 (EHLO mta-70-73-38.sparkpostmail.com)
+ by 10.253.233.87 with SMTPs
+ (version=TLS1_2 cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256);
+ Thu, 07 Aug 2025 15:25:12 +0000
+X-MSFBL: smk14nOO9ZFi9q2zr3X6HM1wvVRQBdLL7URcnoSVEjs=|eyJzdWJhY2NvdW50X2l
+	kIjoiNSIsInRlbmFudF9pZCI6InNwYyIsImN1c3RvbWVyX2lkIjoiMzY0OTU3Iiw
+	iciI6InlvdWNhbmdldGhvbGRvZmp1bGVzQHlhaG9vLmNvbSIsIm1lc3NhZ2VfaWQ
+	iOiI2ODkyNTdjNTk0Njg1MWE2NGIwMiJ9
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+	d=suinsuranceclaimassist.com; s=scph0725; t=1754580311;
+	i=@suinsuranceclaimassist.com;
+	bh=FPkW2oEbIYJ6w8eQ6juEM8T/vhr93ngJgrEuLOgbUj4=;
+	h=Content-Type:Message-ID:To:Date:Subject:From:From:To:Cc:Subject;
+	b=GV5RHOkCUlvt9E3cCWTTBjZlJjSkwtinLgnZZLHeQQI5xyHm0/v0EWEVecFWORvGj
+	 fv5XhgTZ5cAfFcdGK8GgXF/ADP8Jc8NmSzY3FzD98fZvI6LjNI0J/4stCHbL5Lxv4u
+	 BPDEqFjY5kgrboHA9eIixdr8Il2CG6QueuiXWo+I=
+DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple; d=sparkpostmail2.com;
+	s=ssp0116; t=1754580311; i=@sparkpostmail2.com;
+	bh=0OIuAA0x9+iDCU7r65HHQ479eA7oiDS4Y+kjsvdWXeE=;
+	h=Content-Type:Message-ID:To:Date:Subject:From:From:To:Cc:Subject;
+	b=AZCaZRVP2H7OhAJkBsIp46ohoAn1yMdRJ4sNkWcd7VbQYH2v1qKxGylS9PfkdVSju
+	 C89m8yXrhZi/mQ/6LeGoL+zX54Yz5ndSyw3mY1JUzayYEh5ShlyL3KvhmW4sUx7gvE
+	 roSc26KyZKYz7ZdAMnr1pPzUu6JNqxlj/zdlUwhY=
+Received: from [10.90.34.175] ([10.90.34.175])
+	by i-03c100fa6c83369fb.mta1vrest.sd.prd.sparkpost (ecelerity 5.1.0.74578 r(msys-ecelerity:tags/5.1.0.3)) with REST
+	id 20/BC-44195-755C4986; Thu, 07 Aug 2025 15:25:11 +0000
+Content-Transfer-Encoding: 7bit
+Content-Type: text/html; charset="UTF-8"
+Message-ID: <1754580304.yg4q75je7u5jvss8o3.96BRJMI5TXKJICQ5CFQQNHPG795FK@geopod-ismtpd-41>
+To: youcangetholdofjules@yahoo.com
+Date: Thu, 07 Aug 2025 15:25:11 +0000
+MIME-Version: 1.0
+Subject: =?utf-8?B?U2VlIGxmIFlvdeKAmXJlIE92ZXJwYXlpbmcgZm9yIEhvbWUgaW5z?=
+	=?utf-8?B?dXJhbmNl?=
+From: "Home lnsurance by Rate Kick" <Walsh@suinsuranceclaimassist.com>
+Content-Length: 11734
+

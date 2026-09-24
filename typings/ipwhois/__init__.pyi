@@ -1,0 +1,13 @@
+from typing import Any
+
+class IPWhois:
+    def __init__(self, addr: str) -> None: ...
+    def lookup_rdap(self, depth: int = 1) -> dict[str, Any]: ...
+
+class IPDefinedError(Exception): ...
+
+class HTTPLookupError(Exception): ...
+
+class exceptions:
+    IPDefinedError: type[IPDefinedError]
+    HTTPLookupError: type[HTTPLookupError]

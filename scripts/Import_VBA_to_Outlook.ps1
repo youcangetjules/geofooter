@@ -40,7 +40,8 @@ $ModuleFiles = @(
     "MSCANCore.bas",
     "MSCANEventHandlers.bas",
     "MSCANDiagnostics.bas",
-    "MSCANEmailWatcher.cls"
+    "MSCANEmailWatcher.cls",
+    "MSCANSelfUpdate.bas"
 )
 
 $StaleNames = @(
@@ -377,7 +378,10 @@ function Get-VbaProject {
             "Fix:`n" +
             "  1. Fully quit Outlook (tray icon too) and reopen`n" +
             "  2. Press Alt+F11 once (VBA editor can then be closed)`n" +
-            "  3. Re-run scripts\Import_VBA_to_Outlook.bat from a non-admin prompt"
+            "  3. Re-run scripts\Import_VBA_to_Outlook.bat from a non-admin prompt`n" +
+            "If it still fails, update from inside Outlook instead:`n" +
+            "  Alt+F11 > File > Import File > VBA\MSCANSelfUpdate.bas (one time)`n" +
+            "  Alt+F8 > UpdateAesFromDisk > Run, then restart Outlook"
         )
     }
 

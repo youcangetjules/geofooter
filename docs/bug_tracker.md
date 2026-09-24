@@ -55,7 +55,8 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 - **Evidence:** `VBA_Log.txt` shows `ShowGuriGui: python or guri_gui.py not found`, `GetPythonScript: Python script (geolocate_headers.py) not found`, `MSCANSettings: Python settings dialog unavailable; InputBox fallback`. `AesRibbonHost.log` shows the old DLL (`LaunchGuriGuiDirect: missing ... script=`).
 - **Expected / actual:** Buttons launch the scan / GURI / Aura, and Settings opens the PySide6 dialog / nothing happens, or the old InputBox appears.
 - **Workaround:** Re-run the import bat (1.2.4+ executes VBE Compile + Save and prints `File > Save: done`). Otherwise press Alt+F11 → Debug → Compile → Ctrl+S. Then fully quit Outlook, run `AesRibbonHost\install.ps1` with Outlook closed, and reopen.
-- **Fixed in:** 1.2.4 (`54f84b4`), import script now saves. Pending operator verification that the OTM timestamp updates.
+- **Update 2026-09-24 18:08:** The external import can't reach VBE on this machine at all. `Application.VBE` is null from outside even with AccessVBOM=1 and a fresh Outlook start. GURI/Aura work only through the ribbon's direct launch; the scanner (pure VBA) stays broken.
+- **Fixed in:** 1.2.4 (`54f84b4`) import script saves. 1.2.6 adds the in-Outlook updater `MSCANSelfUpdate.UpdateAesFromDisk` (import that one file manually once). Pending operator verification.
 
 ### BUG-002 — VBA modules on disk are ahead of Outlook after 1.2.1 package move
 
@@ -71,10 +72,15 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 ### BUG-001 — Outlook Trust Center UI has no “Trust access to the VBA project object model” checkbox
 
 - **Severity:** S3
+
 - **Area:** Install / VBA
+
 - **Status:** open
+
 - **Reported:** 2026-09-24
+
 - **Summary:** Macro Settings shows Enable all macros, but not AccessVBOM. External sync of VBA modules fails until the registry value is set.
+
 - **Workaround:**
   
   ```powershell
@@ -84,6 +90,7 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
   
   Fully quit Outlook (tray too), reopen, then run `scripts\Import_VBA_to_Outlook.bat`
   (or `Import_VBA_to_Outlook.ps1 -EnableAccessVBOM` once to set the key).
+
 - **Notes:** “Enable all macros” only allows macros to *run*; it does not grant project object model access.
 
 ---

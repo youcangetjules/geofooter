@@ -20,6 +20,16 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.2.6] — 2026-09-24
+
+### Added
+
+- `VBA/MSCANSelfUpdate.bas`: `UpdateAesFromDisk` re-imports all `VBA\MSCAN*` modules (list read from `VBA\IMPORT.txt`), then compiles and saves, from inside Outlook. It's needed because Outlook returns no `Application.VBE` to external scripts on some machines, even with AccessVBOM=1.
+
+### Changed
+
+- `Import_VBA_to_Outlook.ps1` also imports `MSCANSelfUpdate.bas`, and its failure message points at the in-Outlook updater.
+
 ## [1.2.5] — 2026-09-24
 
 ### Fixed

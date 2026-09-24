@@ -12,10 +12,10 @@
     <PlatformTarget>x86</PlatformTarget>
     <Prefer32Bit>true</Prefer32Bit>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Version>1.2.5</Version>
-    <AssemblyVersion>1.2.5.0</AssemblyVersion>
-    <FileVersion>1.2.5.0</FileVersion>
-    <InformationalVersion>1.2.5</InformationalVersion>
+    <Version>1.2.6</Version>
+    <AssemblyVersion>1.2.6.0</AssemblyVersion>
+    <FileVersion>1.2.6.0</FileVersion>
+    <InformationalVersion>1.2.6</InformationalVersion>
     <Title>Aliniant AES Ribbon Host</Title>
     <Description>Outlook COM add-in that hosts AES Ribbon XML (large Home icons, live ON/OFF).</Description>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>

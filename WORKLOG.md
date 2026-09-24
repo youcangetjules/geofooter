@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.2.6: In-Outlook VBA updater (scanner still dead)
+- The user reported the scanner is not firing, while GURI/Aura work. GURI/Aura only work because the reinstalled ribbon DLL launches `guri\gui.py` directly. The VBA is still yesterday's (`VbaProject.OTM` dated 2026-09-23 23:35), so `GetPythonScript` can't find `aes\geolocate_headers.py`.
+- Running `Import_VBA_to_Outlook.bat` from a non-elevated shell: COM attach OK, AccessVBOM=1, Outlook restarted after the key was set, but `Application.VBE` is still null to external callers.
+- Added `VBA/MSCANSelfUpdate.bas` (`UpdateAesFromDisk`). It reads the module list from `VBA\IMPORT.txt`, renames then removes each old component (Remove is deferred while a macro runs), imports the new one, and runs VBE Compile + Save. The ps1 and IMPORT.txt point to it.
+- Follow-up: one-time manual import of `MSCANSelfUpdate.bas`, Alt+F8 `UpdateAesFromDisk`, restart Outlook, confirm the OTM timestamp changes and the `ProcessEmail: Starting async` / `StartAsyncGeolocationJob: launched` log lines appear.
+
 ### 2026-09-24 — 1.2.5: ASCII-only VBA modules (mojibake in Outlook dialogs)
 - The user saw the old InputBox "AES Settings â€" Scan Accounts" dialog. `%APPDATA%\Microsoft\Outlook\VbaProject.OTM` was last saved 2026-09-23 23:35, so none of today's imports were saved. Outlook runs yesterday's code, which looks for the deleted `aes_settings_dialog.py`, so it falls back to the InputBox.
 - Converted all `VBA\*.bas` / `*.cls` to pure ASCII (97 replacements of em-dashes, arrows, quotes). The VBA editor imports them as ANSI, which garbled the punctuation.

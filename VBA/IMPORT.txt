@@ -36,6 +36,7 @@ Import order (File > Import File for each)
   VBA\MSCANEventHandlers.bas
   VBA\MSCANDiagnostics.bas
   VBA\MSCANEmailWatcher.cls
+  VBA\MSCANSelfUpdate.bas
 
 Install root (no hard-coded C:\GeoFooter)
 ----------------------------------------
@@ -106,7 +107,15 @@ Microsoft Outlook Objects should remain.
 
 Future updates
 --------------
-Prefer the automated sync (Outlook must be running):
+Recommended - in-Outlook updater (works even when external scripts cannot
+reach the VBA project, i.e. Application.VBE is Nothing from outside):
+
+  One time: Alt+F11 > File > Import File > VBA\MSCANSelfUpdate.bas
+  Each update: Alt+F8 > UpdateAesFromDisk > Run
+      (re-imports every VBA\MSCAN* file listed above, compiles, saves)
+  Then fully quit Outlook (tray too) and reopen.
+
+External sync (Outlook must be running):
 
   scripts\Import_VBA_to_Outlook.bat
   scripts\Import_VBA_to_Outlook.bat -EnableAccessVBOM

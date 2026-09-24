@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.2.10] — 2026-09-24
+
+### Fixed
+
+- Conda CI smoke tests failed with `ModuleNotFoundError` for `geofooter` / `aes` / `guri` / `aura`: added `tests/conftest.py` to put the install root on `sys.path`.
+
 ## [1.2.9] — 2026-09-24
 
 ### Fixed

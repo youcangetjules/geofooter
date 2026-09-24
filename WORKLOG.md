@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.2.10: CI conftest
+- Added `tests/conftest.py`, which inserts the install root into `sys.path`; the GitHub runner couldn't import the packages (16 smoke tests failed with `ModuleNotFoundError`).
+- Follow-up: confirm the Conda run is green.
+
 ### 2026-09-24 — 1.2.9: Unblock Conda CI (flake8 F821 in scripts/)
 - Every Conda workflow run failed on flake8: `scripts/fix_duplicate_guris.py` used `os` without importing it. Added the import and switched the DB path to `geofooter.paths.datastore_path`.
 - Follow-up: confirm the next GitHub Actions run is green.

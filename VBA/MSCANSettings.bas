@@ -624,9 +624,7 @@ Private Function ResolveSettingsDialogScript() As String
 
     Dim paths As Variant
     paths = Array( _
-        MSCANPaths.InstallPath("VBA", "aes_settings_dialog.py"), _
-        MSCANPaths.InstallPath("aes_settings_dialog.py"), _
-        Environ$("LOCALAPPDATA") & "\GeoFooter\aes_settings_dialog.py")
+        MSCANPaths.GetAesScript("settings_dialog.py"))
 
     Dim p As Variant
     For Each p In paths

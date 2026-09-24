@@ -1,15 +1,15 @@
-# Kill stuck GeoFooter / AES / GURI Python processes, then restart guri_gui.
-# Invoked by Restart_guri_gui.bat
+# Kill stuck GeoFooter / AES / GURI Python processes, then restart guri\gui.py.
+# Invoked by Restart_guri_gui.bat. -Root is the suite install root (parent of scripts\).
 
 param(
-    [string]$Root = (Split-Path -Parent $MyInvocation.MyCommand.Path)
+    [string]$Root = (Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path))
 )
 
 $ErrorActionPreference = "SilentlyContinue"
 # Bat/PowerShell quoting can leave a trailing " when %~dp0 ends with \.
 $Root = ($Root -replace '"', '').Trim().TrimEnd("\", "/")
 if (-not $Root) {
-    $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
+    $Root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 }
 
 Write-Host "========================================"
@@ -25,15 +25,11 @@ $patterns = @(
     [regex]::Escape($Root),
     "geofooter",
     "geolocate_headers\.py",
+    "guri[\\/](gui|gui_service|outlook_scraper|file_scraper|learning)\.py",
+    "aes[\\/](settings_dialog|action_handler|classify_dialog|diagnostics_dialog)\.py",
     "guri_gui\.py",
-    "guri_gui_service\.py",
-    "guri_outlook_scraper\.py",
-    "guri_file_scraper\.py",
-    "guri_learning\.py",
-    "aes_settings_dialog\.py",
-    "aes_action_handler\.py",
-    "aes_classify_dialog\.py",
-    "aes_diagnostics_dialog\.py"
+    "aes_\w+_dialog\.py",
+    "aes_action_handler\.py"
 )
 
 $killed = 0
@@ -54,21 +50,22 @@ Write-Host ""
 
 Start-Sleep -Seconds 2
 
-$gui = Join-Path $Root "guri_gui.py"
+$gui = Join-Path $Root "guri\gui.py"
 if (-not (Test-Path $gui)) {
-    Write-Host "ERROR: guri_gui.py not found in $Root"
+    Write-Host "ERROR: guri\gui.py not found under $Root"
     exit 1
 }
 
 # Guard against truncated / corrupt files that exit silently under pythonw.
 $tail = Get-Content $gui -Tail 30 -ErrorAction SilentlyContinue | Out-String
 if ($tail -notmatch 'if __name__') {
-    Write-Host "ERROR: guri_gui.py looks truncated/corrupt (no __main__ entry point)."
+    Write-Host "ERROR: guri\gui.py looks truncated/corrupt (no __main__ entry point)."
     Write-Host "Restore from Cursor local history or a backup before restarting."
     exit 1
 }
 
 $pyCandidates = @(
+    (Join-Path $Root ".venv\Scripts\pythonw.exe"),
     "C:\Python313\pythonw.exe",
     "C:\Python313\python.exe",
     (Get-Command pythonw -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -First 1),

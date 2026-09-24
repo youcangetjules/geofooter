@@ -16,7 +16,7 @@ Private m_NudgeWiredLogged As Boolean
 ' - These constants serve as default fallbacks.
 '===============================================================================
 Private Const PYTHON_EXE_DEFAULT As String = ""  ' resolved via MSCANPaths / PATH
-' Prefer VBA\geolocate_headers.py under the configured install root.
+' Scan engine lives at aes\geolocate_headers.py under the configured install root.
 Private Const AES_SCANNED_PROP As String = "AESScanned"
 ' Status strip: Outlook refuses to load file:// images in a message, so the
 ' rendered PNG is attached as a hidden inline part and referenced by cid.
@@ -228,8 +228,7 @@ Private Function GetPythonScript() As String
     
     Dim paths As Variant: paths = Array( _
         MSCANPaths.GetGeolocateScript(), _
-        MSCANPaths.InstallPath("VBA", "geolocate_headers.py"), _
-        GetBaseDir() & "\geolocate_headers.py")
+        GetBaseDir() & "\aes\geolocate_headers.py")
 
     Dim p As Variant
     For Each p In paths
@@ -638,7 +637,7 @@ Private Function FindLatestDeepScanReport() As String
     Dim bestDate As Date
     Set fso = CreateObject("Scripting.FileSystemObject")
     Dim dir As String
-    dir = "C:\GeoFooter\output\deepscan_reports"
+    dir = MSCANPaths.InstallPath("output", "deepscan_reports")
     If Not fso.FolderExists(dir) Then Exit Function
     Set folder = fso.GetFolder(dir)
     bestDate = 0

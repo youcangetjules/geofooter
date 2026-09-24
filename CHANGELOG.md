@@ -12,13 +12,29 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html):
 | **MINOR** | New backward-compatible features (ribbon buttons, tabs, modes) |
 | **MAJOR** | Rare — breaking Outlook/VBA contracts, DB schema, or public CLI |
 
-The canonical version string lives in `version.py` and the plain-text `VERSION` file.
+The canonical version string lives in `geofooter/version.py` and the plain-text `VERSION` file.
 Bump those together with this changelog and `AesRibbonHost/AesRibbonHost.csproj` `<Version>`.
 
 Every git commit must start with a short **caption** (one line) stating what was done,
 e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
+
+## [1.2.1] — 2026-09-24
+
+### Changed
+- Python code reorganised into packages under the install root:
+  - `aes/` — scan engine (`geolocate_headers.py`), checks, dialogs, `action_handler.py`, `secret_store.py`
+  - `aes/scanners/` — attachment / body / link / AV / Norton / Defender scanners
+  - `guri/` — `core.py`, `gui.py`, `gui_service.py` and helpers (the `guri_` prefix is dropped)
+  - `aura/` — data-broker removal (was `broker_removal/`)
+  - `geofooter/` — `paths.py`, `version.py`, `crashlog.py`
+- `VBA\` now holds only Outlook modules; its Python scripts, `icons\` and `pages\` moved to `aes\` and `assets\`.
+- GURI recipients, important domains and reply status are read from `datastore\`.
+- VBA, the ribbon host, and the launchers in `scripts\` resolve every script through the install root.
+
+### Fixed
+- The newer `link_scanner` copy (previously shadowed by a stale root duplicate) is now the one that loads.
 
 ## [1.2.0] — 2026-09-24
 

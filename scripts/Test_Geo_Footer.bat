@@ -7,6 +7,8 @@ echo  Geo Footer System Test
 echo ============================================================
 echo.
 
+cd /d "%~dp0.."
+
 REM Test 1: Check Python
 echo [Test 1] Checking Python installation...
 python --version
@@ -20,7 +22,7 @@ echo.
 
 REM Test 2: Test GURI import
 echo [Test 2] Testing GURI module import...
-python quick_test.py
+python tests\quick_test.py
 if errorlevel 1 (
     echo [FAIL] GURI module test failed
     pause
@@ -32,7 +34,7 @@ echo.
 REM Test 3: Process a header file
 echo [Test 3] Processing test header file...
 echo.
-python geolocate_headers.py "headers\headers_20251102_004141_236.txt" "output\test_footer.html"
+python aes\geolocate_headers.py "headers\headers_20251102_004141_236.txt" "output\test_footer.html"
 if errorlevel 1 (
     echo [FAIL] Header processing failed
     pause
@@ -61,7 +63,7 @@ echo.
 echo The geo footer system is working correctly.
 echo.
 echo Next steps:
-echo  1. Open GURI GUI: python guri_gui.py
+echo  1. Open GURI GUI: python guri\gui.py
 echo  2. View generated footer: output\test_footer.html
 echo  3. Check GURI database for new entry
 echo.

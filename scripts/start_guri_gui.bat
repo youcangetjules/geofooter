@@ -1,9 +1,9 @@
 @echo off
 REM GURI GUI Startup Script
-REM This script starts the GURI GUI application
+REM This script starts the GURI GUI application (suite root = parent of scripts\)
 
-cd /d "C:\GeoFooter"
-python guri_gui.py
+cd /d "%~dp0.."
+python guri\gui.py
 
 if errorlevel 1 (
     echo Error starting GURI GUI

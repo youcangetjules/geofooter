@@ -1,11 +1,14 @@
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 print("Python is working!")
 print(f"Python version: {sys.version}")
 print(f"Current directory: {sys.path[0]}")
 
 # Test imports
 try:
-    from guri import GURIDatabase
+    from guri.core import GURIDatabase
     print("SUCCESS: guri module imported")
     
     db = GURIDatabase()

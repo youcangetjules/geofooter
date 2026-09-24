@@ -20,7 +20,9 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-BASE = Path(r"C:\GeoFooter")
+BASE = Path(__file__).resolve().parents[1]
+if str(BASE) not in sys.path:
+    sys.path.insert(0, str(BASE))
 
 
 def _load_json(path: Path) -> Dict[str, Any]:
@@ -65,8 +67,8 @@ def _ensure_pg_database(cfg: Dict[str, Any]) -> None:
 
 def _init_pg_schema(cfg: Dict[str, Any]) -> None:
     # Reuse application DDL
-    from guri import GURIDatabase
-    from guri_component_library import GURIComponentLibrary
+    from guri.core import GURIDatabase
+    from guri.component_library import GURIComponentLibrary
 
     db = GURIDatabase(db_type="postgres", pg_config=cfg, base_path=str(BASE))
     GURIComponentLibrary(database=db)

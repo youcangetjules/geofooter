@@ -13,7 +13,9 @@ Option Explicit
 '   trusted           - exempt from both block lists and from block-all beacons
 ' ============================================================================
 
-Private Const BLOCKED_PIXEL_PATH As String = "C:\GeoFooter\pages\aes_blocked_pixel.png"
+Private Function BlockedPixelPath() As String
+    BlockedPixelPath = MSCANPaths.InstallPath("assets", "pages", "aes_blocked_pixel.png")
+End Function
 
 ' ---------------------------------------------------------------------------
 ' Sender identity
@@ -359,7 +361,7 @@ Private Function DefangBeaconTag(ByVal tagText As String) As String
     Dim q As Long
     Dim ch As String
     Dim inert As String
-    inert = "file:///" & Replace(BLOCKED_PIXEL_PATH, "\", "/")
+    inert = "file:///" & Replace(BlockedPixelPath(), "\", "/")
 
     p = InStr(1, tagText, "src=", vbTextCompare)
     If p = 0 Then

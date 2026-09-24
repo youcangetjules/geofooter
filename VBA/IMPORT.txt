@@ -41,18 +41,20 @@ Install root (no hard-coded C:\GeoFooter)
 ----------------------------------------
 Set the suite folder in GURI → Database → Install root (Save root).
 That writes %LOCALAPPDATA%\GeoFooter\install_root.txt for VBA + Python.
-All suite-relative paths (VBA\, assets\, datastore\, debuglog\, crashlogs\)
-resolve from that root. Optional override: environment variable GEOFOOTER_ROOT.
+All suite-relative paths (aes\, guri\, aura\, geofooter\, VBA\, assets\,
+datastore\, debuglog\, crashlogs\) resolve from that root. Optional override:
+environment variable GEOFOOTER_ROOT. This VBA\ folder holds Outlook modules
+only; all Python lives in the packages above.
 
 Classification dialog (Python UI)
 ---------------------------------
 Outgoing mail classification uses a PySide6 dialog:
-  C:\GeoFooter\VBA\aes_classify_dialog.py
+  <install root>\aes\classify_dialog.py
 launched by MSCANClassificationDialog.bas. Requires Python + PySide6.
 If the dialog cannot start, Outlook falls back to the InputBox picker.
 
 Scan-account Settings (toolbar Settings) uses:
-  C:\GeoFooter\VBA\aes_settings_dialog.py
+  <install root>\aes\settings_dialog.py
 with a checkbox per mailbox (All ON / All OFF / Save / Cancel).
 Falls back to the old InputBox list if Python/PySide6 is unavailable.
 
@@ -158,20 +160,23 @@ Details: C:\GeoFooter\AesRibbonHost\README.md
 Re-import after install: MSCANToolbar.bas, MSCANAppBootstrap.bas
 
 Icons:
-  C:\GeoFooter\VBA\icons\aes_service_on.bmp
-  C:\GeoFooter\VBA\icons\aes_service_off.bmp
-  C:\GeoFooter\VBA\icons\aes_guri.bmp
-  (regenerate set: python C:\GeoFooter\make_aes_icons.py)
+  <install root>\assets\icons\aes_service_on.bmp
+  <install root>\assets\icons\aes_service_off.bmp
+  <install root>\assets\icons\aes_guri.bmp
+  (regenerate set: python scripts\make_aes_icons.py)
 
 If the Add-ins toolbar does not appear, import MSCANToolbar.bas and restart.
 Enable the Add-ins tab: File → Options → Customize Ribbon → tick Add-ins.
 
 Python script
 -------------
-Geolocation script: C:\GeoFooter\VBA\geolocate_headers.py
-Attachment scanner: C:\GeoFooter\attachment_scanner.py
-Windows Defender:  C:\GeoFooter\windows_defender.py (uses MpCmdRun / Start-MpScan when enabled)
-Supporting module:    C:\GeoFooter\guri.py (must stay in project root)
+Geolocation script: <install root>\aes\geolocate_headers.py
+Scanners:           <install root>\aes\scanners\ (attachment, body, link, av, norton,
+                    windows_defender - uses MpCmdRun / Start-MpScan when enabled)
+GURI core:          <install root>\guri\core.py
+aes:// handler:     <install root>\aes\action_handler.py
+                    (re-register after moving the install root:
+                     .venv\Scripts\python.exe aes\action_handler.py --register)
 
 Incoming email pipeline (automatic when Service is On)
 ----------------------------------------------------

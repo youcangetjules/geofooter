@@ -11,7 +11,7 @@ Private Const DEFAULT_READNOTIFY_SUFFIX As String = ".read-notify.com"
 Private Const READNOTIFY_DOMAIN As String = "read-notify.com"
 ' Feature-flag segments the classification dialog can compose into the suffix,
 ' always dot-separated and immediately before the domain. Must match
-' build_read_notify_suffix in aes_classify_dialog.py: an unlisted flag would
+' build_read_notify_suffix in aes\classify_dialog.py: an unlisted flag would
 ' survive StripReadNotifyStamp and be stamped over, producing a double suffix.
 Private Const READNOTIFY_FLAGS As String = "silent,noprint,translate,certified,selfdestruct,ensured"
 ' ANSI + Unicode PR_SMTP_ADDRESS (Exchange address entries vary by profile).

@@ -13,6 +13,25 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — Reorganise Python into aes/ guri/ aura/ geofooter/ packages (1.2.1)
+- **Moves:**
+  - Root and `VBA\` Python → `aes/` (engine, checks, dialogs, `action_handler`, `secret_store`) and `aes/scanners/`.
+  - `guri*.py` → `guri/` (`core`, `gui`, `gui_service`, …).
+  - `broker_removal/` → `aura/`.
+  - `geofooter_paths` / `version` / `aes_crashlog` → `geofooter/`.
+- **Duplicates removed:** the root copies of the scanners and `aes_secrets` are gone; the `VBA\` copies were canonical, so the newer `link_scanner` now loads. `VBA\icons` and `VBA\pages` were merged into `assets\`.
+- **Imports:** all imports are now absolute (`from guri.core import …`). Each entry script has a `sys.path` bootstrap because it is launched by file path.
+- **GURI data:** recipients, important domains and email status now read from `datastore\`. The user's lists were migrated there after the previous tidy left GURI looking in the wrong folder.
+- **Callers updated:**
+  - VBA: `MSCANPaths` (`GetAesScript`, new script paths, `aes\` marker), Module1, Settings, Toolbar, ClassificationDialog, Diagnostics, ModSenderRules (blocked pixel via install root), AppBootstrap, ReadNotify comment.
+  - Ribbon host `Connect.cs` (`guri\gui.py`; working directory is the install root).
+  - `scripts\*.bat/.ps1`, `tests`, `diagnostics_dialog`, `geofooter.paths` discovery.
+- **Verified:** every file compiles; every module imports; the geolocate optional modules are non-None; the entry scripts run by path from `VBA\` as working directory.
+- **Follow-up:**
+  - Re-import VBA: MSCANPaths, MSCANModule1, MSCANSettings, MSCANToolbar, MSCANClassificationDialog, MSCANDiagnostics, MSCANModSenderRules, MSCANAppBootstrap, MSCANReadNotify.
+  - Re-run `AesRibbonHost\install.ps1` with Outlook closed.
+  - Re-register `aes://` with `aes\action_handler.py --register`.
+
 ### 2026-09-24 — Tidy root: scripts/tests/docs/assets; drop Old/_archive
 - Moved migrators/launchers → `scripts/`, ad-hoc tests → `tests/`, feature docs → `docs/`, brand/icons/forms/data → `assets/`.
 - Removed tracked `Old/` and `_archive/` from the repo (gitignored going forward).

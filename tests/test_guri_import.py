@@ -3,6 +3,9 @@
 
 import sys
 import os
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 print("=" * 80)
 print("Testing GURI Module Import and Functionality")
@@ -12,7 +15,7 @@ print()
 # Test 1: Import guri module
 print("Test 1: Importing guri module...")
 try:
-    from guri import GURIDatabase
+    from guri.core import GURIDatabase
     print("✓ SUCCESS: guri module imported")
 except Exception as e:
     print(f"✗ FAILED: Could not import guri module: {e}")
@@ -55,7 +58,7 @@ except Exception as e:
 # Test 5: Test geolocate_headers import
 print("\nTest 5: Testing geolocate_headers imports...")
 try:
-    import geolocate_headers
+    import aes.geolocate_headers as geolocate_headers
     print("✓ SUCCESS: geolocate_headers module loaded")
 except Exception as e:
     print(f"✗ FAILED: Could not import geolocate_headers: {e}")
@@ -65,6 +68,6 @@ print("\n" + "=" * 80)
 print("ALL TESTS PASSED!")
 print("=" * 80)
 print("\nThe geo footer system is ready to use.")
-print("Run: python geolocate_headers.py <header_file> [output_file]")
+print("Run: python aes\\geolocate_headers.py <header_file> [output_file]")
 print()
 

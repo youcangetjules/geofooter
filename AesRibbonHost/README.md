@@ -8,8 +8,8 @@ Classic Outlook **COM add-in** that hosts Ribbon XML on **Home (Mail)** so AES c
 
 Actions call your existing VBA AES CommandBar buttons (`Execute`), so scan/settings/diagnostics logic stays in VBA.
 If the button is missing, the host falls back to `Application.Run` for the macro.
-**GURI** additionally launches `guri_gui.py --raise` directly when VBA has no GURI button yet.
-**Aura** launches `guri_gui.py --raise --aura` (opens the Aura / data-broker removal tab).
+**GURI** additionally launches `<install root>\guri\gui.py --raise` directly when VBA has no GURI button yet.
+**Aura** launches `guri\gui.py --raise --aura` (opens the Aura / data-broker removal tab).
 
 ## Install
 

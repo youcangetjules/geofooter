@@ -27,7 +27,8 @@ if errorlevel 1 (
 
 REM Install the service
 echo Installing service...
-python guri_gui_service.py install
+cd /d "%~dp0.."
+python guri\gui_service.py install
 
 if errorlevel 1 (
     echo Failed to install service. Please run as Administrator.
@@ -39,7 +40,7 @@ echo.
 echo Service installed successfully!
 echo.
 echo To start the service, run as Administrator:
-echo   python guri_gui_service.py start
+echo   python guri\gui_service.py start
 echo.
 echo Or use Services.msc to start it.
 echo.

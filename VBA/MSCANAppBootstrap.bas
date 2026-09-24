@@ -265,8 +265,7 @@ Public Function GetServiceIconPath() As String
 
     paths = Array( _
         Environ$("LOCALAPPDATA") & "\GeoFooter\icons\" & fileName, _
-        "C:\GeoFooter\VBA\icons\" & fileName, _
-        "C:\GeoFooter\icons\" & fileName)
+        MSCANPaths.GetAssetsIconsDir() & "\" & fileName)
 
     Set fso = CreateObject("Scripting.FileSystemObject")
     For Each p In paths

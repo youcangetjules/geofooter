@@ -2,11 +2,12 @@ Attribute VB_Name = "MSCANPaths"
 '===============================================================================
 ' MSCANPaths — install-root resolution (no hard-coded C:\GeoFooter).
 '
-' Pointer file (written by GURI Database tab / geofooter_paths.set_install_root):
+' Pointer file (written by GURI Database tab / geofooter.paths.set_install_root):
 '   %LOCALAPPDATA%\GeoFooter\install_root.txt
 '
 ' Relative layout under install root:
-'   VBA\, assets\, datastore\, debuglog\, crashlogs\, scripts\
+'   aes\ (scan engine + dialogs), guri\, aura\, geofooter\, VBA\ (these modules),
+'   assets\, datastore\, debuglog\, crashlogs\, scripts\
 '
 ' Per-user runtime (settings, jobs, secrets) stays under %LOCALAPPDATA%\GeoFooter.
 '===============================================================================
@@ -63,7 +64,7 @@ Public Function GetInstallRoot() As String
         p = Trim$(CStr(c))
         If Len(p) > 0 Then
             If fso.FolderExists(p) Then
-                If fso.FileExists(p & "\VERSION") Or fso.FolderExists(p & "\VBA") Then
+                If fso.FileExists(p & "\VERSION") Or fso.FolderExists(p & "\aes") Then
                     mInstallRootCache = p
                     GetInstallRoot = p
                     Exit Function
@@ -142,12 +143,17 @@ Public Function GetVenvPython() As String
     GetVenvPython = InstallPath(".venv", "Scripts", "python.exe")
 End Function
 
+''' Python entry point under <install root>\aes\ (e.g. "settings_dialog.py").
+Public Function GetAesScript(ByVal fileName As String) As String
+    GetAesScript = InstallPath("aes", fileName)
+End Function
+
 Public Function GetGeolocateScript() As String
-    GetGeolocateScript = InstallPath("VBA", "geolocate_headers.py")
+    GetGeolocateScript = GetAesScript("geolocate_headers.py")
 End Function
 
 Public Function GetGuriGuiScript() As String
-    GetGuriGuiScript = InstallPath("guri_gui.py")
+    GetGuriGuiScript = InstallPath("guri", "gui.py")
 End Function
 
 '-------------------------------------------------------------------------------

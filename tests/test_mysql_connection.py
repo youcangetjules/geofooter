@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""
+r"""
 Test MySQL connection from the Python environment used by Outlook.
 Run this with: C:\Python313\python.exe test_mysql_connection.py
 """
 
 import sys
 import os
+from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(_ROOT))
 
 print("=" * 60)
 print("MySQL Connection Test")
@@ -28,7 +32,7 @@ except ImportError as e:
 # Test 2: Load config file
 print()
 print("Test 2: Loading MySQL config file...")
-config_path = "C:/GeoFooter/guri_mysql_config.json"
+config_path = str(_ROOT / "guri_mysql_config.json")
 try:
     import json
     with open(config_path, 'r') as f:
@@ -67,8 +71,7 @@ except mysql.connector.Error as e:
 print()
 print("Test 4: Testing GURIDatabase class...")
 try:
-    sys.path.insert(0, "C:/GeoFooter")
-    from guri import GURIDatabase
+    from guri.core import GURIDatabase
     
     guri_db = GURIDatabase(db_type="mysql", mysql_config=config)
     print(f"  ✓ GURIDatabase initialized (type: {guri_db.db_type})")

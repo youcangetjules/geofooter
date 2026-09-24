@@ -301,9 +301,7 @@ Private Function ResolveDiagnosticsDialogScript() As String
     Dim p As Variant
     Set fso = CreateObject("Scripting.FileSystemObject")
     paths = Array( _
-        "C:\GeoFooter\VBA\aes_diagnostics_dialog.py", _
-        "C:\GeoFooter\aes_diagnostics_dialog.py", _
-        Environ$("LOCALAPPDATA") & "\GeoFooter\aes_diagnostics_dialog.py")
+        MSCANPaths.GetAesScript("diagnostics_dialog.py"))
     For Each p In paths
         If fso.FileExists(CStr(p)) Then
             ResolveDiagnosticsDialogScript = CStr(p)
@@ -868,12 +866,18 @@ Private Function GetAesScannerInfo() As String
     
     info = "--- AES SCANNER / PYTHON ---" & vbCrLf
     info = info & "Python (default): C:\Python313\python.exe — " & FileExistsLabel(fso, "C:\Python313\python.exe") & vbCrLf
-    info = info & "geolocate_headers.py (VBA): C:\GeoFooter\VBA\geolocate_headers.py — " & FileExistsLabel(fso, "C:\GeoFooter\VBA\geolocate_headers.py") & vbCrLf
-    info = info & "geolocate_headers.py (root): C:\GeoFooter\geolocate_headers.py — " & FileExistsLabel(fso, "C:\GeoFooter\geolocate_headers.py") & vbCrLf
-    info = info & "guri.py: C:\GeoFooter\guri.py — " & FileExistsLabel(fso, "C:\GeoFooter\guri.py") & vbCrLf
-    info = info & "guri_postgres_config.json: C:\GeoFooter\guri_postgres_config.json — " & FileExistsLabel(fso, "C:\GeoFooter\guri_postgres_config.json") & vbCrLf
-    info = info & "guri_mysql_config.json (legacy): C:\GeoFooter\guri_mysql_config.json — " & FileExistsLabel(fso, "C:\GeoFooter\guri_mysql_config.json") & vbCrLf
-    info = info & "Output folder: C:\GeoFooter\output — " & FolderExistsLabel(fso, "C:\GeoFooter\output") & vbCrLf
+    Dim geoPath As String, guriPath As String, pgCfg As String, myCfg As String, outDir As String
+    geoPath = MSCANPaths.GetGeolocateScript()
+    guriPath = MSCANPaths.InstallPath("guri", "core.py")
+    pgCfg = MSCANPaths.InstallPath("guri_postgres_config.json")
+    myCfg = MSCANPaths.InstallPath("guri_mysql_config.json")
+    outDir = MSCANPaths.InstallPath("output")
+    info = info & "Install root: " & MSCANPaths.GetInstallRoot() & vbCrLf
+    info = info & "aes\geolocate_headers.py: " & geoPath & " — " & FileExistsLabel(fso, geoPath) & vbCrLf
+    info = info & "guri\core.py: " & guriPath & " — " & FileExistsLabel(fso, guriPath) & vbCrLf
+    info = info & "guri_postgres_config.json: " & pgCfg & " — " & FileExistsLabel(fso, pgCfg) & vbCrLf
+    info = info & "guri_mysql_config.json (legacy): " & myCfg & " — " & FileExistsLabel(fso, myCfg) & vbCrLf
+    info = info & "Output folder: " & outDir & " — " & FolderExistsLabel(fso, outDir) & vbCrLf
     info = info & "VBA log: " & MSCANModLogging.logPath() & " — " & FileExistsLabel(fso, MSCANModLogging.logPath()) & vbCrLf
     info = info & vbCrLf
     GetAesScannerInfo = info
@@ -896,19 +900,19 @@ Private Function RunAesScannerTests() As String
         failed = failed + 1
     End If
     
-    If fso.FileExists("C:\GeoFooter\VBA\geolocate_headers.py") Or fso.FileExists("C:\GeoFooter\geolocate_headers.py") Then
-        info = info & "  PASS: geolocate_headers.py found" & vbCrLf
+    If fso.FileExists(MSCANPaths.GetGeolocateScript()) Then
+        info = info & "  PASS: aes\geolocate_headers.py found" & vbCrLf
         passed = passed + 1
     Else
-        info = info & "  FAIL: geolocate_headers.py not found" & vbCrLf
+        info = info & "  FAIL: aes\geolocate_headers.py not found under install root" & vbCrLf
         failed = failed + 1
     End If
     
-    If fso.FileExists("C:\GeoFooter\guri.py") Then
-        info = info & "  PASS: guri.py found" & vbCrLf
+    If fso.FileExists(MSCANPaths.InstallPath("guri", "core.py")) Then
+        info = info & "  PASS: guri\core.py found" & vbCrLf
         passed = passed + 1
     Else
-        info = info & "  FAIL: guri.py not found" & vbCrLf
+        info = info & "  FAIL: guri\core.py not found under install root" & vbCrLf
         failed = failed + 1
     End If
     

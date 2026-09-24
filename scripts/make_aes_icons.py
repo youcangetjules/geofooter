@@ -227,7 +227,7 @@ ICONS = {
     "aes_view_logs": (icon_view_logs, 16),
 }
 
-TARGET_DIRS = None  # filled in main() from geofooter_paths
+TARGET_DIRS = None  # filled in main() from geofooter.paths
 
 
 def main() -> None:
@@ -236,13 +236,12 @@ def main() -> None:
     if str(root_guess) not in sys.path:
         sys.path.insert(0, str(root_guess))
     try:
-        from geofooter_paths import get_install_root, icons_dir, vba_dir
+        from geofooter.paths import get_install_root, icons_dir
 
         root = get_install_root()
         out = root / "assets" / "icons_build"
         targets = [
             Path.home() / "AppData/Local/GeoFooter/icons",
-            vba_dir() / "icons",
             icons_dir(),
         ]
     except Exception:
@@ -250,7 +249,6 @@ def main() -> None:
         out = root / "assets" / "icons_build"
         targets = [
             Path.home() / "AppData/Local/GeoFooter/icons",
-            root / "VBA" / "icons",
             root / "assets" / "icons",
         ]
 

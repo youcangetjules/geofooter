@@ -5,8 +5,6 @@ Attribute VB_Name = "MSCANClassificationDialog"
 Option Explicit
 
 Private Const RESULT_FILE_NAME As String = "classify_result.json"
-Private Const DIALOG_SCRIPT_DEFAULT As String = "C:\GeoFooter\VBA\aes_classify_dialog.py"
-
 Public Function ShowDialog( _
     ByVal originalSubject As String, _
     ByRef selectedTag As String, _
@@ -313,9 +311,7 @@ Private Function ResolveDialogScript() As String
 
     Dim paths As Variant
     paths = Array( _
-        DIALOG_SCRIPT_DEFAULT, _
-        "C:\GeoFooter\aes_classify_dialog.py", _
-        Environ$("LOCALAPPDATA") & "\GeoFooter\aes_classify_dialog.py")
+        MSCANPaths.GetAesScript("classify_dialog.py"))
 
     Dim p As Variant
     For Each p In paths

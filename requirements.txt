@@ -3,7 +3,7 @@
 # Core dependencies
 PySide6>=6.6.0   # GURI GUI + AES Settings / Diagnostics dialogs
 Pillow>=10.0.0  # For image display in Welcome tab + toolbar icon generation
-pywin32>=306    # Outlook COM checks in aes_diagnostics_dialog.py
+pywin32>=306    # Outlook COM checks in aes/diagnostics_dialog.py
 pytz>=2023.3    # For timezone support in geolocate_headers
 
 # Email security analysis (geolocate_headers.py)

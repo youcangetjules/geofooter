@@ -20,7 +20,7 @@ echo Starting GURI GUI...
 echo.
 
 REM Run the GUI
-python "%~dp0guri_gui.py"
+python "%~dp0..\guri\gui.py"
 
 if errorlevel 1 (
     echo.

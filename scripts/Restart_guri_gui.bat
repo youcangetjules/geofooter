@@ -2,17 +2,16 @@
 REM ============================================================================
 REM  Restart_guri_gui.bat
 REM  Kill stuck GeoFooter / AES / GURI Python processes that can prevent
-REM  guri_gui.py from starting, then relaunch GURI GUI.
+REM  guri\gui.py from starting, then relaunch GURI GUI.
 REM ============================================================================
 setlocal
 title Restart GURI GUI
 
-REM %~dp0 always ends with \, which escapes the closing " when passed as
-REM -Root "C:\GeoFooter\" — strip it before quoting.
-set "ROOT=%~dp0"
-if "%ROOT:~-1%"=="\" set "ROOT=%ROOT:~0,-1%"
+REM Suite root is the parent of scripts\. Resolve it without a trailing \,
+REM which would escape the closing " in -Root "...".
+for %%I in ("%~dp0..") do set "ROOT=%%~fI"
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%\Restart_guri_gui.ps1" -Root "%ROOT%"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Restart_guri_gui.ps1" -Root "%ROOT%"
 
 if errorlevel 1 (
     echo.

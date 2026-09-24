@@ -644,7 +644,6 @@ namespace Aliniant.AesRibbonHost
             if (!string.IsNullOrEmpty(root))
             {
                 list.Add(Path.Combine(root, "assets", "icons"));
-                list.Add(Path.Combine(root, "VBA", "icons"));
             }
             list.Add(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icons"));
             return list.ToArray();
@@ -652,7 +651,7 @@ namespace Aliniant.AesRibbonHost
 
         /// <summary>
         /// Suite install root from %LOCALAPPDATA%\GeoFooter\install_root.txt
-        /// (written by GURI Database tab). Falls back to discovering guri_gui.py.
+        /// (written by GURI Database tab), then GEOFOOTER_ROOT, then legacy C:\GeoFooter.
         /// </summary>
         private static string InstallRoot()
         {
@@ -792,7 +791,7 @@ namespace Aliniant.AesRibbonHost
         }
 
         /// <summary>
-        /// Raise or start guri_gui.py without VBA (same paths as MSCANToolbar.ShowGuriGui).
+        /// Raise or start guri\gui.py without VBA (same paths as MSCANToolbar.ShowGuriGui).
         /// </summary>
         private static bool LaunchGuriGuiDirect(string extraArgs = "--raise")
         {
@@ -814,8 +813,7 @@ namespace Aliniant.AesRibbonHost
 
                 var scriptList = new System.Collections.Generic.List<string>();
                 if (!string.IsNullOrEmpty(root))
-                    scriptList.Add(Path.Combine(root, "guri_gui.py"));
-                scriptList.Add(Path.Combine(local, @"GeoFooter\guri_gui.py"));
+                    scriptList.Add(Path.Combine(root, "guri", "gui.py"));
                 string[] scriptCandidates = scriptList.ToArray();
 
                 string py = null;
@@ -846,7 +844,7 @@ namespace Aliniant.AesRibbonHost
                     Arguments = args,
                     UseShellExecute = false,
                     CreateNoWindow = true,
-                    WorkingDirectory = Path.GetDirectoryName(script) ?? (InstallRoot() ?? Environment.CurrentDirectory),
+                    WorkingDirectory = string.IsNullOrEmpty(root) ? Environment.CurrentDirectory : root,
                 };
                 Process.Start(psi);
                 HostLog.Write("LaunchGuriGuiDirect: " + py + " " + args);

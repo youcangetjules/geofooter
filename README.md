@@ -73,7 +73,12 @@ git push origin v1.2.0
 ## Agent / contributor notes
 
 See [`AGENTS.md`](AGENTS.md) and [`SKILLS.md`](SKILLS.md). Do not commit secrets, DPAPI blobs, or live DB passwords.
+All of the API Keys for the Threat websites have free tiers. We did that on purpose :) - pretty powerful even at that level.
 
 ## License / ownership
 
 © Aliniant — internal / product suite. Public mirror: [youcangetjules/geofooter](https://github.com/youcangetjules/geofooter).
+If you can download it and install it - have fun!
+Need help with it - julian.garrett@aliniant.com
+I take cash and card. And feature requests.
+Rule for life - drive it like its stolen :)

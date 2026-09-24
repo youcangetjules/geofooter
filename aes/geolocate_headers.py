@@ -551,6 +551,14 @@ AES_STRIP_MUTED = "#d5dee4"
 AES_STRIP_RULE = "#535f6a"
 AES_STRIP_DOT = "#3ecf8e"
 AES_STRIP_FONT = "Segoe UI, Arial, sans-serif"
+# Outlook drops padding on a div. This row is the gap above the strip.
+AES_FOOTER_GAP_HTML = (
+    "<table border='0' cellpadding='0' cellspacing='0' width='100%' "
+    "bgcolor='#ffffff' style='background:#ffffff; border-collapse:collapse;'>"
+    "<tr><td height='12' bgcolor='#ffffff' "
+    "style='height:12px; line-height:12px; font-size:1px; background:#ffffff; "
+    "mso-line-height-rule:exactly;'>&nbsp;</td></tr></table>"
+)
 # Quick Action chips on that strip. Default is a white pill with slate text.
 AES_CHIP_BG = "#ffffff"
 AES_CHIP_FG = "#0f1f2a"
@@ -5276,8 +5284,8 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
                 f"{mitigate_markers}"
                 f"<!-- AES Start -->\n"
                 f"<a id='aes-footer-start' name='aes-footer-start'></a>\n"
-                f"<div style='margin:0; padding:5px 0 0 0; background:#ffffff; font-family:{AES_STRIP_FONT}; "
-                f"font-size:11px; color:#333;'>{summary_block}</div>\n"
+                f"<div style='margin:0; padding:0; background:#ffffff; font-family:{AES_STRIP_FONT}; "
+                f"font-size:11px; color:#333;'>{AES_FOOTER_GAP_HTML}{summary_block}</div>\n"
                 f"<a id='aes-footer-end' name='aes-footer-end'></a>\n"
                 f"<!-- AES End -->"
             )
@@ -5288,9 +5296,9 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"{mitigate_markers}"
             f"<!-- AES Start -->\n"
             f"<a id='aes-footer-start' name='aes-footer-start'></a>\n"
-            f"<div style='margin:0; padding:5px 0 0 0; background:#ffffff; font-family:{AES_STRIP_FONT}; "
+            f"<div style='margin:0; padding:0; background:#ffffff; font-family:{AES_STRIP_FONT}; "
             f"font-size:11px; color:#333;'>"
-            f"{summary_block}\n"
+            f"{AES_FOOTER_GAP_HTML}{summary_block}\n"
             f"<!-- AES Full Start -->\n"
             f"{full_details}\n"
             f"<!-- AES Full End -->\n"

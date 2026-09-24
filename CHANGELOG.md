@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.18] — 2026-09-24
+
+### Fixed
+
+- The footer no longer sits flush against the message. Outlook was dropping the div padding, so a 12px white spacer row is now part of the footer HTML.
+
 ## [1.3.17] — 2026-09-24
 
 ### Changed

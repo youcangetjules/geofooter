@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.18: Forced gap above the footer
+- Outlook ignores padding on the footer div, so the strip stayed glued to the message. A 12px white table row (`height='12'`) is now the first thing in the footer.
+- Follow-up: rescan a mail. No VBA re-import.
+
 ### 2026-09-24 — 1.3.17: Uniform top-row type
 - Metric links (attachments, beacons, links) were 11px regular inside a 12px bold row. They are now 12px bold.
 - Follow-up: rescan a mail.

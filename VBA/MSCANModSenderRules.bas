@@ -11,6 +11,8 @@ Option Explicit
 '   block_attachments - quarantine + remove attachments from matching senders
 '   block_beacons     - force beacon blocking on (overrides the global default)
 '   allow_beacons     - force beacon blocking off (overrides the global default)
+'   untrusted         - NT: trust removed and beacons blocked (neutral chip)
+'   full_no_trust     - FNT: attachments blocked; mail is kept as text
 '   trusted           - exempt from both block lists and from block-all beacons
 ' ============================================================================
 
@@ -156,6 +158,10 @@ Public Function ShouldBlockAttachments(ByVal mail As Object) As Boolean
     dom = GetMailSenderDomain(mail)
     If Len(smtp) = 0 And Len(dom) = 0 Then Exit Function
     If SenderOnRulesList("trusted", smtp, dom) Then Exit Function
+    If SenderOnRulesList("full_no_trust", smtp, dom) Then
+        ShouldBlockAttachments = True
+        Exit Function
+    End If
     ShouldBlockAttachments = SenderOnRulesList("block_attachments", smtp, dom)
 End Function
 
@@ -261,8 +267,17 @@ Public Function ShouldBlockBeacons(ByVal mail As Object) As Boolean
     If SenderOnRulesList("trusted", smtp, dom) Then Exit Function
 
     ' Footer-button overrides win over the global Beacon Blocking default.
-    If SenderOnRulesList("allow_beacons", smtp, dom) Then Exit Function
+    ' FNT and an explicit block beat an allow. NT blocks beacons unless allowed.
+    If SenderOnRulesList("full_no_trust", smtp, dom) Then
+        ShouldBlockBeacons = True
+        Exit Function
+    End If
     If SenderOnRulesList("block_beacons", smtp, dom) Then
+        ShouldBlockBeacons = True
+        Exit Function
+    End If
+    If SenderOnRulesList("allow_beacons", smtp, dom) Then Exit Function
+    If SenderOnRulesList("untrusted", smtp, dom) Then
         ShouldBlockBeacons = True
         Exit Function
     End If

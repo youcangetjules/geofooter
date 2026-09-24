@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.30: NT levels and footer replace on button click
+- First NT click removes trust and blocks beacons. The NT chip stays the neutral white pill. Second click stores Full No Trust, blocks attachments, and converts the open mail to text with a restore link that is not followed. Later scans leave that text in place.
+- BA, BB, TS, and the first NT click run AES Short Scan so the footer is replaced.
+- Follow-up: re-import `VBA\MSCANModule1.bas` and `VBA\MSCANModSenderRules.bas`.
+
 ### 2026-09-24 — 1.3.29: Footer buttons override global beacon defaults
 - Beacon Blocking settings stay the default. `allow_beacons` in `aes_sender_rules.json` turns blocking off for one sender; `block_beacons` turns it on. BB toggles against the effective state. VBA `ShouldBlockBeacons` honours the same order.
 - Follow-up: re-import `VBA\MSCANModSenderRules.bas`. Rescan mail so the footer colour and blocked count follow the override.

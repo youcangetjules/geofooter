@@ -3326,6 +3326,7 @@ class HTMLReportGenerator:
                             "block_attachments",
                             "block_beacons",
                             "allow_beacons",
+                            "full_no_trust",
                             "trusted",
                             "untrusted",
                         )
@@ -3336,6 +3337,7 @@ class HTMLReportGenerator:
             "block_attachments": [],
             "block_beacons": [],
             "allow_beacons": [],
+            "full_no_trust": [],
             "trusted": [],
             "untrusted": [],
         }
@@ -3354,20 +3356,26 @@ class HTMLReportGenerator:
             return bool(domain and domain != "unknown" and domain in entries)
 
         trusted = on_list("trusted")
-        # Global beacon settings are the default. A footer button override wins:
-        # allow_beacons turns blocking off for this sender, block_beacons turns
-        # it on. Trusted is itself an override that turns blocking off.
-        if trusted or on_list("allow_beacons"):
+        # NT stays a neutral chip. It still removes trust and blocks beacons.
+        # FNT is the next click: attachments blocked and the mail becomes text.
+        nt = on_list("untrusted") and not trusted
+        fnt = on_list("full_no_trust") and not trusted
+        # Global beacon settings are the default. A footer button override wins.
+        if trusted:
             beacons = False
-        elif on_list("block_beacons"):
+        elif fnt or on_list("block_beacons"):
+            beacons = True
+        elif on_list("allow_beacons"):
+            beacons = False
+        elif nt:
             beacons = True
         else:
             beacons = self._beacon_policy_blocks_sender(domain)
         return {
-            "attachments": False if trusted else on_list("block_attachments"),
+            "attachments": False if trusted else (fnt or on_list("block_attachments")),
             "beacons": beacons,
             "trusted": trusted,
-            "untrusted": on_list("untrusted") and not trusted,
+            "untrusted": nt,
         }
 
     @staticmethod

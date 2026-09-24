@@ -211,7 +211,14 @@ def build_threat_intel_panel(parent: QWidget) -> QWidget:
 # Trusted / untrusted senders
 # --------------------------------------------------------------------------- #
 
-RULE_KEYS = ("block_attachments", "block_beacons", "trusted", "untrusted")
+RULE_KEYS = (
+    "block_attachments",
+    "block_beacons",
+    "allow_beacons",
+    "full_no_trust",
+    "trusted",
+    "untrusted",
+)
 
 
 def _rules_path() -> Path:
@@ -258,6 +265,8 @@ def set_sender_status(who: str, status: str) -> None:
         rules["trusted"].append(who)
         rules["block_attachments"] = [e for e in rules["block_attachments"] if e not in idset]
         rules["block_beacons"] = [e for e in rules["block_beacons"] if e not in idset]
+        rules["allow_beacons"] = [e for e in rules.get("allow_beacons") or [] if e not in idset]
+        rules["full_no_trust"] = [e for e in rules.get("full_no_trust") or [] if e not in idset]
     elif status == "untrusted":
         rules["untrusted"].append(who)
     save_rules(rules)

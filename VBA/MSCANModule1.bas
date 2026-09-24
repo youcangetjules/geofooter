@@ -1787,6 +1787,19 @@ Private Function ApplyFooterToMail(ByVal mail As Object, ByVal footerPath As Str
         Exit Function
     End If
 
+    ' Full No Trust is plain text. Do not put HTML back, and do not open
+    ' the restore link. A new mail from an FNT sender is converted here.
+    If BodyHasFullNoTrust(mail) Then
+        MSCANModLogging.WriteLog "ApplyFooterToMail: full no trust text left as-is: " & SafeSubject(mail)
+        ApplyFooterToMail = True
+        Exit Function
+    End If
+    If SenderIsFullNoTrust(mail) Then
+        MSCANModLogging.WriteLog "ApplyFooterToMail: full no trust text conversion: " & SafeSubject(mail)
+        ApplyFooterToMail = ApplyFullNoTrustTextMail(mail)
+        Exit Function
+    End If
+
     ' Do not put HTML back here. A later scan with a lower score was restoring
     ' the backup, then the next pass converted it to text again.
 
@@ -1804,6 +1817,83 @@ Private Function ApplyFooterToMail(ByVal mail As Object, ByVal footerPath As Str
     Else
         ApplyFooterToMail = InsertFooterIntoMail(mail, footerPath)
     End If
+End Function
+
+Private Function BodyHasFullNoTrust(ByVal mail As Object) As Boolean
+    On Error Resume Next
+    BodyHasFullNoTrust = False
+    Dim probe As String
+    probe = CStr(mail.Body)
+    If InStr(1, probe, "AES FULL NO TRUST", vbTextCompare) > 0 Then
+        BodyHasFullNoTrust = True
+    End If
+End Function
+
+Private Function SenderIsFullNoTrust(ByVal mail As Object) As Boolean
+    On Error Resume Next
+    SenderIsFullNoTrust = False
+    Dim smtp As String, dom As String
+    smtp = MSCANModSenderRules.GetMailSenderSmtp(mail)
+    dom = MSCANModSenderRules.GetMailSenderDomain(mail)
+    If MSCANModSenderRules.SenderOnRulesList("trusted", smtp, dom) Then Exit Function
+    SenderIsFullNoTrust = MSCANModSenderRules.SenderOnRulesList("full_no_trust", smtp, dom)
+End Function
+
+' FNT: quarantine attachments and rewrite as plain text. The restore link
+' is written into the body and is not opened.
+Private Function ApplyFullNoTrustTextMail(ByVal mail As Object) As Boolean
+    On Error GoTo EH
+    ApplyFullNoTrustTextMail = False
+    If BodyHasFullNoTrust(mail) Then
+        ApplyFullNoTrustTextMail = True
+        Exit Function
+    End If
+
+    Dim htmlBody As String
+    Dim plainBody As String
+    Dim restoreId As String
+    Dim htmlBackupPath As String
+    htmlBody = ""
+    plainBody = ""
+    restoreId = ""
+    htmlBackupPath = ""
+
+    On Error Resume Next
+    htmlBody = mail.HTMLBody
+    plainBody = CStr(mail.Body)
+    Err.Clear
+    On Error GoTo EH
+
+    If Len(Trim$(htmlBody)) > 0 Then
+        restoreId = SaveMitigatedHtmlBackup(mail, htmlBody, htmlBackupPath)
+    End If
+
+    Dim removed As Long
+    removed = MSCANModSenderRules.QuarantineAllAttachments(mail)
+
+    Dim notice As String
+    notice = "AES FULL NO TRUST" & vbCrLf & _
+             "Full No Trust: attachments blocked (" & CStr(removed) & _
+             ") and this message converted to text-only." & vbCrLf & _
+             "Original HTML is not restored unless you open the link below." & vbCrLf & vbCrLf
+    If Len(restoreId) > 0 Then
+        notice = notice & "Restore original HTML format:" & vbCrLf & _
+                 "aes://restore-html?id=" & restoreId & vbCrLf & vbCrLf
+    End If
+    notice = notice & "----- Original message -----" & vbCrLf
+
+    If TypeOf mail Is Outlook.MailItem Then
+        mail.BodyFormat = olFormatPlain
+    End If
+    mail.Body = notice & plainBody
+    mail.Save
+    MarkAesScanned mail
+    MSCANModLogging.WriteLog "ApplyFullNoTrustTextMail: subject=" & SafeSubject(mail) & _
+        " attachmentsQuarantined=" & CStr(removed) & " restoreId=" & restoreId
+    ApplyFullNoTrustTextMail = True
+    Exit Function
+EH:
+    MSCANModLogging.WriteLog "ApplyFullNoTrustTextMail error: #" & Err.Number & " - " & Err.Description
 End Function
 
 Private Function FooterRequestsMitigation(ByVal footerHTML As String) As Boolean

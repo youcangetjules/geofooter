@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.30] — 2026-09-24
+
+### Changed
+
+- NT has three states. The chip stays the neutral colour. The first click removes Trust and blocks beacons. The second click is Full No Trust: attachments are blocked and that mail becomes plain text, with a restore link that is not opened until you click it.
+- BA, BB, TS, and the first NT click replace the footer on the open message.
+
 ## [1.3.29] — 2026-09-24
 
 ### Changed

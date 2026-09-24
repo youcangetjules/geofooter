@@ -125,6 +125,7 @@ def load_rules() -> dict:
         "block_attachments": [],
         "block_beacons": [],
         "allow_beacons": [],
+        "full_no_trust": [],
         "trusted": [],
         "untrusted": [],
     }
@@ -170,15 +171,38 @@ def _listed(rules: dict, key: str, identities: list[str]) -> bool:
 
 def _beacons_blocked_now(rules: dict, identities: list[str], domain: str) -> bool:
     """Effective beacon block: button override, else the global default."""
-    if _listed(rules, "trusted", identities) or _listed(rules, "allow_beacons", identities):
+    if _listed(rules, "trusted", identities):
         return False
-    if _listed(rules, "block_beacons", identities):
+    # FNT and an explicit block win. An allow override beats NT's beacon block.
+    if _listed(rules, "full_no_trust", identities) or _listed(rules, "block_beacons", identities):
+        return True
+    if _listed(rules, "allow_beacons", identities):
+        return False
+    if _listed(rules, "untrusted", identities):
         return True
     return _global_beacon_blocks(domain)
 
 
+def _nt_level(rules: dict, identities: list[str]) -> int:
+    """0 neutral, 1 NT (trust off, beacons blocked), 2 FNT (text-only)."""
+    if _listed(rules, "trusted", identities):
+        return 0
+    if _listed(rules, "full_no_trust", identities):
+        return 2
+    if _listed(rules, "untrusted", identities):
+        return 1
+    return 0
+
+
 def save_rules(rules: dict) -> None:
-    for key in ("block_attachments", "block_beacons", "allow_beacons", "trusted", "untrusted"):
+    for key in (
+        "block_attachments",
+        "block_beacons",
+        "allow_beacons",
+        "full_no_trust",
+        "trusted",
+        "untrusted",
+    ):
         if not isinstance(rules.get(key), list):
             rules[key] = []
     rules["updated"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
@@ -439,15 +463,47 @@ def handle_url(url: str, logger: logging.Logger) -> int:
     # a domain-level beacon block survives after trusting the mailbox address
     # (attachments appeared to "unblock" while Beacons BLOCKED stayed on).
     beacons_on = None
+    convert_fnt = False
+    replace_footer = True
     if list_key == "trusted":
         rules["trusted"] = _ensure_on_list(rules["trusted"], who)
         rules["untrusted"] = _purge_identities(rules["untrusted"], identities)
         rules["block_attachments"] = _purge_identities(rules["block_attachments"], identities)
         rules["block_beacons"] = _purge_identities(rules["block_beacons"], identities)
         rules["allow_beacons"] = _purge_identities(rules["allow_beacons"], identities)
-    elif list_key == "untrusted":
-        rules["untrusted"] = _ensure_on_list(rules["untrusted"], who)
+        rules["full_no_trust"] = _purge_identities(rules["full_no_trust"], identities)
+    elif action == "untrust-sender":
+        # Three states: neutral NT, first click (trust off + beacons blocked),
+        # second click FNT (attachments blocked, this mail becomes text).
+        nt_level = _nt_level(rules, identities)
         rules["trusted"] = _purge_identities(rules["trusted"], identities)
+        rules["allow_beacons"] = _purge_identities(rules["allow_beacons"], identities)
+        if nt_level >= 2:
+            replace_footer = False
+            blurb = (
+                "{who} is already Full No Trust. "
+                "The message stays text until you click the restore link."
+            )
+        elif nt_level == 1:
+            convert_fnt = True
+            replace_footer = False
+            rules["untrusted"] = _ensure_on_list(rules["untrusted"], who)
+            rules["full_no_trust"] = _ensure_on_list(rules["full_no_trust"], who)
+            rules["block_beacons"] = _ensure_on_list(rules["block_beacons"], who)
+            rules["block_attachments"] = _ensure_on_list(rules["block_attachments"], who)
+            blurb = (
+                "{who} is Full No Trust. Attachments are blocked and this message "
+                "was converted to text. The restore link at the bottom does nothing "
+                "until you click it."
+            )
+        else:
+            rules["untrusted"] = _ensure_on_list(rules["untrusted"], who)
+            rules["full_no_trust"] = _purge_identities(rules["full_no_trust"], identities)
+            rules["block_beacons"] = _ensure_on_list(rules["block_beacons"], who)
+            blurb = (
+                "Trust removed for {who}. Beacons from this sender are blocked. "
+                "NT stays the neutral chip. Click NT again for Full No Trust."
+            )
     elif action == "block-beacons":
         # Toggle against the effective state so the button overrides the global default.
         beacons_on = not _beacons_blocked_now(rules, identities, domain)
@@ -482,26 +538,164 @@ def handle_url(url: str, logger: logging.Logger) -> int:
         rules.get("trusted"),
     )
 
-    refreshed = _refresh_open_mail_action_buttons(
-        action=action,
-        sender=sender,
-        domain=domain,
-        logger=logger,
-        beacons_on=beacons_on,
-    )
+    refreshed = False
+    converted = False
+    replaced = False
+    if convert_fnt:
+        converted = _apply_full_no_trust_text(logger)
+    else:
+        refreshed = _refresh_open_mail_action_buttons(
+            action=action,
+            sender=sender,
+            domain=domain,
+            logger=logger,
+            beacons_on=beacons_on,
+        )
+        if replace_footer:
+            replaced = _replace_open_footer(logger)
 
     state = "was already set — rule refreshed" if already else "rule saved"
-    extra = (
-        "\nFooter buttons on the open message were updated."
-        if refreshed
-        else "\nRescan the message (Short Scan) to refresh the footer buttons."
-    )
+    if converted:
+        extra = "\nThis message is now plain text. The restore link is not opened unless you click it."
+    elif replaced:
+        extra = "\nThe footer on this message is being replaced."
+    elif refreshed:
+        extra = "\nFooter buttons on the open message were updated."
+    else:
+        extra = "\nRescan the message (Short Scan) to refresh the footer."
     show_message(
         "Aliniant Email Scanner",
-        f"{blurb.format(who=who)}\n\n({state}; takes effect on the next scan.){extra}\n"
+        f"{blurb.format(who=who)}\n\n({state}.){extra}\n"
         f"Rules file: {RULES_PATH}",
     )
     return 0
+
+
+def _outlook_mail_item():
+    """Open inspector message, or the explorer selection."""
+    import win32com.client  # type: ignore
+
+    outlook = win32com.client.Dispatch("Outlook.Application")
+    item = None
+    insp = outlook.ActiveInspector
+    if insp is not None:
+        try:
+            item = insp.CurrentItem
+        except Exception:
+            item = None
+    if item is None:
+        exp = outlook.ActiveExplorer
+        if exp is not None and exp.Selection.Count > 0:
+            item = exp.Selection.Item(1)
+    return outlook, item
+
+
+def _replace_open_footer(logger: logging.Logger) -> bool:
+    """Run AES Short Scan so the open mail's footer is replaced, not left stale."""
+    try:
+        outlook, _item = _outlook_mail_item()
+        explorer = outlook.ActiveExplorer
+        if explorer is None:
+            return False
+        ctl = explorer.CommandBars.FindControl(Tag="AES_SHORTSCAN")
+        if ctl is None:
+            logger.warning("Footer replace: AES Short Scan button not found")
+            return False
+        ctl.Execute()
+        logger.info("Footer replace: AES Short Scan started")
+        return True
+    except Exception as exc:
+        logger.warning("Footer replace failed: %s", exc)
+        return False
+
+
+def _save_html_backup(item, html: str) -> str:
+    rid = "r" + datetime.now().strftime("%Y%m%d%H%M%S%f")[:17]
+    base = RULES_PATH.parent / "mitigated_html"
+    base.mkdir(parents=True, exist_ok=True)
+    html_path = base / f"{rid}.html"
+    html_path.write_text(html, encoding="utf-8")
+    store_id = ""
+    try:
+        store_id = str(item.Parent.StoreID)
+    except Exception:
+        pass
+    meta = {
+        "id": rid,
+        "entry_id": str(getattr(item, "EntryID", "") or ""),
+        "store_id": store_id,
+        "html_path": str(html_path),
+        "subject": str(getattr(item, "Subject", "") or ""),
+    }
+    (base / f"{rid}.json").write_text(json.dumps(meta), encoding="utf-8")
+    return rid
+
+
+def _quarantine_attachments(item, logger: logging.Logger) -> int:
+    try:
+        count = int(item.Attachments.Count)
+    except Exception:
+        return 0
+    if count <= 0:
+        return 0
+    qdir = RULES_PATH.parent / "Quarantine" / datetime.now().strftime("%Y%m%d_%H%M%S")
+    removed = 0
+    for i in range(count, 0, -1):
+        try:
+            att = item.Attachments.Item(i)
+            name = str(getattr(att, "FileName", "") or "attachment.bin")
+            for bad in '\\/:*?"<>|':
+                name = name.replace(bad, "_")
+            if not name:
+                name = "attachment.bin"
+            qdir.mkdir(parents=True, exist_ok=True)
+            att.SaveAsFile(str(qdir / name))
+            att.Delete()
+            removed += 1
+        except Exception as exc:
+            logger.warning("FNT quarantine skipped an attachment: %s", exc)
+    return removed
+
+
+def _apply_full_no_trust_text(logger: logging.Logger) -> bool:
+    """Convert the open mail to text. The restore link is only a link."""
+    try:
+        _outlook, item = _outlook_mail_item()
+        if item is None:
+            return False
+        plain = str(getattr(item, "Body", "") or "")
+        if "AES FULL NO TRUST" in plain.upper():
+            logger.info("FNT: message is already text-only")
+            return True
+        html = str(getattr(item, "HTMLBody", "") or "")
+        rid = _save_html_backup(item, html) if html.strip() else ""
+        removed = _quarantine_attachments(item, logger)
+        try:
+            plain = str(item.Body or "")
+        except Exception:
+            pass
+        notice = (
+            "AES FULL NO TRUST\r\n"
+            "Full No Trust: attachments blocked"
+            f" ({removed}) and this message converted to text-only.\r\n"
+            "Original HTML is not restored unless you open the link below.\r\n\r\n"
+        )
+        if rid:
+            notice += (
+                "Restore original HTML format:\r\n"
+                f"aes://restore-html?id={rid}\r\n\r\n"
+            )
+        notice += "----- Original message -----\r\n"
+        # olFormatPlain = 1. Do not open the restore link.
+        item.BodyFormat = 1
+        item.Body = notice + plain
+        item.Save()
+        logger.info("FNT: converted open mail to text restore_id=%s quarantined=%s", rid, removed)
+        return True
+    except Exception as exc:
+        logger.exception("FNT text conversion failed")
+        show_message("AES", f"Could not convert this message to text:\n{exc}", error=True)
+        return False
 
 
 def _refresh_open_mail_action_buttons(
@@ -647,11 +841,14 @@ def _refresh_open_mail_action_buttons(
                 new_html,
                 flags=_re.IGNORECASE,
             )
-            new_html = _paint_action_cell(new_html, "aes://untrust-sender", "#ef6c00", "#ffffff")
+            new_html = _paint_action_cell(new_html, "aes://untrust-sender", "#f2f8fa", "#0f6b7c")
             new_html = _paint_action_cell(new_html, "aes://trust-sender", "#f2f8fa", "#0f6b7c")
+            new_html = _paint_action_cell(new_html, "aes://block-beacons", "#b71c1c", "#ffffff")
             new_html = _re.sub(r">ST<", ">TS<", new_html)
             new_html = _paint_short_chip(new_html, "aes://trust-sender", CHIP_BG, CHIP_FG)
+            # NT stays the neutral chip. Beacons blocked by this click turn BB red.
             new_html = _paint_short_chip(new_html, "aes://untrust-sender", CHIP_BG, CHIP_FG)
+            new_html = _paint_short_chip(new_html, "aes://block-beacons", CHIP_BLOCKED_BG, "#ffffff")
 
         if new_html == html:
             return False

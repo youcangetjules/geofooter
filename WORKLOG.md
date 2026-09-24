@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — Fix Import_VBA_to_Outlook.ps1 parse error
+- Replaced broken here-string in Get-VbaProject; renamed -WhatIf to -DryRun to avoid CmdletBinding clash.
+- Replaced UTF-8 em-dashes with ASCII hyphens so Windows PowerShell 5.1 (no BOM) does not misread `—` as a string-terminating quote.
+- Follow-up: re-run scripts\Import_VBA_to_Outlook.bat -EnableAccessVBOM
 ### 2026-09-24 — Automated Outlook VBA import script (1.2.2)
 - Added `scripts\Import_VBA_to_Outlook.ps1` + `.bat`: syncs all MSCAN modules from `VBA\` into the running Outlook project; optional `-SyncThisOutlookSession`; `-EnableAccessVBOM` sets the registry key when the Trust Center UI omits it.
 - Documented in `VBA\IMPORT.txt`, README, AGENTS; bug_tracker workarounds updated.

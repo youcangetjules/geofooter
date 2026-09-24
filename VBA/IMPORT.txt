@@ -116,7 +116,7 @@ Prefer the automated sync (Outlook must be running):
 
 Or PowerShell:
   powershell -File scripts\Import_VBA_to_Outlook.ps1
-  powershell -File scripts\Import_VBA_to_Outlook.ps1 -WhatIf
+  powershell -File scripts\Import_VBA_to_Outlook.ps1 -DryRun
 
 Manual fallback: File > Import File for each .bas / .cls listed above.
 After the one-time ThisOutlookSession setup, re-import .bas / .cls files only

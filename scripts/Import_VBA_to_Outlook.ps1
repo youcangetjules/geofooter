@@ -9,7 +9,7 @@
 # Usage:
 #   .\Import_VBA_to_Outlook.ps1
 #   .\Import_VBA_to_Outlook.ps1 -SyncThisOutlookSession
-#   .\Import_VBA_to_Outlook.ps1 -WhatIf
+#   .\Import_VBA_to_Outlook.ps1 -DryRun
 #   .\Import_VBA_to_Outlook.ps1 -Root "D:\Suite\GeoFooter"
 
 [CmdletBinding()]
@@ -17,7 +17,7 @@ param(
     [string]$Root = "",
     [switch]$EnableAccessVBOM,
     [switch]$SyncThisOutlookSession,
-    [switch]$WhatIf,
+    [switch]$DryRun,
     [switch]$SkipCleanup
 )
 
@@ -118,8 +118,8 @@ function Ensure-AccessVBOM {
         return $false
     }
 
-    if ($WhatIf) {
-        Write-Host "WhatIf: would set AccessVBOM=1 under $key"
+    if ($DryRun) {
+        Write-Host "DryRun: would set AccessVBOM=1 under $key"
         return $false
     }
 
@@ -134,7 +134,7 @@ function Get-OutlookApplication {
     try {
         return [Runtime.InteropServices.Marshal]::GetActiveObject("Outlook.Application")
     } catch {
-        Write-Host "Outlook not running — starting it..."
+        Write-Host "Outlook not running - starting it..."
         $app = New-Object -ComObject Outlook.Application
         # Force MAPI init
         $null = $app.GetNamespace("MAPI")
@@ -148,16 +148,15 @@ function Get-VbaProject {
     try {
         return $OutlookApp.Application.VBE.ActiveVBProject
     } catch {
-        throw @"
-Cannot open the Outlook VBA project (AccessVBOM / Trust access).
-
-Fix:
-  1. Run:  .\Import_VBA_to_Outlook.ps1 -EnableAccessVBOM
-  2. Fully quit Outlook (including tray) and reopen
-  3. Run this script again without -EnableAccessVBOM
-
-Underlying error: $($_.Exception.Message)
-"@
+        $detail = $_.Exception.Message
+        throw (
+            "Cannot open the Outlook VBA project (AccessVBOM / Trust access).`n" +
+            "Fix:`n" +
+            "  1. Run:  .\Import_VBA_to_Outlook.ps1 -EnableAccessVBOM`n" +
+            "  2. Fully quit Outlook (including tray) and reopen`n" +
+            "  3. Run this script again without -EnableAccessVBOM`n" +
+            "Underlying error: $detail"
+        )
     }
 }
 
@@ -165,8 +164,8 @@ function Remove-ComponentByName {
     param($Project, [string]$Name)
     foreach ($comp in @($Project.VBComponents)) {
         if ($comp.Name -eq $Name) {
-            if ($WhatIf) {
-                Write-Host "  WhatIf: remove $Name (type $($comp.Type))"
+            if ($DryRun) {
+                Write-Host "  DryRun: remove $Name (type $($comp.Type))"
             } else {
                 $Project.VBComponents.Remove($comp)
                 Write-Host "  Removed $Name"
@@ -189,20 +188,20 @@ function Import-ModuleFile {
     # Remove existing standard/class module with this name (not the built-in document).
     foreach ($comp in @($Project.VBComponents)) {
         if ($comp.Name -ne $name) { continue }
-        # Type 100 = document (ThisOutlookSession) — never remove that here.
+        # Type 100 = document (ThisOutlookSession) - never remove that here.
         if ([int]$comp.Type -eq 100) {
             Write-Host "  Skip remove of document component $name"
             continue
         }
-        if ($WhatIf) {
-            Write-Host "  WhatIf: remove existing $name before import"
+        if ($DryRun) {
+            Write-Host "  DryRun: remove existing $name before import"
         } else {
             $Project.VBComponents.Remove($comp)
         }
     }
 
-    if ($WhatIf) {
-        Write-Host "  WhatIf: import $leaf"
+    if ($DryRun) {
+        Write-Host "  DryRun: import $leaf"
         return
     }
 
@@ -252,8 +251,8 @@ function Sync-ThisOutlookSessionDocument {
         throw "ThisOutlookSession.cls produced empty body after stripping headers."
     }
 
-    if ($WhatIf) {
-        Write-Host "  WhatIf: replace built-in ThisOutlookSession CodeModule ($($body.Length) chars)"
+    if ($DryRun) {
+        Write-Host "  DryRun: replace built-in ThisOutlookSession CodeModule ($($body.Length) chars)"
         return
     }
 
@@ -290,7 +289,7 @@ if (-not $ok) {
     if ($EnableAccessVBOM) {
         exit 2
     }
-    # Still try — maybe AccessVBOM was set another way / Excel-style trust.
+    # Still try - maybe AccessVBOM was set another way / Excel-style trust.
 }
 
 $project = Get-VbaProject -OutlookApp $outlook
@@ -306,8 +305,8 @@ if (-not $SkipCleanup) {
     foreach ($comp in @($project.VBComponents)) {
         $n = $comp.Name
         if ($n -match '^ThisOutlookSession\d*$' -and [int]$comp.Type -ne 100) {
-            if ($WhatIf) {
-                Write-Host "  WhatIf: remove duplicate class $n"
+            if ($DryRun) {
+                Write-Host "  DryRun: remove duplicate class $n"
             } else {
                 $project.VBComponents.Remove($comp)
                 Write-Host "  Removed duplicate class $n"

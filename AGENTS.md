@@ -5,7 +5,7 @@
 **Aliniant Email Scanner (AES)** and related tools for Outlook email security analysis, plus **GURI** (Globally Unique Record Identifier) management.
 
 | Product | Role |
-|---------|------|
+| --------- | ------ |
 | **AES (GeoFooter)** | Outlook add-in path: watch inbox → export headers/body → Python scan → inject risk banner + HTML footer into the mail |
 | **GURI** | Desktop GUI to browse/create/search unique IDs for emails and documents; used by AES when stamping analysis. Includes **Aura** tab (Incogni-style opt-out / erasure request tracking). |
 | **Aura** | Aliniant Universal Removal Application — data-broker removal workspace (launched from the Outlook ribbon; lives as a GURI tab). |
@@ -23,7 +23,7 @@ Primary user flow: new mail arrives in Outlook → VBA queues a **compact** scan
 
 ## Repo layout (live code)
 
-```
+```text
 C:\GeoFooter\
   VBA\                      ← canonical AES modules + Python scanners/dialogs
     geolocate_headers.py    ← main scan engine (compact | full | deep)

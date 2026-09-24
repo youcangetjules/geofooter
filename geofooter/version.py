@@ -17,10 +17,10 @@ SemVer (MAJOR.MINOR.PATCH) — almost everything is a PATCH:
 from __future__ import annotations
 
 # Semver: MAJOR.MINOR.PATCH
-VERSION = "1.3.20"
-VERSION_TUPLE = (1, 3, 20)
+VERSION = "1.3.21"
+VERSION_TUPLE = (1, 3, 21)
 # Local release / build timestamp for this VERSION (YYYY-MM-DD HH:MM)
-VERSION_STAMP = "2026-09-24 21:55"
+VERSION_STAMP = "2026-09-24 22:00"
 
 APP_NAME = "GURI"
 APP_FULL_NAME = "GURI - Aliniant Smart Ass Email"
@@ -34,6 +34,11 @@ COPYRIGHT_YEAR = "2026"
 # Short release notes for the About tab (newest first).
 # Each entry: (version, timestamp, notes)
 RELEASE_NOTES = (
+    (
+        "1.3.21",
+        "2026-09-24 22:00",
+        "BB is red when global beacon blocking covers the sender, not only the per-sender list.",
+    ),
     (
         "1.3.20",
         "2026-09-24 21:55",

@@ -3340,7 +3340,9 @@ class HTMLReportGenerator:
         # must not still show Beacons/Attachments BLOCKED after Trust was clicked.
         return {
             "attachments": False if trusted else on_list("block_attachments"),
-            "beacons": False if trusted else on_list("block_beacons"),
+            "beacons": False if trusted else (
+                on_list("block_beacons") or self._beacon_policy_blocks_sender(domain)
+            ),
             "trusted": trusted,
             "untrusted": on_list("untrusted") and not trusted,
         }
@@ -3454,7 +3456,7 @@ class HTMLReportGenerator:
         m = re.search(r"quarantined=(\d+)", att, re.IGNORECASE)
         return int(m.group(1)) if m else 0
 
-    def _beacon_blocking_enabled(self) -> bool:
+    def _load_beacon_blocking(self) -> Dict[str, Any]:
         path = (
             Path(os.environ.get("LOCALAPPDATA", CONFIG["base_path"]))
             / "GeoFooter"
@@ -3463,10 +3465,29 @@ class HTMLReportGenerator:
         try:
             if path.is_file():
                 data = json.loads(path.read_text(encoding="utf-8"))
-                return bool(isinstance(data, dict) and data.get("enabled"))
+                if isinstance(data, dict):
+                    return data
         except Exception:
             pass
-        return False
+        return {}
+
+    def _beacon_blocking_enabled(self) -> bool:
+        return bool(self._load_beacon_blocking().get("enabled"))
+
+    def _beacon_policy_blocks_sender(self, sender_domain: Optional[str]) -> bool:
+        """True when global beacon blocking applies to this sender."""
+        data = self._load_beacon_blocking()
+        if not data.get("enabled"):
+            return False
+        domain = (sender_domain or "").strip().lower()
+        whitelist = {
+            str(item).strip().lower()
+            for item in (data.get("whitelist_domains") or [])
+            if str(item).strip()
+        }
+        if domain and domain in whitelist:
+            return False
+        return bool(data.get("block_all", True))
 
     def _render_status_banner_png(
         self, line: str, *, warn: bool, risk_score: int = 0

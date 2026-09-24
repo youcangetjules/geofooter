@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.21: BB red when global beacon blocking applies
+- `_sender_block_state` treats beacons as blocked when `aes_beacon_blocking.json` is enabled, `block_all` is on, and the sender domain is not whitelisted. Trusted senders stay exempt.
+- Follow-up: rescan the Valla mail. No VBA re-import.
+
 ### 2026-09-24 — 1.3.20: Coloured risk statement, text above 75
 - `high_max` is 75. LOW `#90EE90`, RAISED `#FFC107`, HIGH `#FF4444` on the footer risk label and score.
 - Scores above 75 still convert the mail to text; the plain footer includes Restore original HTML.

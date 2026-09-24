@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.21] — 2026-09-24
+
+### Fixed
+
+- **BB** stays white unless the sender is on the per-sender beacon list. With “block all scanned mail” on, and the sender not whitelisted, **BB** is now red.
+
 ## [1.3.20] — 2026-09-24
 
 ### Changed

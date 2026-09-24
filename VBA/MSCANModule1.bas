@@ -23,6 +23,9 @@ Private Const AES_SCANNED_PROP As String = "AESScanned"
 Private Const AES_BANNER_CID As String = "aesstatusbanner"
 Private Const AES_BANNER_MARKER As String = "<!-- AES-Banner-Img: "
 Private Const AES_BANNER_FILE_PREFIX As String = "aes_status_"
+Private Const AES_MARK_CID As String = "aesfootermark"
+Private Const AES_MARK_MARKER As String = "<!-- AES-Mark-Img: "
+Private Const AES_MARK_FILE_PREFIX As String = "aes_mark_"
 ' Compact auto-scan still needs body for link/beacon counts, but reading huge
 ' HTMLBody on the UI thread freezes Outlook - cap the sidecar write.
 Private Const AES_COMPACT_BODY_CAP As Long = 400000
@@ -926,7 +929,8 @@ End Function
 Private Function IsAesBannerAttachment(ByVal att As Object) As Boolean
     On Error Resume Next
     IsAesBannerAttachment = _
-        (InStr(1, att.FileName, AES_BANNER_FILE_PREFIX, vbTextCompare) = 1)
+        (InStr(1, att.FileName, AES_BANNER_FILE_PREFIX, vbTextCompare) = 1) Or _
+        (InStr(1, att.FileName, AES_MARK_FILE_PREFIX, vbTextCompare) = 1)
 End Function
 
 Private Function ExportAttachmentsForScan(ByVal mail As Object) As String
@@ -2561,7 +2565,7 @@ Private Sub RemoveAesBannerAttachments(ByVal mail As Object)
     On Error Resume Next
     Dim i As Long
     For i = mail.Attachments.Count To 1 Step -1
-        If IsAesBannerAttachment(mail.Attachments.Item(i)) Then
+        If InStr(1, mail.Attachments.Item(i).FileName, AES_BANNER_FILE_PREFIX, vbTextCompare) = 1 Then
             mail.Attachments.Item(i).Delete
         End If
     Next i
@@ -2635,6 +2639,58 @@ ErrHandler:
     EmbedAesBannerImage = bannerHtml
 End Function
 
+' Inline the footer A. Same cid pattern as the status strip, separate file prefix
+' so a banner refresh does not delete it.
+Private Function EmbedAesFooterMark(ByVal mail As Object, ByVal footerHtml As String) As String
+    Const PR_ATTACH_CONTENT_ID As String = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
+    Const PR_ATTACH_MIME_TAG As String = "http://schemas.microsoft.com/mapi/proptag/0x370E001F"
+
+    Dim stage As String
+    Dim att As Object
+    Dim i As Long
+    Dim pngPath As String
+    Dim s As Long
+    Dim e As Long
+
+    On Error GoTo ErrHandler
+    EmbedAesFooterMark = footerHtml
+    s = InStr(1, footerHtml, AES_MARK_MARKER, vbTextCompare)
+    If s = 0 Then Exit Function
+    s = s + Len(AES_MARK_MARKER)
+    e = InStr(s, footerHtml, "-->")
+    If e = 0 Then Exit Function
+    pngPath = Trim$(Mid$(footerHtml, s, e - s))
+    If Len(pngPath) = 0 Then Exit Function
+
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If Not fso.FileExists(pngPath) Then Exit Function
+
+    stage = "remove previous mark"
+    For i = mail.Attachments.Count To 1 Step -1
+        If InStr(1, mail.Attachments.Item(i).FileName, AES_MARK_FILE_PREFIX, vbTextCompare) = 1 Then
+            mail.Attachments.Item(i).Delete
+        End If
+    Next i
+
+    stage = "Attachments.Add"
+    Set att = mail.Attachments.Add(pngPath, olByValue, 0, "aes_mark_footer.png")
+    stage = "set Content-ID"
+    att.PropertyAccessor.SetProperty PR_ATTACH_CONTENT_ID, AES_MARK_CID
+    On Error Resume Next
+    att.PropertyAccessor.SetProperty PR_ATTACH_MIME_TAG, "image/png"
+    Err.Clear
+    On Error GoTo ErrHandler
+
+    EmbedAesFooterMark = Replace(footerHtml, "file:///" & Replace(pngPath, "\", "/"), "cid:" & AES_MARK_CID, 1, -1, vbTextCompare)
+    Exit Function
+ErrHandler:
+    MSCANModLogging.WriteLog "EmbedAesFooterMark failed at '" & stage & "': #" & Err.Number & " - " & Err.Description
+    On Error Resume Next
+    If Not att Is Nothing Then att.Delete
+    EmbedAesFooterMark = footerHtml
+End Function
+
 Private Function InjectAesTopBanner(ByVal bodyHtml As String, ByVal bannerHtml As String) As String
     On Error Resume Next
     InjectAesTopBanner = bodyHtml
@@ -2687,6 +2743,7 @@ Private Function InsertFooterIntoMail(mail As Object, footerPath As String) As B
 
     ' Normal mail: HTML body. ReportItem (ReadNotify IPNRN etc.): Body only.
     If TypeOf mail Is Outlook.MailItem Then
+        footerHTML = EmbedAesFooterMark(mail, footerHTML)
         On Error Resume Next
         If MSCANModSenderRules.ShouldBlockBeacons(mail) Then
             MSCANModSenderRules.NeutralizeBeaconsInMail mail
@@ -2811,6 +2868,8 @@ Private Function ReplaceAesFooterInMail(ByVal mail As Object, ByVal footerPath A
         ReplaceAesFooterInMail = True
         Exit Function
     End If
+
+    footerHTML = EmbedAesFooterMark(mail, footerHTML)
 
     ' Never force BodyFormat while an HTML body exists - on IMAP/Google
     ' stores that regenerates the body from the plain-text copy and

@@ -580,6 +580,26 @@ AES_FOOTER_GAP_HTML = (
     "style='height:12px; line-height:12px; font-size:1px; background:#ffffff; "
     "mso-line-height-rule:exactly;'>&nbsp;</td></tr></table>"
 )
+
+
+def _footer_mark_html() -> str:
+    """Orange A on the left of the strip. White in the source art is already gone."""
+    try:
+        from geofooter.paths import get_install_root
+
+        path = get_install_root() / "assets" / "icons" / "aes_mark_footer.png"
+    except Exception:
+        return ""
+    if not path.is_file():
+        return ""
+    url = "file:///" + str(path).replace("\\", "/")
+    return (
+        f"<!-- AES-Mark-Img: {path} -->"
+        f"<img src='{html.escape(url, quote=True)}' width='75' height='72' alt='' "
+        f"style='display:block; border:0; outline:none; width:75px; height:72px;' />"
+    )
+
+
 # Quick Action chips on that strip. Default is a white pill with slate text.
 AES_CHIP_BG = "#ffffff"
 AES_CHIP_FG = "#0f1f2a"
@@ -5325,10 +5345,17 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         summary_line2 = strip_separators(
             summary_line2, color=AES_STRIP_MUTED, size="12px", weight="normal"
         )
+        # A 1px cell. Outlook drops a div border, so the line has to be the
+        # cell background. Inset 16px, same width between every row.
         rule_row = (
-            f"<tr><td style='padding:0 16px;'>"
-            f"<div style='border-top:1px solid {AES_STRIP_RULE}; margin:0; "
-            f"font-size:1px; line-height:1px;'>&nbsp;</div></td></tr>"
+            f"<tr><td bgcolor='{AES_STRIP_BG}' style='padding:0 16px; "
+            f"background:{AES_STRIP_BG}; font-size:1px; line-height:1px;'>"
+            f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
+            f"style='border-collapse:collapse;'>"
+            f"<tr><td height='1' bgcolor='{AES_STRIP_RULE}' "
+            f"style='height:1px; font-size:1px; line-height:1px; "
+            f"background:{AES_STRIP_RULE}; mso-line-height-rule:exactly;'>"
+            f"&nbsp;</td></tr></table></td></tr>"
         )
         row_pad = "5px 16px"
         actions_row = ""
@@ -5352,6 +5379,20 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"{actions_row}"
             f"</table>"
         )
+        mark = _footer_mark_html()
+        if mark:
+            summary_block = (
+                f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
+                f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
+                f"border-collapse:collapse;'>"
+                f"<tr>"
+                f"<td width='91' valign='middle' bgcolor='{AES_STRIP_BG}' "
+                f"style='width:91px; padding:6px 4px 6px 12px; background:{AES_STRIP_BG};'>"
+                f"{mark}</td>"
+                f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
+                f"style='background:{AES_STRIP_BG};'>{summary_block}</td>"
+                f"</tr></table>"
+            )
 
         # Top-of-mail banners sit outside the AES footer block so VBA can
         # inject them after <body>; the footer itself stays the scan strip.

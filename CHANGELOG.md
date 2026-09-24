@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.32] — 2026-09-24
+
+### Changed
+
+- The orange A is on the left of the footer, with the white background removed.
+- A faint line separates each footer row.
+
 ## [1.3.31] — 2026-09-24
 
 ### Fixed

@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.32: Footer A mark and faint row lines
+- `assets/icons/aes_mark_footer.png` is the orange A composited on the strip colour. It sits in a left cell of the footer. Row separators are 1px cells (`#535f6a`), inset 16px, because Outlook drops a div border.
+- Follow-up: re-import `VBA\MSCANModule1.bas` so the mark is embedded as a cid image. Rescan a mail to see it.
+
 ### 2026-09-24 — 1.3.31: Stop text/HTML flicker on footer buttons
 - Button clicks were saving HTML into the open mail and starting a Short Scan together. Outlook logged "message has been changed" and the body flipped. Text-only mail (high-risk or Full No Trust) is now left as text. Other clicks start the scan only.
 - Follow-up: re-import `VBA\MSCANModule1.bas`. The running Outlook project still calls TryRestoreMitigatedHtml, which the disk source no longer does.

@@ -544,12 +544,13 @@ def risk_color_for_level(level: str) -> str:
     return RISK_LEVEL_COLORS.get(str(level or "").upper(), "#888888")
 
 
-# Footer scan strip. Background is the slate at 80% over white: a grey slate.
-AES_STRIP_BG = "#3f4c55"
+# Footer scan strip. #3f4c55 was the slate at 80%; this is 10% darker.
+AES_STRIP_BG = "#39444d"
 AES_STRIP_TEXT = "#ffffff"
 AES_STRIP_MUTED = "#d5dee4"
-AES_STRIP_RULE = "#5c6b76"
+AES_STRIP_RULE = "#535f6a"
 AES_STRIP_DOT = "#3ecf8e"
+AES_STRIP_FONT = "Segoe UI, Arial, sans-serif"
 # Quick Action chips on that strip. Default is a white pill with slate text.
 AES_CHIP_BG = "#ffffff"
 AES_CHIP_FG = "#0f1f2a"
@@ -557,13 +558,32 @@ AES_CHIP_BLOCKED_BG = "#d92d20"
 AES_CHIP_TRUSTED_BG = "#1b7a3d"
 
 
-def strip_separators(inner_html: str) -> str:
-    """Turn ' | ' separators into a small green dot with 5px on each side."""
-    divider = (
-        f"<span style='color:{AES_STRIP_DOT}; font-size:8px; line-height:1; "
-        f"padding:0 5px; font-weight:normal;'>&#9679;</span>"
+def strip_separators(inner_html: str, *, color: str, size: str, weight: str) -> str:
+    """Turn ' | ' into a green dot with a 5px cell on each side.
+
+    Outlook drops padding on a span, so the gap is a 5px-wide table cell.
+    """
+    cell = (
+        f"<td align='center' valign='middle' style='color:{color}; "
+        f"font-family:{AES_STRIP_FONT}; font-size:{size}; font-weight:{weight}; "
+        f"white-space:nowrap;'>"
     )
-    return (inner_html or "").replace(" | ", divider)
+    spacer = (
+        "<td width='5' valign='middle' "
+        "style='width:5px; font-size:1px; line-height:1px;'>&nbsp;</td>"
+    )
+    dot = (
+        f"<td align='center' valign='middle' "
+        f"style='color:{AES_STRIP_DOT}; font-family:{AES_STRIP_FONT}; "
+        f"font-size:8px; line-height:8px;'>&#9679;</td>"
+    )
+    parts = (inner_html or "").split(" | ")
+    gap = f"</td>{spacer}{dot}{spacer}{cell}"
+    return (
+        "<table border='0' cellpadding='0' cellspacing='0' align='center' "
+        "style='border-collapse:collapse; margin:0 auto;'>"
+        f"<tr>{cell}{gap.join(parts)}</td></tr></table>"
+    )
 
 
 def contrasting_text_color(background: str) -> str:
@@ -4058,9 +4078,9 @@ Live Safe Browsing lookups are optional and separate.</p>
                 "style='border-collapse:separate;'>"
                 f"<tr><td bgcolor='{bg}' align='center' width='78' "
                 f"style='background:{bg}; border:1px solid {border}; "
-                f"width:78px; text-align:center; border-radius:3px; padding:0;'>"
+                f"width:78px; text-align:center; border-radius:3px; padding:2px 0;'>"
                 f"<a href='{html.escape(url, quote=True)}' "
-                f"style='color:{fg}; font-family:Arial,sans-serif; "
+                f"style='color:{fg}; font-family:{AES_STRIP_FONT}; "
                 f"font-size:10px; font-weight:bold; letter-spacing:1px; text-decoration:none;'>"
                 f"{code}</a>"
                 "</td></tr></table>"
@@ -4106,7 +4126,7 @@ Live Safe Browsing lookups are optional and separate.</p>
         if label_color == "#ffffff":
             label_color = AES_STRIP_MUTED
         parts = [
-            "<td style='font-family:Arial,sans-serif; font-size:9px; "
+            f"<td style='font-family:{AES_STRIP_FONT}; font-size:9px; "
             "font-weight:bold; letter-spacing:1.5px; white-space:nowrap; vertical-align:middle;'>"
             f"<span style='color:{label_color};'>QUICK ACTIONS</span></td>"
         ]
@@ -4603,7 +4623,7 @@ Live Safe Browsing lookups are optional and separate.</p>
             f'<a href="{html.escape(href, quote=True)}" target="_blank" '
             f'style="color:#ffffff;text-decoration:{deco};background:transparent;border:none;'
             f'padding:0;margin:0;font-weight:{font_weight};font-size:{font_size};'
-            f'font-family:Arial,sans-serif;">'
+            f"font-family:{AES_STRIP_FONT};\">"
             f"{inner_html}</a>"
         )
 
@@ -5177,8 +5197,12 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             str(data.get("links_report_url") or ""),
             AES_STRIP_BG,
         )
-        summary_line1 = strip_separators(summary_line1)
-        summary_line2 = strip_separators(summary_line2)
+        summary_line1 = strip_separators(
+            summary_line1, color=AES_STRIP_TEXT, size="12px", weight="bold"
+        )
+        summary_line2 = strip_separators(
+            summary_line2, color=AES_STRIP_MUTED, size="12px", weight="normal"
+        )
         actions_row = ""
         if quick_actions:
             actions_row = (
@@ -5192,10 +5216,10 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
             f"border-collapse:collapse;'>"
             f"<tr><td style='padding:12px 16px 3px 16px; text-align:center; "
-            f"color:{AES_STRIP_TEXT}; font-family:Arial,sans-serif; font-size:12px; "
+            f"color:{AES_STRIP_TEXT}; font-family:{AES_STRIP_FONT}; font-size:12px; "
             f"font-weight:bold; letter-spacing:0.3px; line-height:1.4;'>{summary_line1}</td></tr>"
             f"<tr><td style='padding:0 16px 12px 16px; text-align:center; "
-            f"color:{AES_STRIP_MUTED}; font-family:Arial,sans-serif; font-size:13px; "
+            f"color:{AES_STRIP_MUTED}; font-family:{AES_STRIP_FONT}; font-size:12px; "
             f"font-weight:normal; line-height:1.5;'>{summary_line2}</td></tr>"
             f"{actions_row}"
             f"</table>"
@@ -5249,7 +5273,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
                 f"{mitigate_markers}"
                 f"<!-- AES Start -->\n"
                 f"<a id='aes-footer-start' name='aes-footer-start'></a>\n"
-                f"<div style='margin:5px 0 0 0; padding:0; background:#fff; font-family:Arial, sans-serif; "
+                f"<div style='margin:5px 0 0 0; padding:0; background:#fff; font-family:{AES_STRIP_FONT}; "
                 f"font-size:11px; color:#333;'>{summary_block}</div>\n"
                 f"<a id='aes-footer-end' name='aes-footer-end'></a>\n"
                 f"<!-- AES End -->"
@@ -5261,7 +5285,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"{mitigate_markers}"
             f"<!-- AES Start -->\n"
             f"<a id='aes-footer-start' name='aes-footer-start'></a>\n"
-            f"<div style='margin:5px 0 0 0; padding:0; background:#fff; font-family:Arial, sans-serif; "
+            f"<div style='margin:5px 0 0 0; padding:0; background:#fff; font-family:{AES_STRIP_FONT}; "
             f"font-size:11px; color:#333;'>"
             f"{summary_block}\n"
             f"<!-- AES Full Start -->\n"

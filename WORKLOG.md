@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.15: Segoe UI footer, real dot gaps
+- Footer font is Segoe UI. Green-dot separators are table cells with a 5px spacer on each side, because Outlook drops padding on a span.
+- Strip background `#39444d` (10% darker). Second line 12px. Chip padding `2px 0` (+4px height).
+- Follow-up: rescan a mail. No VBA re-import.
+
 ### 2026-09-24 — 1.3.14: Footer spacing and grey slate
 - Strip background `#3f4c55`. Separators are a green dot with 5px padding each side. Second line is 13px. Button row padding reduced by 5px above and below. Footer wrapper `margin-top: 5px`.
 - Follow-up: rescan a mail. No VBA re-import.

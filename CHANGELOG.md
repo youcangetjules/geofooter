@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.15] — 2026-09-24
+
+### Changed
+
+- The footer is set in Segoe UI. Each green dot has a 5px-wide cell on either side, which Outlook keeps. The strip is 10% darker (`#39444d`). The second line is 1pt smaller. The action buttons are 4px taller.
+
 ## [1.3.14] — 2026-09-24
 
 ### Changed

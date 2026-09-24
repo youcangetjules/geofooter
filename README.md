@@ -9,7 +9,7 @@
 | **Aura**            | Aliniant Universal Removal Application (broker opt-out workspace)          |
 | **AesRibbonHost**   | Optional COM/ribbon host for AES UI in Outlook                             |
 
-**Version:** see [`VERSION`](VERSION) / [`geofooter/version.py`](geofooter/version.py) — currently **1.3.32**.  
+**Version:** see [`VERSION`](VERSION) / [`geofooter/version.py`](geofooter/version.py) — currently **1.3.33**.  
 **Changes:** [`CHANGELOG.md`](CHANGELOG.md) · day-to-day notes in [`WORKLOG.md`](WORKLOG.md) · bugs in [`docs/bug_tracker.md`](docs/bug_tracker.md).
 
 ## Paths / Conda

@@ -592,10 +592,12 @@ def _footer_mark_html() -> str:
         return ""
     if not path.is_file():
         return ""
-    url = "file:///" + str(path).replace("\\", "/")
+    # cid: is what Outlook will paint. A file:// src is blocked and shows as a
+    # blank box. The comment lets VBA embed the file when that module is current;
+    # the scan also attaches it after the footer is applied.
     return (
         f"<!-- AES-Mark-Img: {path} -->"
-        f"<img src='{html.escape(url, quote=True)}' width='75' height='72' alt='' "
+        f"<img src='cid:aesfootermark' width='75' height='72' alt='' "
         f"style='display:block; border:0; outline:none; width:75px; height:72px;' />"
     )
 
@@ -7875,7 +7877,139 @@ def _notify_guri_scan_finished() -> None:
         return
 
 
+def _schedule_footer_mark(header_file: str) -> None:
+    """Attach the footer A after Outlook has written the footer.
+
+    The running VBA project blocks file:// images and does not yet embed this
+    mark. Attaching aes_status_mark.png once the cid is in the body survives
+    the banner cleanup, which deletes aes_status_* files during apply.
+    """
+    try:
+        import subprocess
+        import tempfile
+
+        text = open(header_file, encoding="utf-8", errors="replace").read()
+        subject = ""
+        for line in text.splitlines():
+            if line.lower().startswith("original subject:"):
+                subject = line.split(":", 1)[1].strip()
+                break
+        if not subject:
+            return
+        job = Path(tempfile.gettempdir()) / "aes_footer_mark_job.txt"
+        job.write_text(subject, encoding="utf-8")
+        flags = 0x00000008 | 0x00000200 | 0x08000000  # detached, new group, no window
+        subprocess.Popen(
+            [sys.executable, str(Path(__file__).resolve()), "--embed-footer-mark", str(job)],
+            creationflags=flags,
+            close_fds=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        logging.getLogger("geolocate").warning("Could not schedule footer mark", exc_info=True)
+
+
+def _embed_footer_mark_job(job_path: str) -> None:
+    import shutil
+    import tempfile
+    import time
+
+    try:
+        subject = Path(job_path).read_text(encoding="utf-8").strip()
+    except Exception:
+        return
+    if not subject:
+        return
+    try:
+        from geofooter.paths import get_install_root
+        src = get_install_root() / "assets" / "icons" / "aes_mark_footer.png"
+    except Exception:
+        return
+    if not src.is_file():
+        return
+
+    time.sleep(2)
+    try:
+        import win32com.client  # type: ignore
+        outlook = win32com.client.Dispatch("Outlook.Application")
+    except Exception:
+        return
+
+    def candidates():
+        found = []
+        try:
+            insp = outlook.ActiveInspector
+            if insp is not None:
+                found.append(insp.CurrentItem)
+        except Exception:
+            pass
+        try:
+            exp = outlook.ActiveExplorer
+            if exp is not None and exp.Selection.Count > 0:
+                found.append(exp.Selection.Item(1))
+        except Exception:
+            pass
+        return found
+
+    want = subject.casefold()
+    item = None
+    for _ in range(16):
+        for cand in candidates():
+            try:
+                if str(getattr(cand, "Subject", "") or "").strip().casefold() != want:
+                    continue
+                html = str(getattr(cand, "HTMLBody", "") or "")
+            except Exception:
+                continue
+            if "cid:aesfootermark" in html.lower():
+                item = cand
+                break
+        if item is not None:
+            break
+        time.sleep(1)
+    if item is None:
+        return
+
+    cid_prop = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
+    try:
+        for i in range(1, int(item.Attachments.Count) + 1):
+            att = item.Attachments.Item(i)
+            try:
+                if str(att.PropertyAccessor.GetProperty(cid_prop) or "").strip("<>").lower() == "aesfootermark":
+                    return
+            except Exception:
+                if str(getattr(att, "FileName", "") or "").lower().startswith("aes_status_mark"):
+                    return
+    except Exception:
+        pass
+
+    tmp = Path(tempfile.gettempdir()) / "aes_status_mark.png"
+    shutil.copyfile(src, tmp)
+    try:
+        att = item.Attachments.Add(str(tmp), 1, 0, "aes_status_mark.png")
+        att.PropertyAccessor.SetProperty(cid_prop, "aesfootermark")
+        try:
+            att.PropertyAccessor.SetProperty(
+                "http://schemas.microsoft.com/mapi/proptag/0x370E001F", "image/png"
+            )
+            att.PropertyAccessor.SetProperty(
+                "http://schemas.microsoft.com/mapi/proptag/0x7FFE000B", True
+            )
+        except Exception:
+            pass
+        html = str(item.HTMLBody or "")
+        item.HTMLBody = html
+        item.Save()
+    except Exception:
+        logging.getLogger("geolocate").warning("Footer mark attach failed", exc_info=True)
+
+
 def main():
+    if len(sys.argv) >= 3 and sys.argv[1] == "--embed-footer-mark":
+        _embed_footer_mark_job(sys.argv[2])
+        os._exit(0)
+
     """Main execution function."""
     import sys
     import os
@@ -8028,6 +8162,7 @@ def main():
         # CRITICAL: Only output the footer file path to stdout (single line, no extra text)
         # This is what VBA expects to capture
         print(output_file)
+        _schedule_footer_mark(header_file)
         _notify_guri_scan_finished()
         try:
             logging.shutdown()

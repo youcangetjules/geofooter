@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.33] — 2026-09-24
+
+### Fixed
+
+- The footer A was a blocked file link, which Outlook drew as an empty bar. It is now embedded in the message.
+
 ## [1.3.32] — 2026-09-24
 
 ### Changed

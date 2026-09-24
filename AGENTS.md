@@ -38,16 +38,19 @@ C:\GeoFooter\
 
 Prefer **`VBA\geolocate_headers.py`** and other scripts under `VBA\` over stale root copies. Root `geolocate_headers.py` / dialogs may be archived or secondary.
 
+**Install root** — set in GURI → Database → Install root (writes `%LOCALAPPDATA%\GeoFooter\install_root.txt`). Suite paths (`assets\`, `datastore\`, `debuglog\`, `crashlogs\`, `VBA\`) are relative to that folder. Override with env `GEOFOOTER_ROOT`. See `geofooter_paths.py` / `VBA\MSCANPaths.bas`.
+
 ## Operating constraints agents must respect
 
 1. **Outlook UI thread** — never run `ProcessEmail` / heavy export synchronously from `ItemAdd` / `NewMailEx`. Queue + delayed VBS tick only.
 2. **VBA changes require re-import** into Outlook (`VBA\IMPORT.txt`). Editing `.bas` on disk does nothing until imported.
 3. **Keep modules in sync** — e.g. `MSCANModule1` calling `MSCANModSenderRules.QuarantineAllAttachments` needs that module imported too.
 4. **Compact vs full/deep** — automatic new-mail scans are compact/lite (lighter hop/AV/export). Full/Deep keep heavy fidelity.
-5. **Do not commit** unless the user asks. Avoid pushing secrets (`aes_secrets`, DPAPI settings, API keys).
+5. **Commit + push after each patch** — when a meaningful patch lands, create a captioned git commit and `git push` to `origin` in the same turn (unless the user says not to for that change). Never commit secrets (`aes_secrets`, DPAPI settings, API keys, `*.dpapi`, live DB configs).
 6. **Work log** — whenever you make meaningful code or project-doc changes, append an entry to **`WORKLOG.md`** (newest first). Include what changed, why, and any follow-up (e.g. VBA re-import). Skip trivial typos-only edits unless the user asks.
 7. **Versioning** — SemVer `MAJOR.MINOR.PATCH` in `VERSION` + `version.py` + `CHANGELOG.md` + AesRibbonHost `<Version>`. **~90% of bumps are PATCH**; MINOR for new features; MAJOR only for breaking contracts. Keep versions aligned across those files.
 8. **Commit captions** — every commit message **must** open with a short caption stating what was done (imperative, specific). Example: `Fix Create-GURI silent insert failure for long document paths`. Do not use vague messages like `update` or `wip`.
+9. **Install root** — never hard-code `C:\GeoFooter`. Use `geofooter_paths` (Python) / `MSCANPaths` (VBA). User sets root in GURI → Database → Install root.
 
 ## Quick pointers
 

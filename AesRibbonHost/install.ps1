@@ -59,6 +59,8 @@ foreach ($p in $clsidCandidates) {
 if (-not $found) {
     Write-Host "CLSID missing after import - writing keys explicitly (32-bit view)..."
     $codeBase = "file:///" + ($dll -replace '\\', '/')
+    $asmVer = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($dll).FileVersion
+    if ([string]::IsNullOrWhiteSpace($asmVer)) { $asmVer = "1.2.0.0" }
     $ps32 = Join-Path $env:WINDIR "SysWOW64\WindowsPowerShell\v1.0\powershell.exe"
     $writeScript = Join-Path $root "bin\Release\write_clsid32.ps1"
     @"
@@ -66,6 +68,7 @@ if (-not $found) {
 `$clsid = '$clsid'
 `$progId = '$progId'
 `$codeBase = '$codeBase'
+`$asmVer = '$asmVer'
 `$root = "HKCU:\Software\Classes\CLSID\`$clsid"
 New-Item -Path `$root -Force | Out-Null
 Set-ItemProperty -Path `$root -Name '(default)' -Value 'Aliniant.AesRibbonHost.Connect'
@@ -74,13 +77,13 @@ New-Item -Path `$inproc -Force | Out-Null
 Set-ItemProperty -Path `$inproc -Name '(default)' -Value 'mscoree.dll'
 Set-ItemProperty -Path `$inproc -Name 'ThreadingModel' -Value 'Both'
 Set-ItemProperty -Path `$inproc -Name 'Class' -Value 'Aliniant.AesRibbonHost.Connect'
-Set-ItemProperty -Path `$inproc -Name 'Assembly' -Value 'AesRibbonHost, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Set-ItemProperty -Path `$inproc -Name 'Assembly' -Value ("AesRibbonHost, Version=`$asmVer, Culture=neutral, PublicKeyToken=null")
 Set-ItemProperty -Path `$inproc -Name 'RuntimeVersion' -Value 'v4.0.30319'
 Set-ItemProperty -Path `$inproc -Name 'CodeBase' -Value `$codeBase
-`$ver = Join-Path `$inproc '1.0.0.0'
+`$ver = Join-Path `$inproc `$asmVer
 New-Item -Path `$ver -Force | Out-Null
 Set-ItemProperty -Path `$ver -Name 'Class' -Value 'Aliniant.AesRibbonHost.Connect'
-Set-ItemProperty -Path `$ver -Name 'Assembly' -Value 'AesRibbonHost, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+Set-ItemProperty -Path `$ver -Name 'Assembly' -Value ("AesRibbonHost, Version=`$asmVer, Culture=neutral, PublicKeyToken=null")
 Set-ItemProperty -Path `$ver -Name 'RuntimeVersion' -Value 'v4.0.30319'
 Set-ItemProperty -Path `$ver -Name 'CodeBase' -Value `$codeBase
 `$prog = "HKCU:\Software\Classes\`$progId"
@@ -123,28 +126,6 @@ New-ItemProperty -Path $keyPath -Name "LoadBehavior" -PropertyType DWord -Value 
 
 $ps32 = Join-Path $env:WINDIR "SysWOW64\WindowsPowerShell\v1.0\powershell.exe"
 $verify = Join-Path $root "verify32.ps1"
-@'
-$clsid = "{A1E50001-AE51-4B0B-9C11-AE5B1BB00001}"
-$paths = @(
-    "HKCU:\Software\Classes\CLSID\$clsid\InprocServer32",
-    "HKCU:\Software\Classes\Wow6432Node\CLSID\$clsid\InprocServer32"
-)
-$ok = $false
-foreach ($path in $paths) {
-    Write-Host ("32-bit sees InprocServer32 ($path): " + (Test-Path $path))
-    if (Test-Path $path) { $ok = $true }
-}
-if ($ok) {
-    try {
-        $null = New-Object -ComObject Aliniant.AesRibbonHost
-        Write-Host "32-bit CoCreate: OK"
-    } catch {
-        Write-Host ("32-bit CoCreate FAIL: " + $_.Exception.Message)
-    }
-} else {
-    Write-Host "32-bit CoCreate SKIP: CLSID InprocServer32 not found"
-}
-'@ | Set-Content $verify -Encoding ASCII
 
 if (Test-Path $ps32) {
     Write-Host "Verifying 32-bit CLSID visibility..."

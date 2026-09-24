@@ -13,6 +13,18 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — AesRibbonHost verify: no false CoCreate FAIL
+- `verify32.ps1` / `install.ps1`: success is CLSID + InprocServer32 present; CoCreate while Outlook holds the DLL is reported as skipped, not FAIL.
+- Explicit CLSID fallback now uses the built DLL’s FileVersion (was hard-coded 1.0.0.0).
+- Follow-up: none required if registry OK and Outlook already loads the add-in.
+
+### 2026-09-24 — Configurable install root (relative paths)
+- Added `geofooter_paths.py` + `VBA\MSCANPaths.bas`; GURI Database tab can set Install root.
+- Pointer: `%LOCALAPPDATA%\GeoFooter\install_root.txt` (optional `GEOFOOTER_ROOT`).
+- Suite dirs relative to root: `assets/`, `datastore/`, `debuglog/`, `crashlogs/`.
+- Removed hard-coded `C:\GeoFooter` from live VBA/Python/ribbon host where practical.
+- Follow-up: re-import `MSCANPaths.bas` first, then Module1/Toolbar/Settings; Save root once in GURI.
+
 ### 2026-09-24 — Correct suite version to 1.2.0 (patch-first SemVer)
 - Suite is **1.2.0**, not 2.0.0 — SemVer MAJOR.MINOR.PATCH with ~90% patches.
 - Commit messages must open with a caption of what was done (`AGENTS.md`).

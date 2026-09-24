@@ -12,6 +12,9 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 ```
 
 ---
+### 2026-09-24 - Import_VBA: multi-path Outlook COM attach diagnostics
+- Try GetActiveObject, VB GetObject, and New-Object; surface each failure instead of a generic bitness message.
+- Follow-up: run DryRun/import with Outlook open; enable AccessVBOM if VBE still unavailable.
 ### 2026-09-24 — Import_VBA: resolve VBProject when ActiveVBProject is empty
 - Fall back to VBE.VBProjects.Item(1); clearer Alt+F11 hint.
 - Follow-up: user re-runs bat with Outlook open (Alt+F11 once if needed).

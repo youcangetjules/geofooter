@@ -139,16 +139,109 @@ function Test-HasGetActiveObject {
     return $null -ne [Runtime.InteropServices.Marshal].GetMethod("GetActiveObject", $flags)
 }
 
-function Get-ActiveOutlookCom {
-    # Windows PowerShell / .NET Framework only - missing in PowerShell 7.
-    if (-not (Test-HasGetActiveObject)) {
-        return $null
-    }
+function Test-IsElevated {
     try {
-        return [Runtime.InteropServices.Marshal]::GetActiveObject("Outlook.Application")
+        $id = [Security.Principal.WindowsIdentity]::GetCurrent()
+        $p = New-Object Security.Principal.WindowsPrincipal($id)
+        return [bool]$p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
     } catch {
-        return $null
+        return $false
     }
+}
+
+function Get-OutlookAttachAttempts {
+    # Returns @{ App = $comOrNull; Errors = @(strings) }
+    $errors = New-Object System.Collections.Generic.List[string]
+    $app = $null
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+
+    try {
+        # 1) ROT via Marshal.GetActiveObject (Windows PowerShell / .NET Framework)
+        try {
+            $app = [Runtime.InteropServices.Marshal]::GetActiveObject("Outlook.Application")
+            if ($app) {
+                return @{ App = $app; Errors = @() }
+            }
+            $errors.Add("GetActiveObject: returned null")
+        } catch {
+            $errors.Add("GetActiveObject: $($_.Exception.Message)")
+        }
+
+        # 2) VB GetObject(, "Outlook.Application")
+        try {
+            Add-Type -AssemblyName Microsoft.VisualBasic -ErrorAction Stop
+            $app = [Microsoft.VisualBasic.Interaction]::GetObject($null, "Outlook.Application")
+            if ($app) {
+                return @{ App = $app; Errors = $errors.ToArray() }
+            }
+            $errors.Add("VB.GetObject: returned null")
+        } catch {
+            $errors.Add("VB.GetObject: $($_.Exception.Message)")
+        }
+
+        # 3) CreateObject - on Windows PowerShell this often binds to the running instance
+        try {
+            $app = New-Object -ComObject Outlook.Application
+            if ($app) {
+                return @{ App = $app; Errors = $errors.ToArray() }
+            }
+            $errors.Add("New-Object: returned null")
+        } catch {
+            $errors.Add("New-Object Outlook.Application: $($_.Exception.Message)")
+        }
+
+        return @{ App = $null; Errors = $errors.ToArray() }
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
+}
+
+function Get-OutlookApplication {
+    $result = Get-OutlookAttachAttempts
+    if ($result.App) {
+        $ver = ""
+        try { $ver = [string]$result.App.Version } catch {}
+        if ($ver) { Write-Host "Attached to Outlook $ver via COM." }
+        else { Write-Host "Attached to Outlook via COM." }
+        return $result.App
+    }
+
+    $running = Test-OutlookProcessRunning
+    $outlookPath = ""
+    try {
+        $outlookPath = (Get-Process -Name OUTLOOK -ErrorAction SilentlyContinue |
+            Select-Object -First 1 -ExpandProperty Path)
+    } catch {}
+
+    if ($running) {
+        $errText = if ($result.Errors.Count) { ($result.Errors -join "`n  ") } else { "(no detail)" }
+        $elev = Test-IsElevated
+        throw (
+            "Outlook.exe is running but COM attach failed from this host.`n" +
+            "  Host: Windows PowerShell $($PSVersionTable.PSVersion) | 64-bit process=$([Environment]::Is64BitProcess) | elevated=$elev`n" +
+            "  Outlook: $outlookPath`n" +
+            "  Attempts:`n  $errText`n" +
+            "Common fixes:`n" +
+            "  - Start Outlook normally (not 'Run as administrator'), then re-run this bat (also not elevated) - or elevate BOTH.`n" +
+            "  - Press Alt+F11 once in Outlook, close the VBA window, re-run.`n" +
+            "  - Fully quit Outlook (tray too), start it again, wait until the inbox loads, re-run.`n" +
+            "  - Your interactive shell can be PowerShell 7; this bat must keep using SysWOW64 Windows PowerShell 5.1."
+        )
+    }
+
+    Write-Host "Outlook not running - starting it..."
+    try {
+        $app = New-Object -ComObject Outlook.Application
+    } catch {
+        throw (
+            "Failed to start Outlook via COM ($($_.Exception.Message)).`n" +
+            "Start Outlook manually, then re-run this script."
+        )
+    }
+    $null = $app.GetNamespace("MAPI")
+    Start-Sleep -Seconds 2
+    return $app
 }
 
 function Get-WindowsPowerShell32 {
@@ -167,11 +260,11 @@ function Ensure-CompatiblePowerShellHost {
     if (-not (Test-HasGetActiveObject)) {
         $needRelaunch = $true
         $reason = "this host has no Marshal.GetActiveObject (likely PowerShell 7+)"
-    } elseif ([Environment]::Is64BitProcess -and (Test-Path (Join-Path $env:SystemRoot "SysWOW64\WindowsPowerShell\v1.0\powershell.exe"))) {
-        # Prefer 32-bit host when Outlook is under Program Files (x86).
+    } elseif ([Environment]::Is64BitProcess -and (Get-WindowsPowerShell32)) {
         $outlookPath = $null
         try {
-            $outlookPath = (Get-Process -Name OUTLOOK -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty Path)
+            $outlookPath = (Get-Process -Name OUTLOOK -ErrorAction SilentlyContinue |
+                Select-Object -First 1 -ExpandProperty Path)
         } catch {}
         if ($outlookPath -and ($outlookPath -match '(?i)Program Files \(x86\)')) {
             $needRelaunch = $true
@@ -202,34 +295,6 @@ function Ensure-CompatiblePowerShellHost {
 
     $p = Start-Process -FilePath $ps32 -ArgumentList $argList -Wait -PassThru -NoNewWindow
     exit $p.ExitCode
-}
-
-function Get-OutlookApplication {
-    $app = Get-ActiveOutlookCom
-    if ($app) { return $app }
-
-    $running = Test-OutlookProcessRunning
-    if ($running) {
-        throw (
-            "Outlook.exe is running but this PowerShell host cannot attach to it via COM.`n" +
-            "Usual causes: PowerShell 7 (no GetActiveObject), or 64-bit PowerShell vs 32-bit Outlook.`n" +
-            "Fix: run scripts\Import_VBA_to_Outlook.bat (uses SysWOW64 Windows PowerShell 5.1),`n" +
-            "or open: $env:SystemRoot\SysWOW64\WindowsPowerShell\v1.0\powershell.exe"
-        )
-    }
-
-    Write-Host "Outlook not running - starting it..."
-    try {
-        $app = New-Object -ComObject Outlook.Application
-    } catch {
-        throw (
-            "Failed to start Outlook via COM ($($_.Exception.Message)).`n" +
-            "Start Outlook manually, then re-run this script."
-        )
-    }
-    $null = $app.GetNamespace("MAPI")
-    Start-Sleep -Seconds 2
-    return $app
 }
 
 function Get-VbaProject {

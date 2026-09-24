@@ -13,12 +13,12 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ### Severity
 
-| Level | Meaning |
-| ----- | ------- |
+| Level  | Meaning                                                              |
+| ------ | -------------------------------------------------------------------- |
 | **S1** | Data loss, wrong security decision, or Outlook hang on the UI thread |
-| **S2** | Feature broken for a main path (scan, footer, GURI save, ribbon) |
-| **S3** | Workaround exists; annoying or partial failure |
-| **S4** | Cosmetic, docs, or rare edge case |
+| **S2** | Feature broken for a main path (scan, footer, GURI save, ribbon)     |
+| **S3** | Workaround exists; annoying or partial failure                       |
+| **S4** | Cosmetic, docs, or rare edge case                                    |
 
 ### Areas
 
@@ -32,7 +32,33 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-005 — Ribbon macro fallback can never work (Outlook has no `Application.Run`)
+
+- **Severity:** S3
+- **Area:** Ribbon
+- **Status:** open
+- **Reported:** 2026-09-24
+- **Summary:** When the AES CommandBar button isn't found, `Connect.TryRunVbaMacro` calls `Application.Run`. The Outlook object model has no `Run`, so every attempt fails with "'ApplicationClass' does not contain a definition for 'Run'". Ribbon scan buttons therefore depend entirely on the VBA toolbar existing.
+- **Repro:** Delete or skip the `AES` CommandBar, then click Short Scan on the ribbon. `AesRibbonHost.log` shows `TryRunVbaMacro miss ...` for every candidate.
+- **Expected / actual:** The scan runs / nothing happens, and a "no matching button/macro" message appears.
+- **Workaround:** Alt+F8 → `CreateToolbar` (or `RecoverAesUi`), or restart Outlook so `MSCANAppBootstrap.DeferredToolbar` rebuilds the bar.
+- **Follow-up:** Remove the dead `Run` path. Replace it with a reliable bridge, e.g. public methods on `ThisOutlookSession` (exposed via late-bound `Application`) or a file/queue trigger that VBA polls.
+
+### BUG-003 — Buttons do nothing / old dialogs appear: VBA import never saved to `VbaProject.OTM`
+
+- **Severity:** S2
+- **Area:** VBA / Install
+- **Status:** investigating
+- **Reported:** 2026-09-24
+- **Summary:** After `Import_VBA_to_Outlook.bat`, the new modules only lived in memory. `%APPDATA%\Microsoft\Outlook\VbaProject.OTM` was still dated 2026-09-23 23:35, so each Outlook restart reloaded pre-1.2.1 code. That code looks for deleted files (`guri_gui.py`, `VBA\geolocate_headers.py`, `VBA\aes_settings_dialog.py`). As a result the Scan, GURI and Aura buttons fire but silently fail. Settings falls back to the legacy InputBox "Scan Accounts" dialog.
+- **Repro:** Run the import bat, don't press Save in the VBA editor, restart Outlook, click GURI or Settings.
+- **Evidence:** `VBA_Log.txt` shows `ShowGuriGui: python or guri_gui.py not found`, `GetPythonScript: Python script (geolocate_headers.py) not found`, `MSCANSettings: Python settings dialog unavailable; InputBox fallback`. `AesRibbonHost.log` shows the old DLL (`LaunchGuriGuiDirect: missing ... script=`).
+- **Expected / actual:** Buttons launch the scan / GURI / Aura, and Settings opens the PySide6 dialog / nothing happens, or the old InputBox appears.
+- **Workaround:** Re-run the import bat (1.2.4+ executes VBE Compile + Save and prints `File > Save: done`). Otherwise press Alt+F11 → Debug → Compile → Ctrl+S. Then fully quit Outlook, run `AesRibbonHost\install.ps1` with Outlook closed, and reopen.
+- **Fixed in:** 1.2.4 (`54f84b4`), import script now saves. Pending operator verification that the OTM timestamp updates.
+
 ### BUG-002 — VBA modules on disk are ahead of Outlook after 1.2.1 package move
+
 - **Severity:** S2
 - **Area:** VBA / Install
 - **Status:** open
@@ -43,16 +69,19 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 - **Follow-up:** Operator still needs to run the import on each machine after pull.
 
 ### BUG-001 — Outlook Trust Center UI has no “Trust access to the VBA project object model” checkbox
+
 - **Severity:** S3
 - **Area:** Install / VBA
 - **Status:** open
 - **Reported:** 2026-09-24
 - **Summary:** Macro Settings shows Enable all macros, but not AccessVBOM. External sync of VBA modules fails until the registry value is set.
 - **Workaround:**
+  
   ```powershell
   New-Item -Path "HKCU:\Software\Microsoft\Office\16.0\Outlook\Security" -Force | Out-Null
   Set-ItemProperty -Path "HKCU:\Software\Microsoft\Office\16.0\Outlook\Security" -Name "AccessVBOM" -Type DWord -Value 1
   ```
+  
   Fully quit Outlook (tray too), reopen, then run `scripts\Import_VBA_to_Outlook.bat`
   (or `Import_VBA_to_Outlook.ps1 -EnableAccessVBOM` once to set the key).
 - **Notes:** “Enable all macros” only allows macros to *run*; it does not grant project object model access.

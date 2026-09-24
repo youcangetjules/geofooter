@@ -1,0 +1,30 @@
+# Conda environment for GeoFooter / AES / GURI / Aura
+# CI (Linux) and local Conda installs.
+#
+# Create / update:
+#   conda env create -f environment.yml
+#   conda activate geofooter
+#   conda env update -f environment.yml --prune
+#
+# On Windows (Outlook COM / AES dialogs), also:
+#   pip install pywin32>=306
+
+name: geofooter
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pyside6>=6.6.0
+  - pillow>=10.0.0
+  - pytz>=2023.3
+  - dnspython>=2.4.0
+  - requests>=2.31.0
+  - pycountry>=24.0.0
+  - flake8
+  - pytest
+  - pip:
+      - python-whois>=0.8.0
+      - ipwhois>=1.2.0
+      - psycopg2-binary>=2.9.0
+      - mysql-connector-python>=8.0.0

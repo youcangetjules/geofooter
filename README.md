@@ -2,34 +2,43 @@
 
 **Aliniant Email Scanner (AES)**, **GURI**, and **Aura** — scan and track emails, stamp unique record IDs, and manage data-broker opt-outs.
 
-| Product | Role |
-| --------- | ------ |
+| Product             | Role                                                                       |
+| ------------------- | -------------------------------------------------------------------------- |
 | **AES (GeoFooter)** | Outlook watch → Python scan → risk banner + HTML footer (`aes://` actions) |
-| **GURI** | Desktop GUI for unique IDs, scrape, deadlines, library |
-| **Aura** | Aliniant Universal Removal Application (broker opt-out workspace) |
-| **AesRibbonHost** | Optional COM/ribbon host for AES UI in Outlook |
+| **GURI**            | Desktop GUI for unique IDs, scrape, deadlines, library                     |
+| **Aura**            | Aliniant Universal Removal Application (broker opt-out workspace)          |
+| **AesRibbonHost**   | Optional COM/ribbon host for AES UI in Outlook                             |
 
-**Version:** see [`VERSION`](VERSION) / [`geofooter/version.py`](geofooter/version.py) — currently **1.2.2**.  
+**Version:** see [`VERSION`](VERSION) / [`geofooter/version.py`](geofooter/version.py) — currently **1.2.3**.  
 **Changes:** [`CHANGELOG.md`](CHANGELOG.md) · day-to-day notes in [`WORKLOG.md`](WORKLOG.md) · bugs in [`docs/bug_tracker.md`](docs/bug_tracker.md).
 
-## Paths
+## Paths / Conda
 
 Set **Install root** in GURI → **Database** (saves `%LOCALAPPDATA%\GeoFooter\install_root.txt`).
 All suite folders below are relative to that root.
 Override with env `GEOFOOTER_ROOT`. See `geofooter/paths.py` / `VBA\MSCANPaths.bas`.
 
-| Folder | Contents |
-| -------- | ---------- |
-| `aes/` | Scan engine (`geolocate_headers.py`), dialogs, `aes://` handler, `scanners/` |
-| `guri/` | GURI core (`core.py`) and desktop app (`gui.py`) |
-| `aura/` | Data-broker removal workspace (GURI tab) |
-| `geofooter/` | Shared install-root paths, version, crash logging |
-| `VBA/` | Outlook VBA modules only (`.bas` / `.cls`) |
-| `assets/` | Brand, ribbon icons, pages, Outlook forms, sample data |
-| `datastore/` | Local DBs and GURI lists (not committed) |
-| `docs/` | Feature guides |
-| `scripts/` | Migrations, launchers, icon build helpers |
-| `tests/` | Ad-hoc test scripts |
+**Conda (optional, also used by CI):**
+
+```bash
+conda env create -f environment.yml
+conda activate geofooter
+# Windows only (Outlook COM):
+pip install pywin32>=306
+```
+
+| Folder       | Contents                                                                     |
+| ------------ | ---------------------------------------------------------------------------- |
+| `aes/`       | Scan engine (`geolocate_headers.py`), dialogs, `aes://` handler, `scanners/` |
+| `guri/`      | GURI core (`core.py`) and desktop app (`gui.py`)                             |
+| `aura/`      | Data-broker removal workspace (GURI tab)                                     |
+| `geofooter/` | Shared install-root paths, version, crash logging                            |
+| `VBA/`       | Outlook VBA modules only (`.bas` / `.cls`)                                   |
+| `assets/`    | Brand, ribbon icons, pages, Outlook forms, sample data                       |
+| `datastore/` | Local DBs and GURI lists (not committed)                                     |
+| `docs/`      | Feature guides                                                               |
+| `scripts/`   | Migrations, launchers, icon build helpers                                    |
+| `tests/`     | Ad-hoc test scripts                                                          |
 
 ## Requirements
 
@@ -50,10 +59,10 @@ Override with env `GEOFOOTER_ROOT`. See `geofooter/paths.py` / `VBA\MSCANPaths.b
 
 We use **SemVer** (`MAJOR.MINOR.PATCH`). **About 90% of bumps are patches.**
 
-| Bump | When |
-| ------ | ------ |
-| **PATCH** | Default — fixes, wording, scoring tweaks, icons, docs |
-| **MINOR** | New backward-compatible features (Aura, tabs, scan modes) |
+| Bump      | When                                                         |
+| --------- | ------------------------------------------------------------ |
+| **PATCH** | Default — fixes, wording, scoring tweaks, icons, docs        |
+| **MINOR** | New backward-compatible features (Aura, tabs, scan modes)    |
 | **MAJOR** | Rare — breaking Outlook/VBA contracts, schema, or public CLI |
 
 **Git commits:** every commit message starts with a short caption of what was done
@@ -73,7 +82,10 @@ git push origin v1.2.0
 ## Agent / contributor notes
 
 See [`AGENTS.md`](AGENTS.md) and [`SKILLS.md`](SKILLS.md). Do not commit secrets, DPAPI blobs, or live DB passwords.
-All of the API Keys for the Threat websites have free tiers. We did that on purpose :) - pretty powerful even at that level.
+
+All of the API Keys for the Threat websites have free tiers.  
+
+We did that on purpose :) - pretty powerful even at that level.
 
 ## License / ownership
 

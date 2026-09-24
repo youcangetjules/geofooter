@@ -12,6 +12,14 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 ```
 
 ---
+
+### 2026-09-24 — Ship 1.2.3: Conda CI, GURI cold-start, AES toolbar recovery
+- Added `environment.yml` + fixed `.github/workflows/python-package-conda.yml` (was failing on missing env file).
+- Ribbon GURI/Aura always launches `guri\gui.py --raise` (starts if not running); VBA sets cwd to install root.
+- Added `RecoverAesUi`; clearer ribbon message after VBA re-import (Compile + recreate toolbar).
+- AGENTS: bump SemVer on every meaningful patch commit.
+- Follow-up: Alt+F11 Compile → Alt+F8 `CreateToolbar` or re-import MSCANToolbar then `RecoverAesUi` → restart Outlook; `AesRibbonHost\install.ps1`.
+
 ### 2026-09-24 - Import_VBA: AccessVBOM restart / Alt+F11 nudge
 - Nudge Alt+F11 when VBE is unavailable; explain when AccessVBOM=1 but the running Outlook process still blocks VBE.
 - Follow-up: fully quit Outlook (tray too), reopen, Alt+F11 once, re-run bat from a non-admin prompt.

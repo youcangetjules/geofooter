@@ -255,28 +255,15 @@ namespace Aliniant.AesRibbonHost
 
         public void OnGuri(IRibbonControl control)
         {
-            // GURI is an external Python GUI. The ribbon click runs in Outlook, which
-            // owns Windows foreground rights — so we must SetForegroundWindow here.
-            // Launching pythonw --raise alone only pings the existing instance; that
-            // process cannot steal focus, so the window stays buried.
-            if (TryExecuteVbaButton("AES_GURI", "ShowGuriGui"))
-            {
-                BringGuriWindowToFront();
-                return;
-            }
-
+            // Always direct-launch (or --raise) so GURI starts when it is not running.
+            // VBA toolbar path is best-effort only; do not return early on it alone.
+            TryExecuteVbaButton("AES_GURI", "ShowGuriGui");
             RaiseOrLaunchGuri("--raise", "GURI");
         }
 
         public void OnAura(IRibbonControl control)
         {
-            // Aura = data-broker removal workspace inside GURI (Data Brokers / Aura tab).
-            if (TryExecuteVbaButton("AES_AURA", "ShowAuraGui"))
-            {
-                BringGuriWindowToFront();
-                return;
-            }
-
+            TryExecuteVbaButton("AES_AURA", "ShowAuraGui");
             RaiseOrLaunchGuri("--raise --aura", "Aura");
         }
 
@@ -678,7 +665,9 @@ namespace Aliniant.AesRibbonHost
 
             // Last-resort legacy folder if still present
             if (Directory.Exists(@"C:\GeoFooter") &&
-                (File.Exists(@"C:\GeoFooter\VERSION") || Directory.Exists(@"C:\GeoFooter\VBA")))
+                (File.Exists(@"C:\GeoFooter\VERSION") ||
+                 Directory.Exists(@"C:\GeoFooter\aes") ||
+                 Directory.Exists(@"C:\GeoFooter\VBA")))
                 return @"C:\GeoFooter";
 
             return null;
@@ -694,7 +683,9 @@ namespace Aliniant.AesRibbonHost
             HostLog.Write("ExecuteVbaButton: no matching button/macro for tag=" + tag + " hint=" + onActionHint);
             System.Windows.Forms.MessageBox.Show(
                 "AES button '" + onActionHint + "' was not found on the VBA toolbar." +
-                "\n\nEnsure the AES VBA toolbar is loaded (restart Outlook after importing MSCANToolbar).",
+                "\n\nAfter a VBA re-import: Alt+F11 → Debug → Compile VBAProject," +
+                "\nthen Alt+F8 → run RecoverAesUi (or restart Outlook)." +
+                "\n\nIf Compile fails, fix errors first (remove duplicate ThisOutlookSession under Modules).",
                 "Aliniant AES",
                 System.Windows.Forms.MessageBoxButtons.OK,
                 System.Windows.Forms.MessageBoxIcon.Warning);
@@ -768,7 +759,11 @@ namespace Aliniant.AesRibbonHost
                 }
                 catch { }
 
-                foreach (var candidate in new[] { project + "." + bare, bare, "MSCANToolbar." + bare })
+                foreach (var candidate in new[] {
+                    project + ".MSCANToolbar." + bare,
+                    "MSCANToolbar." + bare,
+                    project + "." + bare,
+                    bare })
                 {
                     try
                     {
@@ -808,12 +803,21 @@ namespace Aliniant.AesRibbonHost
                     pyList.Add(Path.Combine(root, @".venv\Scripts\python.exe"));
                 }
                 pyList.Add(Path.Combine(userProfile, @"AppData\Local\Programs\Python\Python313\pythonw.exe"));
+                pyList.Add(Path.Combine(userProfile, @"AppData\Local\Programs\Python\Python312\pythonw.exe"));
+                pyList.Add(Path.Combine(userProfile, @"AppData\Local\Programs\Python\Python311\pythonw.exe"));
                 pyList.Add(Path.Combine(local, @"Programs\Python\Python313\pythonw.exe"));
+                pyList.Add(Path.Combine(local, @"Programs\Python\Python312\pythonw.exe"));
+                pyList.Add(@"C:\Python313\pythonw.exe");
+                pyList.Add(@"C:\Python312\pythonw.exe");
                 string[] pyCandidates = pyList.ToArray();
 
                 var scriptList = new System.Collections.Generic.List<string>();
                 if (!string.IsNullOrEmpty(root))
+                {
                     scriptList.Add(Path.Combine(root, "guri", "gui.py"));
+                    scriptList.Add(Path.Combine(root, "guri_gui.py")); // legacy filename
+                }
+                scriptList.Add(@"C:\GeoFooter\guri\gui.py");
                 string[] scriptCandidates = scriptList.ToArray();
 
                 string py = null;
@@ -830,8 +834,15 @@ namespace Aliniant.AesRibbonHost
 
                 if (py == null || script == null)
                 {
-                    HostLog.Write("LaunchGuriGuiDirect: missing py=" + (py ?? "") + " script=" + (script ?? ""));
+                    HostLog.Write("LaunchGuriGuiDirect: missing py=" + (py ?? "") +
+                        " script=" + (script ?? "") + " root=" + root);
                     return false;
+                }
+
+                if (string.IsNullOrEmpty(root))
+                {
+                    try { root = Path.GetDirectoryName(Path.GetDirectoryName(script)) ?? ""; }
+                    catch { root = @"C:\GeoFooter"; }
                 }
 
                 string args = "\"" + script + "\"";
@@ -847,7 +858,7 @@ namespace Aliniant.AesRibbonHost
                     WorkingDirectory = string.IsNullOrEmpty(root) ? Environment.CurrentDirectory : root,
                 };
                 Process.Start(psi);
-                HostLog.Write("LaunchGuriGuiDirect: " + py + " " + args);
+                HostLog.Write("LaunchGuriGuiDirect: " + py + " " + args + " cwd=" + psi.WorkingDirectory);
                 return true;
             }
             catch (Exception ex)

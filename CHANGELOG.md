@@ -20,6 +20,20 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.2.3] — 2026-09-24
+
+### Added
+- `environment.yml` for Conda/CI; `tests/test_ci_smoke.py` package smoke tests.
+- `MSCANToolbar.RecoverAesUi` to rebuild the AES CommandBar after a VBA re-import.
+
+### Fixed
+- Conda GitHub Action failed (missing `environment.yml`).
+- GURI/Aura ribbon: always direct-launch `guri\gui.py --raise` so a cold start works; broader Python path search; set process working directory to install root.
+- Ribbon error text points at Compile + `RecoverAesUi` when the VBA toolbar is missing.
+
+### Changed
+- AGENTS: bump SemVer on every meaningful patch commit.
+
 ## [1.2.2] — 2026-09-24
 
 ### Added

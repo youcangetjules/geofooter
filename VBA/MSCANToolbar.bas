@@ -747,6 +747,7 @@ Public Sub ShowGuriGui()
     Dim cmd As String
     Dim paths As Variant
     Dim p As Variant
+    Dim workDir As String
 
     Set fso = CreateObject("Scripting.FileSystemObject")
     Set shell = CreateObject("WScript.Shell")
@@ -754,9 +755,13 @@ Public Sub ShowGuriGui()
     py = ""
     paths = Array( _
         MSCANPaths.GetVenvPythonw(), _
-        Environ$("USERPROFILE") & "\AppData\Local\Programs\Python\Python313\pythonw.exe", _
+        MSCANPaths.GetVenvPython(), _
         Environ$("LOCALAPPDATA") & "\Programs\Python\Python313\pythonw.exe", _
-        MSCANPaths.GetVenvPython())
+        Environ$("LOCALAPPDATA") & "\Programs\Python\Python312\pythonw.exe", _
+        Environ$("USERPROFILE") & "\AppData\Local\Programs\Python\Python313\pythonw.exe", _
+        Environ$("USERPROFILE") & "\AppData\Local\Programs\Python\Python312\pythonw.exe", _
+        "C:\Python313\pythonw.exe", _
+        "C:\Python312\pythonw.exe")
     For Each p In paths
         If Len(CStr(p)) > 0 Then
             If fso.FileExists(CStr(p)) Then
@@ -768,7 +773,9 @@ Public Sub ShowGuriGui()
 
     script = ""
     paths = Array( _
-        MSCANPaths.GetGuriGuiScript())
+        MSCANPaths.GetGuriGuiScript(), _
+        MSCANPaths.InstallPath("guri", "gui.py"), _
+        "C:\GeoFooter\guri\gui.py")
     For Each p In paths
         If Len(CStr(p)) > 0 Then
             If fso.FileExists(CStr(p)) Then
@@ -779,15 +786,18 @@ Public Sub ShowGuriGui()
     Next p
 
     If Len(py) = 0 Or Len(script) = 0 Then
-        MSCANModLogging.WriteLog "ShowGuriGui: python or guri\gui.py not found (py=" & py & " script=" & script & ")."
+        MSCANModLogging.WriteLog "ShowGuriGui: python or guri\gui.py not found (py=" & py & " script=" & script & " root=" & MSCANPaths.GetInstallRoot() & ")."
         MSCANModStatus.ShowStatus "GURI GUI not found — set Install root in GURI Database tab"
         Exit Sub
     End If
 
     ' --raise: single-instance IPC brings an existing window forward; else starts GURI.
+    workDir = MSCANPaths.GetInstallRoot()
+    If Len(workDir) = 0 Then workDir = fso.GetParentFolderName(fso.GetParentFolderName(script))
     cmd = """" & py & """ """ & script & """ --raise"
+    shell.CurrentDirectory = workDir
     shell.Run cmd, 0, False
-    MSCANModLogging.WriteLog "ShowGuriGui: launched " & cmd
+    MSCANModLogging.WriteLog "ShowGuriGui: launched " & cmd & " cwd=" & workDir
     MSCANModStatus.ShowStatus "Opening GURI…"
     Exit Sub
 
@@ -807,6 +817,7 @@ Public Sub ShowAuraGui()
     Dim cmd As String
     Dim paths As Variant
     Dim p As Variant
+    Dim workDir As String
 
     Set fso = CreateObject("Scripting.FileSystemObject")
     Set shell = CreateObject("WScript.Shell")
@@ -814,9 +825,13 @@ Public Sub ShowAuraGui()
     py = ""
     paths = Array( _
         MSCANPaths.GetVenvPythonw(), _
-        Environ$("USERPROFILE") & "\AppData\Local\Programs\Python\Python313\pythonw.exe", _
+        MSCANPaths.GetVenvPython(), _
         Environ$("LOCALAPPDATA") & "\Programs\Python\Python313\pythonw.exe", _
-        MSCANPaths.GetVenvPython())
+        Environ$("LOCALAPPDATA") & "\Programs\Python\Python312\pythonw.exe", _
+        Environ$("USERPROFILE") & "\AppData\Local\Programs\Python\Python313\pythonw.exe", _
+        Environ$("USERPROFILE") & "\AppData\Local\Programs\Python\Python312\pythonw.exe", _
+        "C:\Python313\pythonw.exe", _
+        "C:\Python312\pythonw.exe")
     For Each p In paths
         If Len(CStr(p)) > 0 Then
             If fso.FileExists(CStr(p)) Then
@@ -828,7 +843,9 @@ Public Sub ShowAuraGui()
 
     script = ""
     paths = Array( _
-        MSCANPaths.GetGuriGuiScript())
+        MSCANPaths.GetGuriGuiScript(), _
+        MSCANPaths.InstallPath("guri", "gui.py"), _
+        "C:\GeoFooter\guri\gui.py")
     For Each p In paths
         If Len(CStr(p)) > 0 Then
             If fso.FileExists(CStr(p)) Then
@@ -839,15 +856,18 @@ Public Sub ShowAuraGui()
     Next p
 
     If Len(py) = 0 Or Len(script) = 0 Then
-        MSCANModLogging.WriteLog "ShowAuraGui: python or guri\gui.py not found (py=" & py & " script=" & script & ")."
+        MSCANModLogging.WriteLog "ShowAuraGui: python or guri\gui.py not found (py=" & py & " script=" & script & " root=" & MSCANPaths.GetInstallRoot() & ")."
         MSCANModStatus.ShowStatus "Aura GUI not found — set Install root in GURI Database tab"
         Exit Sub
     End If
 
-    ' --aura selects the Aura tab; --raise brings an existing instance forward.
+    ' --aura selects the Aura tab; --raise brings an existing instance forward (or starts GURI).
+    workDir = MSCANPaths.GetInstallRoot()
+    If Len(workDir) = 0 Then workDir = fso.GetParentFolderName(fso.GetParentFolderName(script))
     cmd = """" & py & """ """ & script & """ --raise --aura"
+    shell.CurrentDirectory = workDir
     shell.Run cmd, 0, False
-    MSCANModLogging.WriteLog "ShowAuraGui: launched " & cmd
+    MSCANModLogging.WriteLog "ShowAuraGui: launched " & cmd & " cwd=" & workDir
     MSCANModStatus.ShowStatus "Opening Aura…"
     Exit Sub
 
@@ -894,6 +914,24 @@ Public Sub UpdateServiceButtonCaption()
     On Error Resume Next
     CreateToolbar
     WriteServiceStateFile
+End Sub
+
+''' Rebuild the AES CommandBar after a VBA re-import (Alt+F8 → RecoverAesUi).
+Public Sub RecoverAesUi()
+    On Error GoTo EH
+    MSCANModLogging.WriteLog "RecoverAesUi: rebuilding AES toolbar and refreshing service UI."
+    CreateToolbar
+    WriteServiceStateFile
+    ApplyServiceBusyAppearance
+    On Error Resume Next
+    MSCANAppBootstrap.RefreshServiceUI
+    MSCANModStatus.ShowStatus "AES toolbar recovered."
+    Exit Sub
+EH:
+    MSCANModLogging.WriteLog "RecoverAesUi error: #" & Err.Number & " - " & Err.Description
+    MsgBox "Could not recover AES toolbar: " & Err.Description & vbCrLf & vbCrLf & _
+           "Alt+F11 → Debug → Compile VBAProject, fix errors, then run RecoverAesUi again.", _
+           vbExclamation, "AES"
 End Sub
 
 ' State for AesRibbonHost COM add-in (live Home ribbon ON/OFF icons).

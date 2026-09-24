@@ -585,7 +585,37 @@ if ($SyncThisOutlookSession) {
     Write-Host ""
 }
 
+function Invoke-VbeCommand {
+    param($Vbe, [int]$ControlId, [string]$Label)
+    try {
+        $ctl = $Vbe.CommandBars.FindControl(1, $ControlId)
+        if (-not $ctl) {
+            Write-Host "  ${Label}: VBE control $ControlId not found - do it manually."
+            return $false
+        }
+        $ctl.Execute()
+        Write-Host "  ${Label}: done"
+        return $true
+    } catch {
+        Write-Host "  ${Label}: failed ($($_.Exception.Message)) - do it manually."
+        return $false
+    }
+}
+
+$saved = $false
+if (-not $DryRun) {
+    # Without a save, Outlook reloads the old VbaProject.OTM on the next restart.
+    Write-Host "Compiling and saving the VBA project..."
+    $vbe = $project.VBE
+    [void](Invoke-VbeCommand -Vbe $vbe -ControlId 578 -Label "Debug > Compile")
+    $saved = Invoke-VbeCommand -Vbe $vbe -ControlId 3 -Label "File > Save"
+    Write-Host ""
+}
+
 Write-Host "Done."
-Write-Host "Next: Alt+F11 -> Debug -> Compile VBAProject, then File -> Save."
-Write-Host "If Outlook was already running with old code in memory, restart Outlook once."
+if (-not $saved) {
+    Write-Host "IMPORTANT: Alt+F11 -> Debug -> Compile VBAProject, then File -> Save (Ctrl+S)."
+    Write-Host "Without Save, restarting Outlook brings the OLD code back."
+}
+Write-Host "Then fully quit Outlook (tray too) and reopen so the new modules run from startup."
 exit 0

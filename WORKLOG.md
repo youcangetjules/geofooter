@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.2.4: VBA import compiles + saves (buttons ran stale code)
+- Logs showed buttons firing but running pre-1.2.1 VBA ("guri_gui.py not found", "geolocate_headers.py not found"): the import was never saved, so an Outlook restart reloaded the old `VbaProject.OTM`.
+- `scripts/Import_VBA_to_Outlook.ps1` now executes VBE Compile (control 578) and Save (control 3) after importing, with a loud manual fallback message.
+- The ribbon host log also shows the old DLL (checks `guri_gui.py` only); `AesRibbonHost\install.ps1` must be re-run with Outlook closed. Outlook `Application` has no `Run`, so the ribbon's macro fallback never works; the CommandBar button path is the only one that does.
+- Follow-up: re-run the import bat, quit Outlook fully, run `install.ps1`, reopen.
+
 ### 2026-09-24 — Ship 1.2.3: Conda CI, GURI cold-start, AES toolbar recovery
 - Added `environment.yml` + fixed `.github/workflows/python-package-conda.yml` (was failing on missing env file).
 - Ribbon GURI/Aura always launches `guri\gui.py --raise` (starts if not running); VBA sets cwd to install root.

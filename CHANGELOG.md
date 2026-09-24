@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.26] — 2026-09-24
+
+### Changed
+
+- **HRE** is a link to the risk-score breakdown, which lists the elements behind the count.
+- Vertical padding on each footer row is 5px, half of the previous 10px.
+
 ## [1.3.25] — 2026-09-24
 
 ### Fixed

@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.26: HRE links to the breakdown; tighter rows
+- `{{AES_HRE}}` is replaced with a coloured link to the risk report. Row padding is `5px 16px`.
+- Follow-up: rescan a mail. No VBA re-import.
+
 ### 2026-09-24 — 1.3.25: Stop text/HTML flip on rescan
 - `ApplyFooterToMail`, insert, and replace no longer call `TryRestoreMitigatedHtml`. A lower score on the plain-text body was restoring HTML, then the HTML scan mitigated it again.
 - A mail that already contains the high-risk text notice is left as text.

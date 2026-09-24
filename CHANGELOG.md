@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.5] — 2026-09-24
+
+### Fixed
+
+- The suite tray icon was registered as GURI under Python, so it did not appear as AGS in Settings > Personalisation > Taskbar > Other system tray icons. It now registers as **AGS (Aliniant Geosense Suite)** and turns that entry On.
+
 ## [1.3.4] — 2026-09-24
 
 ### Fixed

@@ -12621,16 +12621,83 @@ Preview:
         # Do NOT also call setContextMenu — on Windows that double-fires with our
         # Context handler and makes the menu sluggish or appear then vanish.
         self.tray_icon.activated.connect(self._tray_icon_activated)
-        self.tray_icon.setToolTip("GURI Database Viewer & Manager")
+        # Windows 11 Settings > Taskbar > Other system tray icons uses this
+        # tooltip as the list name (InitialTooltip).
+        self.tray_icon.setToolTip("AGS (Aliniant Geosense Suite)")
         self.tray_icon.show()
+        QTimer.singleShot(1500, self._promote_windows_tray_icon)
+        QTimer.singleShot(4000, self._promote_windows_tray_icon)
 
         if self.tray_show_notifications:
             self.tray_icon.showMessage(
-                "GURI Database Manager",
+                "AGS (Aliniant Geosense Suite)",
                 "Application is running in the system tray",
                 QSystemTrayIcon.MessageIcon.Information,
                 2000,
             )
+
+    def _promote_windows_tray_icon(self) -> None:
+        """Put AGS on the Windows 11 taskbar tray list and turn it on.
+
+        Settings > Personalisation > Taskbar > Other system tray icons only
+        lists a program after it has registered a notify icon. The label is
+        the tooltip. IsPromoted=1 is the On switch in that list.
+        """
+        if sys.platform != "win32":
+            return
+        try:
+            import winreg
+        except Exception:
+            return
+        exe = os.path.normcase(os.path.abspath(sys.executable))
+        tip = "AGS (Aliniant Geosense Suite)"
+        try:
+            root = winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER,
+                r"Control Panel\NotifyIconSettings",
+                0,
+                winreg.KEY_READ,
+            )
+        except OSError:
+            return
+        try:
+            count = winreg.QueryInfoKey(root)[0]
+            for i in range(count):
+                name = winreg.EnumKey(root, i)
+                try:
+                    key = winreg.OpenKey(
+                        winreg.HKEY_CURRENT_USER,
+                        rf"Control Panel\NotifyIconSettings\{name}",
+                        0,
+                        winreg.KEY_READ | winreg.KEY_SET_VALUE,
+                    )
+                except OSError:
+                    continue
+                try:
+                    path, _ = winreg.QueryValueEx(key, "ExecutablePath")
+                except OSError:
+                    winreg.CloseKey(key)
+                    continue
+                if os.path.normcase(os.path.abspath(str(path))) != exe:
+                    winreg.CloseKey(key)
+                    continue
+                try:
+                    winreg.SetValueEx(key, "IsPromoted", 0, winreg.REG_DWORD, 1)
+                except OSError as exc:
+                    self.logger.debug("Tray IsPromoted write failed: %s", exc)
+                for value_name in ("InitialTooltip", "IconTooltip"):
+                    try:
+                        winreg.QueryValueEx(key, value_name)
+                    except OSError:
+                        continue
+                    try:
+                        winreg.SetValueEx(key, value_name, 0, winreg.REG_SZ, tip)
+                    except OSError:
+                        pass
+                winreg.CloseKey(key)
+                self.logger.info("Promoted tray icon in Windows settings: %s", name)
+        finally:
+            winreg.CloseKey(root)
 
     def _show_tray_menu(self) -> None:
         """Show the tray context menu at the cursor (Windows-reliable path)."""
@@ -12858,9 +12925,19 @@ def main():
         return
 
     app = QApplication(sys.argv)
-    # Required on some Windows setups so the tray icon identity is stable
-    app.setApplicationName(APP_NAME)
+    # Required on some Windows setups so the tray icon identity is stable.
+    # Windows 11 lists this name under Other system tray icons.
+    app.setApplicationName("AGS")
+    app.setApplicationDisplayName("AGS (Aliniant Geosense Suite)")
     app.setOrganizationName(APP_ORG)
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                "Aliniant.AGS"
+            )
+        except Exception:
+            pass
     app.setQuitOnLastWindowClosed(False)
     if os.path.isfile(GURI_APP_ICON_PATH):
         app.setWindowIcon(QIcon(GURI_APP_ICON_PATH))

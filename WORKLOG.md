@@ -12,6 +12,9 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 ```
 
 ---
+### 2026-09-24 - Import_VBA: AccessVBOM restart / Alt+F11 nudge
+- Nudge Alt+F11 when VBE is unavailable; explain when AccessVBOM=1 but the running Outlook process still blocks VBE.
+- Follow-up: fully quit Outlook (tray too), reopen, Alt+F11 once, re-run bat from a non-admin prompt.
 ### 2026-09-24 — Import_VBA: highlight elevated-shell COM failure
 - When elevated=True, print a clear re-run-from-normal-prompt hint (MK_E_UNAVAILABLE).
 

@@ -307,51 +307,103 @@ function Ensure-CompatiblePowerShellHost {
 
 function Get-VbaProject {
     param($OutlookApp)
+
+    $vbeErrors = New-Object System.Collections.Generic.List[string]
+    $vbe = $null
+
     try {
-        # GetActiveObject returns Outlook.Application already - prefer .VBE directly.
-        $vbe = $null
-        try { $vbe = $OutlookApp.VBE } catch {}
-        if (-not $vbe) {
-            try { $vbe = $OutlookApp.Application.VBE } catch {}
+        $vbe = $OutlookApp.VBE
+        if (-not $vbe) { $vbeErrors.Add("Application.VBE returned null/empty") }
+    } catch {
+        $vbeErrors.Add("Application.VBE: $($_.Exception.Message)")
+    }
+
+    if (-not $vbe) {
+        try {
+            $vbe = $OutlookApp.Application.VBE
+            if (-not $vbe) { $vbeErrors.Add("Application.Application.VBE returned null/empty") }
+        } catch {
+            $vbeErrors.Add("Application.Application.VBE: $($_.Exception.Message)")
         }
-        if (-not $vbe) {
-            throw "Outlook.VBE is unavailable (AccessVBOM may still be off, or macros disabled)."
+    }
+
+    if (-not $vbe) {
+        # Outlook often refuses Application.VBE until the IDE has been opened once.
+        try {
+            Write-Host "Nudge: sending Alt+F11 to Outlook to load the VBA project..."
+            $shell = New-Object -ComObject WScript.Shell
+            $activated = $false
+            foreach ($title in @("Inbox", "Outlook", "Mail")) {
+                if ($shell.AppActivate($title)) { $activated = $true; break }
+            }
+            if (-not $activated) {
+                $oid = (Get-Process OUTLOOK -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty Id)
+                if ($oid) { [void]$shell.AppActivate($oid) }
+            }
+            Start-Sleep -Milliseconds 400
+            $shell.SendKeys("%{F11}")
+            Start-Sleep -Seconds 2
+        } catch {
+            Write-Host "Nudge failed: $($_.Exception.Message)"
         }
 
-        $project = $null
-        try { $project = $vbe.ActiveVBProject } catch {}
-        if (-not $project) {
-            # ActiveVBProject is often empty until the editor has focus; take the first project.
-            try {
-                if ($vbe.VBProjects.Count -ge 1) {
-                    $project = $vbe.VBProjects.Item(1)
-                }
-            } catch {}
+        try {
+            $vbe = $OutlookApp.VBE
+            if (-not $vbe) { $vbeErrors.Add("Application.VBE after Alt+F11 returned null/empty") }
+        } catch {
+            $vbeErrors.Add("Application.VBE after Alt+F11: $($_.Exception.Message)")
         }
-        if (-not $project) {
-            foreach ($p in @($vbe.VBProjects)) {
-                if ($p.Name -match '(?i)VbaProject|Project') {
-                    $project = $p
-                    break
-                }
-            }
+    }
+
+    if (-not $vbe) {
+        $access = $null
+        try {
+            $access = (Get-ItemProperty "HKCU:\Software\Microsoft\Office\16.0\Outlook\Security" -Name AccessVBOM -ErrorAction SilentlyContinue).AccessVBOM
+        } catch {}
+        $detail = ($vbeErrors -join "`n  ")
+        $restartHint = ""
+        if ($access -eq 1) {
+            $restartHint = (
+                "`nAccessVBOM is already 1 in the registry, but this Outlook process still blocks VBE.`n" +
+                "That almost always means Outlook was running when AccessVBOM was set.`n" +
+                "Fully quit Outlook (system tray too), start it again, press Alt+F11 once, then re-run this bat.`n"
+            )
         }
-        if (-not $project) {
-            throw "No VBA project found. Open Outlook, press Alt+F11 once to load the VBA project, then re-run."
-        }
-        return $project
-    } catch {
-        $detail = $_.Exception.Message
         throw (
-            "Cannot open the Outlook VBA project (AccessVBOM / Trust access).`n" +
+            "Cannot open the Outlook VBA project.`n" +
+            "  AccessVBOM (HKCU)= $access`n" +
+            $restartHint +
+            "  VBE errors:`n  $detail`n" +
             "Fix:`n" +
-            "  1. Run:  .\Import_VBA_to_Outlook.ps1 -EnableAccessVBOM`n" +
-            "  2. Fully quit Outlook (including tray) and reopen`n" +
-            "  3. Press Alt+F11 once so the VBA project loads`n" +
-            "  4. Run this script again without -EnableAccessVBOM`n" +
-            "Underlying error: $detail"
+            "  1. Fully quit Outlook (tray icon too) and reopen`n" +
+            "  2. Press Alt+F11 once (VBA editor can then be closed)`n" +
+            "  3. Re-run scripts\Import_VBA_to_Outlook.bat from a non-admin prompt"
         )
     }
+
+    try { $null = $vbe.MainWindow } catch {}
+
+    $project = $null
+    try { $project = $vbe.ActiveVBProject } catch {}
+    if (-not $project) {
+        try {
+            if ($vbe.VBProjects.Count -ge 1) {
+                $project = $vbe.VBProjects.Item(1)
+            }
+        } catch {}
+    }
+    if (-not $project) {
+        foreach ($p in @($vbe.VBProjects)) {
+            if ($p.Name -match '(?i)VbaProject|Project') {
+                $project = $p
+                break
+            }
+        }
+    }
+    if (-not $project) {
+        throw "No VBA project found after opening VBE. Press Alt+F11 in Outlook, then re-run."
+    }
+    return $project
 }
 
 function Remove-ComponentByName {

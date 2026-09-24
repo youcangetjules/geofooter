@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.2.9: Unblock Conda CI (flake8 F821 in scripts/)
+- Every Conda workflow run failed on flake8: `scripts/fix_duplicate_guris.py` used `os` without importing it. Added the import and switched the DB path to `geofooter.paths.datastore_path`.
+- Follow-up: confirm the next GitHub Actions run is green.
+
 ### 2026-09-24 - 1.2.8: MSCANSelfUpdate when AccessVBOM is already 1
 
 - What: `VBA\MSCANSelfUpdate.bas` now nudges Alt+F11 and retries `Application.VBE`; if still Nothing, shows a manual File > Import checklist (clipboard + open VBA folder) via `ShowAesImportChecklist`, without blaming AccessVBOM when it is already 1.

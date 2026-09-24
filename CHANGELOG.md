@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.2.9] — 2026-09-24
+
+### Fixed
+
+- Conda CI flake8 F821: `scripts/fix_duplicate_guris.py` used `os` without importing it (blocked every push since the workflow started linting `scripts/`). Path now uses `geofooter.paths.datastore_path` instead of a hard-coded `C:\GeoFooter`.
+
 ## [1.2.8] — 2026-09-24
 
 ### Fixed

@@ -36,6 +36,8 @@ def test_packages_compile() -> None:
         "aura",
         "aura.detect",
         "aura.catalog",
+        "aura.settings",
+        "aura.automation",
     ],
 )
 def test_import_module(mod: str) -> None:

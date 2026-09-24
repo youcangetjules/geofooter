@@ -17,10 +17,10 @@ SemVer (MAJOR.MINOR.PATCH) — almost everything is a PATCH:
 from __future__ import annotations
 
 # Semver: MAJOR.MINOR.PATCH
-VERSION = "1.2.10"
-VERSION_TUPLE = (1, 2, 10)
+VERSION = "1.3.0"
+VERSION_TUPLE = (1, 3, 0)
 # Local release / build timestamp for this VERSION (YYYY-MM-DD HH:MM)
-VERSION_STAMP = "2026-09-24 18:45"
+VERSION_STAMP = "2026-09-24 19:30"
 
 APP_NAME = "GURI"
 APP_FULL_NAME = "GURI - Aliniant Smart Ass Email"
@@ -34,6 +34,13 @@ COPYRIGHT_YEAR = "2026"
 # Short release notes for the About tab (newest first).
 # Each entry: (version, timestamp, notes)
 RELEASE_NOTES = (
+    (
+        "1.3.0",
+        "2026-09-24 19:30",
+        "Aura automation: removal emails for the whole catalogue drafted in Outlook for "
+        "review (never auto-sent); AES auto-queues broker mail dated 2026-09-24 onwards; "
+        "sent drafts tracked with 30-day follow-up.",
+    ),
     (
         "1.2.10",
         "2026-09-24 18:45",

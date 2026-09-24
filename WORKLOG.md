@@ -13,6 +13,14 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.0: Aura email automation up to user review
+- New `aura/automation.py` (prepare / sync_sent / regenerate / skip / open_draft, CLI `--prepare` / `--sync`) and `aura/settings.py` (`detect_since` 2026-09-24, send account, 30-day follow-up).
+- `aura/store.py`: `draft_entry_id` column plus `latest_for_broker()`. `aura/pending.py`: filters on `received_at` against `detect_since`. `aes/geolocate_headers.py`: auto-queues broker hits from the mail's `Date:` header. `aes/action_handler.py`: reports mail outside the window.
+- `aura/gui_tab.py`: Review sub-tab, background COM worker, auto-run on open and every 5 minutes, Send-from combo.
+- Why: user asked for Aura to be fully automated up to reviewing the draft before pressing Send, for the whole catalogue, with no backdated mail.
+- Tests: `tests/test_aura_automation.py`, added to the Conda workflow.
+- Follow-up: fill in Aura Identity (full name + email) so drafting isn't blocked; no VBA re-import needed.
+
 ### 2026-09-24 — 1.2.10: CI conftest
 - Added `tests/conftest.py`, which inserts the install root into `sys.path`; the GitHub runner couldn't import the packages (16 smoke tests failed with `ModuleNotFoundError`).
 - Follow-up: confirm the Conda run is green.

@@ -62,6 +62,11 @@ class RemovalRequest:
     subject: str = ""
     guri: str = ""
     evidence: str = ""
+    draft_entry_id: str = ""
+
+
+# Requests in these states already cover the broker; don't prepare another.
+ACTIVE_STATUSES = ("ready", "sent", "awaiting", "confirmed", "denied")
 
 
 class RemovalStore:
@@ -104,6 +109,11 @@ class RemovalStore:
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status)"
             )
+            cols = {r[1] for r in conn.execute("PRAGMA table_info(requests)")}
+            if "draft_entry_id" not in cols:
+                conn.execute(
+                    "ALTER TABLE requests ADD COLUMN draft_entry_id TEXT DEFAULT ''"
+                )
             conn.commit()
 
     @staticmethod
@@ -124,7 +134,17 @@ class RemovalStore:
             subject=str(row["subject"] or ""),
             guri=str(row["guri"] or ""),
             evidence=str(row["evidence"] or ""),
+            draft_entry_id=str(row["draft_entry_id"] or ""),
         )
+
+    def latest_for_broker(self, broker_id: str) -> Optional[RemovalRequest]:
+        with self._connect() as conn:
+            cur = conn.execute(
+                "SELECT * FROM requests WHERE broker_id = ? ORDER BY updated_at DESC LIMIT 1",
+                (broker_id,),
+            )
+            row = cur.fetchone()
+            return self._row(row) if row else None
 
     def list_requests(self, status: Optional[str] = None) -> List[RemovalRequest]:
         with self._connect() as conn:
@@ -160,6 +180,7 @@ class RemovalStore:
         guri: str = "",
         notes: str = "",
         evidence: str = "",
+        draft_entry_id: str = "",
     ) -> RemovalRequest:
         status = status if status in STATUSES else "draft"
         now = _now_iso()
@@ -178,6 +199,7 @@ class RemovalStore:
             subject=subject,
             guri=guri,
             evidence=evidence,
+            draft_entry_id=draft_entry_id,
         )
         with self._connect() as conn:
             conn.execute(
@@ -185,8 +207,8 @@ class RemovalStore:
                 INSERT INTO requests (
                     id, broker_id, broker_name, status, created_at, updated_at,
                     notes, last_action, follow_up_due, source, sender, domain,
-                    subject, guri, evidence
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    subject, guri, evidence, draft_entry_id
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """,
                 (
                     req.id,
@@ -204,6 +226,7 @@ class RemovalStore:
                     req.subject,
                     req.guri,
                     req.evidence,
+                    req.draft_entry_id,
                 ),
             )
             conn.commit()
@@ -218,10 +241,19 @@ class RemovalStore:
         follow_up_due: Optional[str] = None,
         last_action: Optional[str] = None,
         evidence: Optional[str] = None,
+        subject: Optional[str] = None,
+        source: Optional[str] = None,
+        draft_entry_id: Optional[str] = None,
     ) -> Optional[RemovalRequest]:
         req = self.get(request_id)
         if not req:
             return None
+        if subject is not None:
+            req.subject = subject
+        if source is not None:
+            req.source = source
+        if draft_entry_id is not None:
+            req.draft_entry_id = draft_entry_id
         if status is not None and status in STATUSES:
             req.status = status
         if notes is not None:
@@ -238,7 +270,8 @@ class RemovalStore:
                 """
                 UPDATE requests SET
                     status=?, notes=?, follow_up_due=?, last_action=?,
-                    evidence=?, updated_at=?
+                    evidence=?, subject=?, source=?, draft_entry_id=?,
+                    updated_at=?
                 WHERE id=?
                 """,
                 (
@@ -247,6 +280,9 @@ class RemovalStore:
                     req.follow_up_due,
                     req.last_action,
                     req.evidence,
+                    req.subject,
+                    req.source,
+                    req.draft_entry_id,
                     req.updated_at,
                     req.id,
                 ),

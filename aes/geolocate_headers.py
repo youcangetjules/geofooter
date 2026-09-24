@@ -74,6 +74,11 @@ try:
 except ImportError:
     broker_match_sender = None  # type: ignore[assignment]
 
+try:
+    from aura.pending import enqueue_from_aes as broker_enqueue
+except ImportError:
+    broker_enqueue = None  # type: ignore[assignment]
+
 # Test imports and provide helpful error messages
 try:
     import dns.resolver
@@ -2738,6 +2743,7 @@ class HTMLReportGenerator:
                     }
                 ],
             )
+            self._auto_queue_broker(broker_hit, sender_email, sender_domain, headers)
 
         if not sender_domain or sender_domain == "Unknown":
             sender_domain = self._infer_sender_domain(sender_email, sender_domain, per_hop_analysis, headers)
@@ -4841,6 +4847,34 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         except Exception as e:
             self.logger.error(f"Error generating GURI: {e}")
             return "N/A"
+
+    def _auto_queue_broker(
+        self,
+        broker_hit: Dict[str, Any],
+        sender_email: Optional[str],
+        sender_domain: Optional[str],
+        headers: Optional[str],
+    ) -> None:
+        """Queue broker mail for Aura automatically; aura drops mail older than detect_since."""
+        if broker_enqueue is None or not headers:
+            return
+        try:
+            m_date = re.search(r"^Date:\s*(.+)$", headers, re.IGNORECASE | re.MULTILINE)
+            if not m_date:
+                return
+            received = email.utils.parsedate_to_datetime(m_date.group(1).strip())
+            m_subj = re.search(r"^Subject:\s*(.+)$", headers, re.IGNORECASE | re.MULTILINE)
+            item = broker_enqueue(
+                sender=sender_email or "",
+                domain=sender_domain or "",
+                subject=m_subj.group(1).strip() if m_subj else "",
+                broker_id=str(broker_hit.get("id") or ""),
+                received_at=received.isoformat(),
+            )
+            if item:
+                self.logger.info("Aura: queued %s for removal draft", broker_hit.get("name"))
+        except Exception as exc:
+            self.logger.debug("Aura auto-queue skipped: %s", exc)
 
     def _infer_sender_domain(
         self,

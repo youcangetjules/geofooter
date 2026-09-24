@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
+import threading
 import webbrowser
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QObject, Qt, QTimer, Signal
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
-    QGroupBox,
     QHBoxLayout,
     QInputDialog,
     QLabel,
@@ -19,7 +19,6 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
-    QSplitter,
     QTabWidget,
     QTreeWidget,
     QTreeWidgetItem,
@@ -28,11 +27,36 @@ from PySide6.QtWidgets import (
     QFileDialog,
 )
 
+from aura import automation
 from aura.catalog import find_broker, load_catalog
 from aura.pending import accept_pending, dismiss_pending, list_pending
 from aura.profile import IdentityProfile, load_profile, save_profile
+from aura.settings import load_settings, save_settings
 from aura.store import STATUSES, RemovalStore
 from aura.templates import render_removal
+
+AUTO_RUN_MS = 5 * 60 * 1000
+
+
+class _ComJob(QObject):
+    """Runs one Outlook COM call on a worker thread; result comes back on the GUI thread."""
+
+    finished = Signal(object, str)  # (result, error text)
+
+    def __init__(self, fn: Callable[[], Any], parent: Optional[QObject] = None) -> None:
+        super().__init__(parent)
+        self._fn = fn
+
+    def start(self) -> None:
+        threading.Thread(target=self._run, daemon=True).start()
+
+    def _run(self) -> None:
+        try:
+            with automation._com_apartment():
+                result = self._fn()
+            self.finished.emit(result, "")
+        except Exception as exc:
+            self.finished.emit(None, str(exc) or exc.__class__.__name__)
 
 
 class DataBrokersPanel(QWidget):
@@ -51,8 +75,47 @@ class DataBrokersPanel(QWidget):
         self._accent = accent
         self._muted = muted
         self._store = RemovalStore()
+        self._jobs: List[_ComJob] = []
+        self._auto_busy = False
+        self._auto_started = False
         self._build()
         self.reload_all()
+        self._auto_timer = QTimer(self)
+        self._auto_timer.setInterval(AUTO_RUN_MS)
+        self._auto_timer.timeout.connect(self._auto_run)
+
+    def showEvent(self, event) -> None:  # noqa: N802 (Qt override)
+        super().showEvent(event)
+        if not self._auto_started:
+            self._auto_started = True
+            self._auto_timer.start()
+            QTimer.singleShot(500, self._auto_run)
+            QTimer.singleShot(0, self._load_send_accounts)
+
+    def _run_com(self, fn: Callable[[], Any], done: Callable[[Any, str], None]) -> None:
+        job = _ComJob(fn, self)
+        self._jobs.append(job)
+
+        def _finish(result: Any, err: str) -> None:
+            self._jobs.remove(job)
+            job.deleteLater()
+            done(result, err)
+
+        job.finished.connect(_finish)
+        job.start()
+
+    def _auto_run(self) -> None:
+        if self._auto_busy:
+            return
+        self._auto_busy = True
+        self._run_com(automation.prepare_and_sync, self._auto_done)
+
+    def _auto_done(self, summary: Any, err: str) -> None:
+        self._auto_busy = False
+        self._msg(f"Aura: {err}" if err else str(summary))
+        self._reload_requests()
+        self._reload_review()
+        self._reload_pending()
 
     def _msg(self, text: str) -> None:
         self._status(text)
@@ -67,9 +130,9 @@ class DataBrokersPanel(QWidget):
         root.addWidget(head)
 
         sub = QLabel(
-            "Track opt-out / erasure requests against people-search and data brokers "
-            "(Incogni-style). Templates are filled from your local identity profile — "
-            "you copy or export and send manually. Nothing is submitted automatically."
+            "Aura prepares removal emails as Outlook drafts. You review and press Send. "
+            "Letters are filled from your identity profile; brokers that only accept "
+            "a web form are tracked in Requests with their opt-out URL."
         )
         sub.setWordWrap(True)
         sub.setStyleSheet(f"color: {self._muted};")
@@ -80,12 +143,13 @@ class DataBrokersPanel(QWidget):
             "Use only data you are prepared to put in removal letters."
         )
         warn.setWordWrap(True)
-        warn.setStyleSheet(f"color: #b54708; font-size: 11px;")
+        warn.setStyleSheet("color: #b54708; font-size: 11px;")
         root.addWidget(warn)
 
         tabs = QTabWidget()
         root.addWidget(tabs, stretch=1)
 
+        tabs.addTab(self._build_review_tab(), "Review")
         tabs.addTab(self._build_identity_tab(), "Identity")
         tabs.addTab(self._build_brokers_tab(), "Brokers")
         tabs.addTab(self._build_requests_tab(), "Requests")
@@ -121,6 +185,10 @@ class DataBrokersPanel(QWidget):
         form.addRow("Addresses", self.id_addresses)
         form.addRow("Date of birth", self.id_dob)
         form.addRow("Notes", self.id_notes)
+        self.id_send_from = QComboBox()
+        self.id_send_from.setEditable(True)
+        self.id_send_from.setToolTip("Outlook account the removal drafts are sent from")
+        form.addRow("Send from", self.id_send_from)
         layout.addLayout(form)
         row = QHBoxLayout()
         save_btn = QPushButton("Save profile")
@@ -161,7 +229,129 @@ class DataBrokersPanel(QWidget):
             notes=self.id_notes.toPlainText().strip(),
         )
         path = save_profile(p)
+        settings = load_settings()
+        settings.send_account = self.id_send_from.currentText().strip().lower()
+        save_settings(settings)
         self._msg(f"Identity profile saved → {path}")
+
+    def _load_send_accounts(self) -> None:
+        def _done(accounts: Any, err: str) -> None:
+            current = load_settings().send_account
+            self.id_send_from.clear()
+            for addr in accounts or []:
+                self.id_send_from.addItem(addr)
+            if not current:
+                emails = {e.lower() for e in load_profile().emails}
+                current = next((a for a in accounts or [] if a.lower() in emails), "")
+            if current:
+                self.id_send_from.setCurrentText(current)
+            if err:
+                self._msg(f"Aura: could not list Outlook accounts ({err})")
+
+        self._run_com(lambda: automation.OutlookDrafts().accounts(), _done)
+
+    # ---- Review (drafts awaiting the user's Send) ----
+
+    def _build_review_tab(self) -> QWidget:
+        w = QWidget()
+        layout = QVBoxLayout(w)
+        hint = QLabel(
+            "Drafts Aura has prepared in Outlook (category \"Aura\"). Open a draft, "
+            "check it, and press Send in Outlook; Aura marks it sent automatically. "
+            "Aura re-checks every 5 minutes while GURI is open."
+        )
+        hint.setWordWrap(True)
+        hint.setStyleSheet(f"color: {self._muted};")
+        layout.addWidget(hint)
+        self.review_tree = QTreeWidget()
+        self.review_tree.setHeaderLabels(("Broker", "To", "Subject", "Prepared"))
+        self.review_tree.setRootIsDecorated(False)
+        self.review_tree.setSortingEnabled(True)
+        self.review_tree.setColumnWidth(0, 160)
+        self.review_tree.setColumnWidth(1, 200)
+        self.review_tree.setColumnWidth(2, 320)
+        self.review_tree.itemDoubleClicked.connect(lambda *_: self._review_open())
+        layout.addWidget(self.review_tree, stretch=1)
+        row = QHBoxLayout()
+        for label, slot in (
+            ("Open draft", self._review_open),
+            ("Regenerate", self._review_regenerate),
+            ("Skip", self._review_skip),
+            ("Prepare all now", self._auto_run),
+        ):
+            btn = QPushButton(label)
+            btn.clicked.connect(slot)
+            row.addWidget(btn)
+        row.addStretch(1)
+        layout.addLayout(row)
+        return w
+
+    def _selected_review_id(self) -> str:
+        item = self.review_tree.currentItem()
+        return str(item.data(0, Qt.ItemDataRole.UserRole) or "") if item else ""
+
+    def _reload_review(self) -> None:
+        self.review_tree.clear()
+        for req in self._store.list_requests(status="ready"):
+            broker = find_broker(req.broker_id) or {}
+            item = QTreeWidgetItem(
+                [
+                    req.broker_name,
+                    str(broker.get("opt_out_email") or ""),
+                    req.subject,
+                    req.updated_at[:16].replace("T", " "),
+                ]
+            )
+            item.setData(0, Qt.ItemDataRole.UserRole, req.id)
+            self.review_tree.addTopLevelItem(item)
+
+    def _review_request(self):
+        rid = self._selected_review_id()
+        req = self._store.get(rid) if rid else None
+        if not req:
+            QMessageBox.information(self, "Review", "Select a draft.")
+        return req
+
+    def _review_open(self) -> None:
+        req = self._review_request()
+        if not req:
+            return
+
+        def _done(_r: Any, err: str) -> None:
+            if err:
+                QMessageBox.warning(self, "Review", f"Could not open the draft:\n{err}")
+
+        self._run_com(lambda: automation.open_draft(req), _done)
+
+    def _review_regenerate(self) -> None:
+        req = self._review_request()
+        if not req:
+            return
+
+        def _done(_r: Any, err: str) -> None:
+            if err:
+                QMessageBox.warning(self, "Review", f"Could not regenerate:\n{err}")
+            else:
+                self._msg(f"Aura: regenerated draft for {req.broker_name}")
+            self._reload_review()
+            self._reload_requests()
+
+        self._run_com(lambda: automation.regenerate(req.id, store=self._store), _done)
+
+    def _review_skip(self) -> None:
+        req = self._review_request()
+        if not req:
+            return
+
+        def _done(_r: Any, err: str) -> None:
+            if err:
+                QMessageBox.warning(self, "Review", f"Could not skip:\n{err}")
+            else:
+                self._msg(f"Aura: skipped {req.broker_name} (draft deleted)")
+            self._reload_review()
+            self._reload_requests()
+
+        self._run_com(lambda: automation.skip(req.id, store=self._store), _done)
 
     # ---- Brokers catalog ----
 
@@ -445,8 +635,9 @@ class DataBrokersPanel(QWidget):
         w = QWidget()
         layout = QVBoxLayout(w)
         hint = QLabel(
-            "Items queued from an AES footer (Queue data removal) on broker mail. "
-            "Accept creates a draft request; Dismiss drops the item."
+            "Broker mail AES detected (dated on or after the Aura start date) or queued "
+            "from a footer. Aura turns these into Outlook drafts on its next run; "
+            "Accept / Dismiss handle them by hand."
         )
         hint.setWordWrap(True)
         hint.setStyleSheet(f"color: {self._muted};")
@@ -514,4 +705,5 @@ class DataBrokersPanel(QWidget):
         self._load_identity()
         self._reload_brokers()
         self._reload_requests()
+        self._reload_review()
         self._reload_pending()

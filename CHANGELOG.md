@@ -20,6 +20,21 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-09-24
+
+### Added
+
+- Aura automation (`aura/automation.py`): creates an Outlook draft removal email for every catalogue broker with an opt-out address, plus AES-detected brokers. Drafts are saved to Drafts (category "Aura") and are **never sent automatically**.
+- Aura tab **Review** sub-tab: Open draft, Regenerate, Skip, Prepare all now. Aura runs on open and every 5 minutes, and marks requests as sent (30-day follow-up) when the email shows up in Sent Items.
+- "Send from" Outlook account in the Aura identity form (`aura/settings.py`, `aura_settings.json`).
+- AES scans auto-queue detected broker mail to Aura, but only mail dated on or after the Aura start date (default 2026-09-24).
+- `draft_entry_id` column on Aura requests (auto-migrated).
+- `tests/test_aura_automation.py` (fake draft backend, no Outlook needed); runs in Conda CI.
+
+### Changed
+
+- Web-form-only brokers are tracked as "Manual web form (not automated)" and are not submitted.
+
 ## [1.2.10] — 2026-09-24
 
 ### Fixed

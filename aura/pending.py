@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from aura.catalog import find_broker, match_domain
+from aura.settings import load_settings
 from aura.store import RemovalStore
 
 
@@ -49,8 +50,23 @@ def _save(items: List[Dict[str, Any]]) -> None:
     )
 
 
+def _parse_when(value: str) -> Optional[datetime]:
+    try:
+        return datetime.fromisoformat((value or "").replace("Z", "+00:00"))
+    except Exception:
+        return None
+
+
+def _in_window(item: Dict[str, Any]) -> bool:
+    """Items without received_at predate the date gate (manual footer clicks) and are kept."""
+    raw = str(item.get("received_at") or "")
+    if not raw:
+        return True
+    return load_settings().is_in_window(_parse_when(raw))
+
+
 def list_pending() -> List[Dict[str, Any]]:
-    return _load()
+    return [x for x in _load() if _in_window(x)]
 
 
 def enqueue_from_aes(
@@ -60,8 +76,17 @@ def enqueue_from_aes(
     subject: str = "",
     guri: str = "",
     broker_id: str = "",
-) -> Dict[str, Any]:
-    """Append a pending AES queue item (dedupe by domain+sender)."""
+    received_at: str = "",
+) -> Optional[Dict[str, Any]]:
+    """Append a pending AES queue item (dedupe by domain+sender).
+
+    ``received_at`` (ISO) is set by automatic scan detection; mail dated before
+    ``detect_since`` is ignored and None is returned. Manual footer clicks pass
+    no date and are always queued.
+    """
+    received_at = (received_at or "").strip()
+    if received_at and not load_settings().is_in_window(_parse_when(received_at)):
+        return None
     sender = (sender or "").strip().lower()
     domain = (domain or "").strip().lower()
     if domain in {"unknown"}:
@@ -84,6 +109,7 @@ def enqueue_from_aes(
         ):
             existing["subject"] = subject or existing.get("subject") or ""
             existing["guri"] = guri or existing.get("guri") or ""
+            existing["received_at"] = received_at or existing.get("received_at") or ""
             existing["scanned_at"] = _now_iso()
             _save(items)
             return existing
@@ -96,6 +122,7 @@ def enqueue_from_aes(
         "domain": domain,
         "subject": (subject or "").strip(),
         "guri": (guri or "").strip(),
+        "received_at": received_at,
         "scanned_at": _now_iso(),
     }
     items.insert(0, item)

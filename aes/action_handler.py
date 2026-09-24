@@ -285,6 +285,9 @@ def handle_broker_removal(params: dict, logger: logging.Logger) -> int:
         logger.exception("broker-removal: enqueue failed")
         show_message("AES", f"Could not queue removal request:\n{exc}", error=True)
         return 1
+    if item is None:
+        show_message("AES", "This message is outside the Aura date window; not queued.")
+        return 0
 
     logger.info(
         "broker-removal queued id=%s broker=%s sender=%s domain=%s",

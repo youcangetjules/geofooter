@@ -7588,6 +7588,27 @@ GURI: {data.get('guri', 'N/A')} | (C) Aliniant Labs 2025 | Created: {data.get('c
 """
         return signature
 
+def _notify_guri_scan_finished() -> None:
+    """Tell a running GURI that AES just finished a scan (Push mode)."""
+    try:
+        from PySide6.QtCore import QCoreApplication
+        from PySide6.QtNetwork import QLocalSocket
+
+        app = QCoreApplication.instance()
+        if app is None:
+            app = QCoreApplication([])
+        sock = QLocalSocket()
+        sock.connectToServer("GeoFooter_GURI_GUI_v1")
+        if not sock.waitForConnected(300):
+            return
+        sock.write(b"PUSH\n")
+        sock.flush()
+        sock.waitForBytesWritten(300)
+        sock.disconnectFromServer()
+    except Exception:
+        return
+
+
 def main():
     """Main execution function."""
     import sys
@@ -7741,6 +7762,7 @@ def main():
         # CRITICAL: Only output the footer file path to stdout (single line, no extra text)
         # This is what VBA expects to capture
         print(output_file)
+        _notify_guri_scan_finished()
         try:
             logging.shutdown()
         except Exception:

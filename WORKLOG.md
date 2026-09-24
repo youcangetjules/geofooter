@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.6: One Refresh, Push/Pull pill, Settings tab
+- Removed the Welcome Refresh buttons. One Refresh is on the top-right bar, next to a Push/Pull pill. Push waits for AES (`PUSH` on the GURI local socket). Pull keeps the Outlook poll timer.
+- Settings is the last tab, after Ollama.
+- Follow-up: restart GURI. No VBA re-import.
+
 ### 2026-09-24 — 1.3.5: AGS tray icon in Windows taskbar settings
 - Tray tooltip and app identity are "AGS (Aliniant Geosense Suite)". After the icon is shown, the Windows 11 NotifyIconSettings entry for this process is set IsPromoted=1 so it can appear on the taskbar.
 - Follow-up: quit and reopen GURI, then reopen the Taskbar settings page. No VBA re-import.

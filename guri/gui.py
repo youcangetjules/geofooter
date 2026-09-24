@@ -2050,6 +2050,17 @@ class GURIViewerGUI(QMainWindow):
         db_tab_btn.clicked.connect(self._focus_database_tab)
         conn_layout.addWidget(db_tab_btn)
 
+        self.ingest_pill = QPushButton("Pull")
+        self.ingest_pill.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.ingest_pill.clicked.connect(self._toggle_ingest_mode)
+        conn_layout.addWidget(self.ingest_pill)
+
+        screen_refresh_btn = QPushButton("Refresh")
+        screen_refresh_btn.setToolTip("Reload the Welcome dashboard from Outlook now")
+        screen_refresh_btn.clicked.connect(self._refresh_welcome_live)
+        conn_layout.addWidget(screen_refresh_btn)
+        self._apply_ingest_pill_style()
+
         # Add to main widget
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -2126,10 +2137,109 @@ class GURIViewerGUI(QMainWindow):
 
         # Tab 12: Ollama
         self._create_ollama_tab()
+
+        # Settings stays the rightmost tab (next to Ollama).
+        self._create_settings_tab()
         
         # Add notebook to main layout
         self.main_layout.addWidget(self.notebook)
     
+    def _apply_ingest_pill_style(self) -> None:
+        btn = getattr(self, "ingest_pill", None)
+        if btn is None:
+            return
+        push = getattr(self, "_ingest_mode", "pull") == "push"
+        if push:
+            btn.setText("Push")
+            btn.setToolTip(
+                "Push: AES tells GURI as soon as a scan finishes. "
+                "Click to switch to Pull."
+            )
+            btn.setStyleSheet(
+                "QPushButton { background:#1b7a3d; color:#ffffff; border:none; "
+                "border-radius:12px; padding:4px 16px; font-weight:700; }"
+                "QPushButton:hover { background:#166533; }"
+            )
+        else:
+            btn.setText("Pull")
+            btn.setToolTip(
+                "Pull: GURI polls Outlook on a timer. Click to switch to Push."
+            )
+            btn.setStyleSheet(
+                "QPushButton { background:#0f6b7c; color:#ffffff; border:none; "
+                "border-radius:12px; padding:4px 16px; font-weight:700; }"
+                "QPushButton:hover { background:#0c5563; }"
+            )
+
+    def _apply_ingest_mode(self) -> None:
+        """Push: wait for AES. Pull: poll Outlook on the scrape timer."""
+        push = getattr(self, "_ingest_mode", "pull") == "push"
+        timer = getattr(self, "scrape_timer", None)
+        if timer is None:
+            return
+        if push:
+            timer.stop()
+        elif not timer.isActive():
+            timer.start(int(getattr(self, "_auto_scrape_interval_ms", 5 * 60 * 1000)))
+        self._apply_ingest_pill_style()
+
+    def _toggle_ingest_mode(self, _checked: bool = False) -> None:
+        self._ingest_mode = "pull" if getattr(self, "_ingest_mode", "pull") == "push" else "push"
+        self._apply_ingest_mode()
+        self._persist_scrape_settings()
+        if self._ingest_mode == "push":
+            self.status_bar.showMessage("Push: AES will update GURI when a scan finishes")
+        else:
+            self.status_bar.showMessage("Pull: GURI will poll Outlook on a timer")
+
+    def note_aes_push(self) -> None:
+        """AES finished a scan. In Push mode, refresh immediately."""
+        if getattr(self, "_ingest_mode", "pull") != "push":
+            return
+        self.status_bar.showMessage("AES pushed a new scan — refreshing")
+        self._refresh_welcome_live()
+
+    def _create_settings_tab(self) -> None:
+        """Rightmost tab. Ingest mode lives on the top bar; this explains it."""
+        frame = QWidget()
+        self.notebook.addTab(frame, "Settings")
+        root = QVBoxLayout(frame)
+        root.setContentsMargins(20, 20, 20, 20)
+        root.setSpacing(12)
+
+        title = QLabel("Settings")
+        title.setStyleSheet(
+            f"font-size: 18px; font-weight: 700; color: {PALETTE['accent']};"
+        )
+        root.addWidget(title)
+
+        blurb = QLabel(
+            "Refresh is the button at the top right. The pill beside it chooses "
+            "how new mail reaches this window."
+        )
+        blurb.setWordWrap(True)
+        root.addWidget(blurb)
+
+        mode_box = QGroupBox("Mail updates")
+        mode_layout = QVBoxLayout(mode_box)
+        push = QLabel(
+            "Push — Outlook, through AES, tells GURI as soon as a scan finishes. "
+            "GURI does not poll."
+        )
+        push.setWordWrap(True)
+        pull = QLabel(
+            "Pull — GURI polls Outlook on a timer and refreshes the Welcome page "
+            "from that scrape."
+        )
+        pull.setWordWrap(True)
+        mode_layout.addWidget(push)
+        mode_layout.addWidget(pull)
+        here = QPushButton("Switch Push / Pull")
+        here.clicked.connect(self._toggle_ingest_mode)
+        mode_layout.addWidget(here, alignment=Qt.AlignmentFlag.AlignLeft)
+        root.addWidget(mode_box)
+        root.addStretch(1)
+
     def _create_about_tab(self):
         """About / version tab (leftmost)."""
         frame = QWidget()
@@ -2285,11 +2395,7 @@ class GURIViewerGUI(QMainWindow):
         self.timeline_radio_today.toggled.connect(self._on_timeline_mode_toggled)
         info_layout.addWidget(self.timeline_radio_today)
         info_layout.addWidget(self.timeline_radio_24h)
-        
-        refresh_timeline_btn = QPushButton("Refresh")
-        refresh_timeline_btn.clicked.connect(self._refresh_welcome_live)
-        info_layout.addWidget(refresh_timeline_btn)
-        
+
         timeline_layout.addWidget(info_frame)
 
         legend = QLabel(
@@ -2422,10 +2528,6 @@ class GURIViewerGUI(QMainWindow):
         emails_toolbar.addWidget(emails_heading)
         emails_toolbar.addStretch(1)
 
-        refresh_important_btn = QPushButton("Refresh")
-        refresh_important_btn.clicked.connect(self._refresh_welcome_live)
-        emails_toolbar.addWidget(refresh_important_btn)
-
         scrape_btn = QPushButton("Scrape Outlook")
         scrape_btn.setToolTip(
             "Pull recent Inbox mail from AES-enabled accounts and detect actions."
@@ -2522,11 +2624,8 @@ class GURIViewerGUI(QMainWindow):
         actions_layout.addWidget(self.actions_tree)
 
         actions_btns = QHBoxLayout()
-        refresh_actions_btn = QPushButton("Refresh Actions")
-        refresh_actions_btn.clicked.connect(self._refresh_welcome_live)
         open_outlook_btn = QPushButton("Open in Outlook")
         open_outlook_btn.clicked.connect(self._open_selected_action_in_outlook)
-        actions_btns.addWidget(refresh_actions_btn)
         actions_btns.addWidget(open_outlook_btn)
         actions_btns.addStretch(1)
         actions_layout.addLayout(actions_btns)
@@ -2632,12 +2731,7 @@ class GURIViewerGUI(QMainWindow):
         stats_container_layout.addWidget(yesterday_frame)
         
         stats_layout.addWidget(stats_container)
-        
-        # Refresh button
-        refresh_stats_btn = QPushButton("Refresh Statistics")
-        refresh_stats_btn.clicked.connect(self._refresh_welcome_live)
-        stats_layout.addWidget(refresh_stats_btn)
-        
+
         right_layout.addWidget(stats_frame)
         self.welcome_stats_frame = stats_frame
 
@@ -9901,6 +9995,8 @@ Current Page: {self.current_page + 1}
         self.scrape_lookback_months = months if locked else months
         self.scrape_lookback_locked = locked
         self.scrape_unread_only = bool(cfg.get("unread_only"))
+        mode = str(cfg.get("ingest_mode") or "pull").lower()
+        self._ingest_mode = "push" if mode == "push" else "pull"
         if locked and months > 0:
             self.scrape_days = lookback_months_to_days(months)
         elif not locked:
@@ -9914,6 +10010,7 @@ Current Page: {self.current_page + 1}
                     "lookback_months": int(getattr(self, "scrape_lookback_months", 0) or 0),
                     "lookback_locked": bool(getattr(self, "scrape_lookback_locked", False)),
                     "unread_only": bool(getattr(self, "scrape_unread_only", False)),
+                    "ingest_mode": getattr(self, "_ingest_mode", "pull"),
                 }
             )
         except Exception as exc:
@@ -12417,6 +12514,7 @@ Preview:
         self._schedule_welcome_refresh(allow_db_fallback=False)
         # First Outlook scrape shortly after startup (then via scrape_timer)
         QTimer.singleShot(8000, lambda: self._start_outlook_scrape(manual=False))
+        self._apply_ingest_mode()
     
     def _auto_refresh_welcome(self):
         """Auto-refresh Welcome panels every 60 seconds (no Outlook COM)."""
@@ -12435,6 +12533,8 @@ Preview:
         """Periodic light Outlook scrape (default every 5 minutes)."""
         try:
             if not getattr(self, "_auto_scrape_enabled", True):
+                return
+            if getattr(self, "_ingest_mode", "pull") == "push":
                 return
             if self._scrape_busy or getattr(self, "_expanding_to_screen", False):
                 return
@@ -12976,7 +13076,9 @@ def main():
             except Exception:
                 raw = "RAISE"
             upper = raw.upper()
-            if "AURA" in upper or "BROKER" in upper:
+            if "PUSH" in upper:
+                window.note_aes_push()
+            elif "AURA" in upper or "BROKER" in upper:
                 window.show_aura_tab()
             elif "RAISE" in upper or not raw.strip():
                 window.expand_to_screen()

@@ -54,6 +54,7 @@ def load_scrape_settings() -> Dict[str, Any]:
         "lookback_months": months,
         "lookback_locked": bool(data.get("lookback_locked")) and months > 0,
         "unread_only": bool(data.get("unread_only")),
+        "ingest_mode": "push" if str(data.get("ingest_mode") or "").lower() == "push" else "pull",
     }
 
 
@@ -67,6 +68,7 @@ def save_scrape_settings(settings: Dict[str, Any]) -> Path:
         "lookback_months": months,
         "lookback_locked": bool(settings.get("lookback_locked")) and months > 0,
         "unread_only": bool(settings.get("unread_only")),
+        "ingest_mode": "push" if str(settings.get("ingest_mode") or "").lower() == "push" else "pull",
         "updated": datetime.now().isoformat(timespec="seconds"),
     }
     save_json(path, payload)

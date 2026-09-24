@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.6] — 2026-09-24
+
+### Changed
+
+- Welcome no longer has its own Refresh buttons. One **Refresh** sits at the top right. The pill beside it is **Push** (AES tells GURI as soon as a scan finishes) or **Pull** (GURI polls Outlook on a timer).
+- **Settings** is the rightmost tab, next to Ollama.
+
 ## [1.3.5] — 2026-09-24
 
 ### Fixed

@@ -23,42 +23,51 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 ## [1.2.5] — 2026-09-24
 
 ### Fixed
+
 - Garbled punctuation (`â€”`) in VBA dialog titles and messages. All `VBA\*.bas` / `*.cls` are now pure ASCII (97 replacements), because the VBA editor imports them as ANSI.
 
 ### Added
+
 - CI smoke test `test_vba_modules_are_ascii` so non-ASCII can't creep back into VBA modules.
 
 ## [1.2.4] — 2026-09-24
 
 ### Fixed
+
 - `scripts/Import_VBA_to_Outlook.ps1` now runs VBE Compile + Save after importing. Without the save, restarting Outlook reloaded the old `VbaProject.OTM`, so the buttons ran pre-1.2.1 code that looks for `guri_gui.py` / `VBA\geolocate_headers.py` and did nothing.
 
 ## [1.2.3] — 2026-09-24
 
 ### Added
+
 - `environment.yml` for Conda/CI; `tests/test_ci_smoke.py` package smoke tests.
 - `MSCANToolbar.RecoverAesUi` to rebuild the AES CommandBar after a VBA re-import.
 
 ### Fixed
+
 - Conda GitHub Action failed (missing `environment.yml`).
 - GURI/Aura ribbon: always direct-launch `guri\gui.py --raise` so a cold start works; broader Python path search; set process working directory to install root.
 - Ribbon error text points at Compile + `RecoverAesUi` when the VBA toolbar is missing.
 
 ### Changed
+
 - AGENTS: bump SemVer on every meaningful patch commit.
 
 ## [1.2.2] — 2026-09-24
 
 ### Added
+
 - `scripts/Import_VBA_to_Outlook.ps1` (+ `.bat`) to remove/re-import AES `MSCAN*` modules into the running Outlook VBA project (AccessVBOM required; optional `-SyncThisOutlookSession`).
 - `docs/bug_tracker.md` for open/closed suite defects.
 
 ### Changed
+
 - `VBA/IMPORT.txt`, README, and AGENTS point at the automated import path.
 
 ## [1.2.1] — 2026-09-24
 
 ### Changed
+
 - Python code reorganised into packages under the install root:
   - `aes/` — scan engine (`geolocate_headers.py`), checks, dialogs, `action_handler.py`, `secret_store.py`
   - `aes/scanners/` — attachment / body / link / AV / Norton / Defender scanners
@@ -70,11 +79,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 - VBA, the ribbon host, and the launchers in `scripts\` resolve every script through the install root.
 
 ### Fixed
+
 - The newer `link_scanner` copy (previously shadowed by a stale root duplicate) is now the one that loads.
 
 ## [1.2.0] — 2026-09-24
 
 ### Added
+
 - **Aura** (Aliniant Universal Removal Application): Outlook ribbon / toolbar button, `aes_aura` icons, GURI `--aura` / IPC `AURA`, broker-removal workspace tab.
 - Threat-intelligence RiskTable multi-engine **consensus scoring** (VirusTotal lone hits such as 1/91 stay clean).
 - Clickable footer metrics (Attachments / Beacons / Links) via `aes://open-report`.
@@ -82,6 +93,7 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 - Agent/project docs: `AGENTS.md`, `SKILLS.md`, `WORKLOG.md`.
 
 ### Changed
+
 - Create-GURI persists document paths: `guri_records.avg_risk` widened to **TEXT**; failed inserts raise instead of silent success.
 - Document-type radios share one exclusive group across Standard / Aliniant / Sensitive.
 - RiskTable banner wording: `{n} found on RiskTable`.
@@ -89,12 +101,14 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 - IP / RDAP allocation preference over misleading BGP org labels where applicable.
 
 ### Security
+
 - Local DB credentials (`guri_*_config.json`) are **not** published; use `*.example.json` templates only.
 - Rotate any passwords that previously lived in local git history before this public release.
 
 ## [1.1.0] — 2026-08-10
 
 ### Added
+
 - User rules with compile + local enforcement; Locations file scrape.
 - Identity / not-for-me deadlines; timeline importance colours; scrape lookback months.
 - About tab + `version.py`.
@@ -102,6 +116,7 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 ## [1.0.0] — 2026-01-02
 
 ### Added
+
 - GURI database viewer, Outlook scrape, deadlines, learning loop, Ollama.
 
 [Unreleased]: https://github.com/youcangetjules/geofooter/compare/v1.2.0...HEAD

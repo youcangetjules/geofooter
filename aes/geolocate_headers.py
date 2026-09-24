@@ -4043,28 +4043,27 @@ Live Safe Browsing lookups are optional and separate.</p>
         if not planned:
             return ""
 
-        # Label plus one cell per chip, equal shares, so the row is centred
-        # and the gaps stay proportional.
-        slots = len(planned) + 1
-        share = int(100 / slots)
-        label = (
-            f"<td align='center' width='{share}%' "
-            "style='color:#ffffff; font-family:Arial,sans-serif; font-size:10px; "
-            "font-weight:bold; text-align:center; vertical-align:middle;'>"
-            "Quick Actions:</td>"
+        # Shrink-wrapped row so the chips sit together. A 20px spacer cell is
+        # what Outlook actually honours between them.
+        spacer = (
+            "<td width='20' style='width:20px; font-size:1px; line-height:1px;'>&nbsp;</td>"
         )
-        cells = []
+        parts = [
+            "<td style='color:#ffffff; font-family:Arial,sans-serif; font-size:10px; "
+            "font-weight:bold; white-space:nowrap; vertical-align:middle;'>"
+            "Quick Actions:</td>"
+        ]
         for code, url, bg, fg in planned:
-            cells.append(
-                f"<td align='center' width='{share}%' "
-                "style='text-align:center; vertical-align:middle; padding:3px 0;'>"
+            parts.append(spacer)
+            parts.append(
+                "<td style='vertical-align:middle;'>"
                 f"{chip(url, code, bg, fg)}</td>"
             )
         return (
-            "<div style='font-weight:normal; margin-top:4px;'>"
-            "<table border='0' cellpadding='0' cellspacing='0' width='100%' align='center' "
-            "style='border-collapse:separate;'>"
-            f"<tr>{label}{''.join(cells)}</tr></table></div>"
+            "<div style='font-weight:normal; margin-top:4px; text-align:center;'>"
+            "<table border='0' cellpadding='0' cellspacing='0' align='center' "
+            "style='border-collapse:separate; margin:0 auto;'>"
+            f"<tr>{''.join(parts)}</tr></table></div>"
         )
     
     def _calculate_domain_age(self, creation_date: str) -> Optional[int]:

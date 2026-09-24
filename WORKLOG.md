@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.8: Quick Action chips grouped with 20px gaps
+- The footer row no longer stretches each chip across the bar. Quick Actions and the chips are one centred group, with a 20px spacer between chips.
+- Follow-up: a new scan is required before an existing mail shows the tighter row. No VBA re-import.
+
 ### 2026-09-24 — 1.3.7: Centred clock on the top bar
 - The connection bar shows `Now: 24 September 2026; 20:08:56`, centred between the status and the right-hand buttons, ticking every second.
 - PostgreSQL and Database… moved off the top bar onto the Settings tab.

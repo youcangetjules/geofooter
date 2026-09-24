@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.8] — 2026-09-24
+
+### Changed
+
+- Footer Quick Action chips (SL, BA, BB, TS, NT) sit together in the centre of the strip, with 20px between each chip.
+
 ## [1.3.7] — 2026-09-24
 
 ### Changed

@@ -524,9 +524,9 @@ def _refresh_open_mail_action_buttons(
             new_html = _paint_action_cell(new_html, "aes://block-beacons", "#f2f8fa", "#0f6b7c")
             new_html = _paint_action_cell(new_html, "aes://block-attachments", "#f2f8fa", "#0f6b7c")
             new_html = _re.sub(r">TS<", ">ST<", new_html)
-            new_html = _paint_short_chip(new_html, "aes://trust-sender", "#ffffff", "#1b7a3d")
-            new_html = _paint_short_chip(new_html, "aes://block-beacons", "#1b7a3d", "#ffffff")
-            new_html = _paint_short_chip(new_html, "aes://block-attachments", "#1b7a3d", "#ffffff")
+            new_html = _paint_short_chip(new_html, "aes://trust-sender", CHIP_TRUSTED_BG, "#ffffff")
+            new_html = _paint_short_chip(new_html, "aes://block-beacons", CHIP_BG, CHIP_FG)
+            new_html = _paint_short_chip(new_html, "aes://block-attachments", CHIP_BG, CHIP_FG)
         elif action == "block-beacons":
             new_html = _re.sub(
                 r">Block beacons from sender<",
@@ -536,8 +536,8 @@ def _refresh_open_mail_action_buttons(
             )
             new_html = _paint_action_cell(new_html, "aes://block-beacons", "#b71c1c", "#ffffff")
             new_html = _re.sub(r">ST<", ">TS<", new_html)
-            new_html = _paint_short_chip(new_html, "aes://block-beacons", "#c62828", "#ffffff")
-            new_html = _paint_short_chip(new_html, "aes://trust-sender", "#1b7a3d", "#ffffff")
+            new_html = _paint_short_chip(new_html, "aes://block-beacons", CHIP_BLOCKED_BG, "#ffffff")
+            new_html = _paint_short_chip(new_html, "aes://trust-sender", CHIP_BG, CHIP_FG)
             new_html = _re.sub(
                 r">Sender Trusted(?:\s*&#10003;|\s*✓)?<",
                 ">Trust sender<",
@@ -554,8 +554,8 @@ def _refresh_open_mail_action_buttons(
             )
             new_html = _paint_action_cell(new_html, "aes://block-attachments", "#b71c1c", "#ffffff")
             new_html = _re.sub(r">ST<", ">TS<", new_html)
-            new_html = _paint_short_chip(new_html, "aes://block-attachments", "#c62828", "#ffffff")
-            new_html = _paint_short_chip(new_html, "aes://trust-sender", "#1b7a3d", "#ffffff")
+            new_html = _paint_short_chip(new_html, "aes://block-attachments", CHIP_BLOCKED_BG, "#ffffff")
+            new_html = _paint_short_chip(new_html, "aes://trust-sender", CHIP_BG, CHIP_FG)
             new_html = _re.sub(
                 r">Sender Trusted(?:\s*&#10003;|\s*✓)?<",
                 ">Trust sender<",
@@ -585,8 +585,8 @@ def _refresh_open_mail_action_buttons(
             new_html = _paint_action_cell(new_html, "aes://untrust-sender", "#ef6c00", "#ffffff")
             new_html = _paint_action_cell(new_html, "aes://trust-sender", "#f2f8fa", "#0f6b7c")
             new_html = _re.sub(r">ST<", ">TS<", new_html)
-            new_html = _paint_short_chip(new_html, "aes://trust-sender", "#1b7a3d", "#ffffff")
-            new_html = _paint_short_chip(new_html, "aes://untrust-sender", "#1b7a3d", "#ffffff")
+            new_html = _paint_short_chip(new_html, "aes://trust-sender", CHIP_BG, CHIP_FG)
+            new_html = _paint_short_chip(new_html, "aes://untrust-sender", CHIP_BG, CHIP_FG)
 
         if new_html == html:
             return False
@@ -597,6 +597,13 @@ def _refresh_open_mail_action_buttons(
     except Exception as exc:
         logger.warning("Could not refresh open-mail action buttons: %s", exc)
         return False
+
+
+# Quick Action chip colours; mirror AES_CHIP_* in geolocate_headers.py.
+CHIP_BG = "#ffffff"
+CHIP_FG = "#0f1f2a"
+CHIP_BLOCKED_BG = "#d92d20"
+CHIP_TRUSTED_BG = "#1b7a3d"
 
 
 def _paint_action_cell(html: str, href_prefix: str, bg: str, fg: str) -> str:

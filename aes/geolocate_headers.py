@@ -544,6 +544,27 @@ def risk_color_for_level(level: str) -> str:
     return RISK_LEVEL_COLORS.get(str(level or "").upper(), "#888888")
 
 
+# Footer scan strip: one dark slate background, white type, muted dividers.
+AES_STRIP_BG = "#0f1f2a"
+AES_STRIP_TEXT = "#ffffff"
+AES_STRIP_MUTED = "#9fb3bf"
+AES_STRIP_RULE = "#24394a"
+AES_STRIP_DIVIDER = "#4d6575"
+# Quick Action chips on that strip. Default is a white pill with slate text.
+AES_CHIP_BG = "#ffffff"
+AES_CHIP_FG = "#0f1f2a"
+AES_CHIP_BLOCKED_BG = "#d92d20"
+AES_CHIP_TRUSTED_BG = "#1b7a3d"
+
+
+def strip_separators(inner_html: str) -> str:
+    """Turn ' | ' text separators into muted hairline dividers."""
+    divider = (
+        f"<span style='color:{AES_STRIP_DIVIDER}; padding:0 8px; font-weight:normal;'>|</span>"
+    )
+    return (inner_html or "").replace(" | ", divider)
+
+
 def contrasting_text_color(background: str) -> str:
     """Near-black or white, whichever meets contrast on this banner colour.
 
@@ -4023,10 +4044,10 @@ Live Safe Browsing lookups are optional and separate.</p>
         query = urllib.parse.urlencode(
             {"sender": sender, "domain": domain, "guri": guri or ""}
         )
-        green_bg, green_fg = "#1b7a3d", "#ffffff"
-        red_bg, red_fg = "#c62828", "#ffffff"
-        # Trusted state is the letters themselves in green, not white-on-green.
-        trust_bg, trust_fg = "#ffffff", "#1b7a3d"
+        green_bg, green_fg = AES_CHIP_BG, AES_CHIP_FG
+        red_bg, red_fg = AES_CHIP_BLOCKED_BG, "#ffffff"
+        # Trusted sender: the chip fills green so it reads at a glance.
+        trust_bg, trust_fg = AES_CHIP_TRUSTED_BG, "#ffffff"
 
         def chip(url: str, code: str, bg: str, fg: str) -> str:
             border = bg if bg != "#ffffff" else fg
@@ -4036,10 +4057,10 @@ Live Safe Browsing lookups are optional and separate.</p>
                 "style='border-collapse:separate;'>"
                 f"<tr><td bgcolor='{bg}' align='center' width='78' "
                 f"style='background:{bg}; border:1px solid {border}; "
-                f"width:78px; text-align:center; border-radius:3px; padding:3px 0;'>"
+                f"width:78px; text-align:center; border-radius:3px; padding:5px 0;'>"
                 f"<a href='{html.escape(url, quote=True)}' "
                 f"style='color:{fg}; font-family:Arial,sans-serif; "
-                f"font-size:10px; font-weight:bold; text-decoration:none;'>"
+                f"font-size:10px; font-weight:bold; letter-spacing:1px; text-decoration:none;'>"
                 f"{code}</a>"
                 "</td></tr></table>"
             )
@@ -4081,10 +4102,12 @@ Live Safe Browsing lookups are optional and separate.</p>
             "<td width='20' style='width:20px; font-size:1px; line-height:1px;'>&nbsp;</td>"
         )
         label_color = contrasting_text_color(banner_bg)
+        if label_color == "#ffffff":
+            label_color = AES_STRIP_MUTED
         parts = [
-            "<td style='font-family:Arial,sans-serif; font-size:10px; "
-            "font-weight:bold; white-space:nowrap; vertical-align:middle;'>"
-            f"<span style='color:{label_color};'>Quick Actions:</span></td>"
+            "<td style='font-family:Arial,sans-serif; font-size:9px; "
+            "font-weight:bold; letter-spacing:1.5px; white-space:nowrap; vertical-align:middle;'>"
+            f"<span style='color:{label_color};'>QUICK ACTIONS</span></td>"
         ]
         for code, url, bg, fg in planned:
             parts.append(spacer)
@@ -4093,7 +4116,7 @@ Live Safe Browsing lookups are optional and separate.</p>
                 f"{chip(url, code, bg, fg)}</td>"
             )
         return (
-            "<div style='font-weight:normal; margin-top:4px; text-align:center;'>"
+            "<div style='font-weight:normal; text-align:center;'>"
             "<table border='0' cellpadding='0' cellspacing='0' align='center' "
             "style='border-collapse:separate; margin:0 auto;'>"
             f"<tr>{''.join(parts)}</tr></table></div>"
@@ -5151,15 +5174,43 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             str(data.get("guri") or ""),
             block_state,
             str(data.get("links_report_url") or ""),
-            risk_bg,
+            AES_STRIP_BG,
         )
+        # Risk is a small coloured dot beside the label; the strip itself is
+        # one flat slate colour.
+        risk_dot = (
+            f"<span style='color:{risk_color_for_level(risk)}; font-size:11px; "
+            f"padding-right:5px;'>&#9679;</span>"
+        )
+        summary_line1 = strip_separators(summary_line1)
+        summary_line2 = strip_separators(summary_line2)
+        if "Risk" in summary_line1 and risk_dot not in summary_line1:
+            summary_line1 = re.sub(
+                r"(<a [^>]*>)?(Risk\s)",
+                lambda m: f"{risk_dot}{m.group(1) or ''}{m.group(2)}",
+                summary_line1,
+                count=1,
+            )
+        actions_row = ""
+        if quick_actions:
+            actions_row = (
+                f"<tr><td style='padding:0 16px 12px 16px;'>"
+                f"<div style='border-top:1px solid {AES_STRIP_RULE}; margin:0 0 10px 0; "
+                f"font-size:1px; line-height:1px;'>&nbsp;</div>"
+                f"{quick_actions}</td></tr>"
+            )
         summary_block = (
-            f"<div style='background:{risk_bg}; color:#fff; font-weight:bold; font-size:12px; "
-            f"padding:4px 6px; text-align:center; line-height:1.35;'>"
-            f"<div>{summary_line1}</div>"
-            f"<div style='font-size:10px; font-weight:normal; margin-top:2px;'>{summary_line2}</div>"
-            f"{quick_actions}"
-            f"</div>"
+            f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
+            f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
+            f"border-collapse:collapse;'>"
+            f"<tr><td style='padding:12px 16px 3px 16px; text-align:center; "
+            f"color:{AES_STRIP_TEXT}; font-family:Arial,sans-serif; font-size:12px; "
+            f"font-weight:bold; letter-spacing:0.3px; line-height:1.4;'>{summary_line1}</td></tr>"
+            f"<tr><td style='padding:0 16px 12px 16px; text-align:center; "
+            f"color:{AES_STRIP_MUTED}; font-family:Arial,sans-serif; font-size:10px; "
+            f"font-weight:normal; line-height:1.5;'>{summary_line2}</td></tr>"
+            f"{actions_row}"
+            f"</table>"
         )
 
         # Top-of-mail banners sit outside the AES footer block so VBA can
@@ -5210,7 +5261,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
                 f"{mitigate_markers}"
                 f"<!-- AES Start -->\n"
                 f"<a id='aes-footer-start' name='aes-footer-start'></a>\n"
-                f"<div style='margin:0; padding:2px; background:#fff; font-family:Arial, sans-serif; "
+                f"<div style='margin:0; padding:0; background:#fff; font-family:Arial, sans-serif; "
                 f"font-size:11px; color:#333;'>{summary_block}</div>\n"
                 f"<a id='aes-footer-end' name='aes-footer-end'></a>\n"
                 f"<!-- AES End -->"
@@ -5222,7 +5273,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"{mitigate_markers}"
             f"<!-- AES Start -->\n"
             f"<a id='aes-footer-start' name='aes-footer-start'></a>\n"
-            f"<div style='margin:0; padding:2px; background:#fff; font-family:Arial, sans-serif; "
+            f"<div style='margin:0; padding:0; background:#fff; font-family:Arial, sans-serif; "
             f"font-size:11px; color:#333;'>"
             f"{summary_block}\n"
             f"<!-- AES Full Start -->\n"

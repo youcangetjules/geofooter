@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.12] — 2026-09-24
+
+### Changed
+
+- The AES footer strip is redesigned: one flat dark-slate background (`#0f1f2a`), white heading, muted detail line, and hairline `|` dividers instead of the green-to-red gradient. Risk shows as a small coloured dot beside the label.
+- Quick Action chips are white pills with slate letters so they lift off the strip. Blocked attachments/beacons fill red; a trusted sender fills green.
+
 ## [1.3.11] — 2026-09-24
 
 ### Changed

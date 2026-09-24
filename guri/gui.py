@@ -2287,7 +2287,7 @@ class GURIViewerGUI(QMainWindow):
         info_layout.addWidget(self.timeline_radio_24h)
         
         refresh_timeline_btn = QPushButton("Refresh")
-        refresh_timeline_btn.clicked.connect(self._refresh_email_timeline)
+        refresh_timeline_btn.clicked.connect(self._refresh_welcome_live)
         info_layout.addWidget(refresh_timeline_btn)
         
         timeline_layout.addWidget(info_frame)
@@ -2423,7 +2423,7 @@ class GURIViewerGUI(QMainWindow):
         emails_toolbar.addStretch(1)
 
         refresh_important_btn = QPushButton("Refresh")
-        refresh_important_btn.clicked.connect(self._refresh_important_emails)
+        refresh_important_btn.clicked.connect(self._refresh_welcome_live)
         emails_toolbar.addWidget(refresh_important_btn)
 
         scrape_btn = QPushButton("Scrape Outlook")
@@ -2523,7 +2523,7 @@ class GURIViewerGUI(QMainWindow):
 
         actions_btns = QHBoxLayout()
         refresh_actions_btn = QPushButton("Refresh Actions")
-        refresh_actions_btn.clicked.connect(self._refresh_actions_panel)
+        refresh_actions_btn.clicked.connect(self._refresh_welcome_live)
         open_outlook_btn = QPushButton("Open in Outlook")
         open_outlook_btn.clicked.connect(self._open_selected_action_in_outlook)
         actions_btns.addWidget(refresh_actions_btn)
@@ -2635,7 +2635,7 @@ class GURIViewerGUI(QMainWindow):
         
         # Refresh button
         refresh_stats_btn = QPushButton("Refresh Statistics")
-        refresh_stats_btn.clicked.connect(self._refresh_welcome_stats)
+        refresh_stats_btn.clicked.connect(self._refresh_welcome_live)
         stats_layout.addWidget(refresh_stats_btn)
         
         right_layout.addWidget(stats_frame)
@@ -3062,7 +3062,7 @@ class GURIViewerGUI(QMainWindow):
         except Exception as exc:
             QMessageBox.critical(self, "Install root", f"Could not save:\n{exc}")
 
-    def _refresh_database_browser(self) -> None:
+    def _refresh_database_browser(self, _checked: bool = False) -> None:
         if not hasattr(self, "db_info_label"):
             return
         if not self.db:
@@ -5562,7 +5562,7 @@ Current Page: {self.current_page + 1}
         self.deadline_timeline_radio_14.toggled.connect(self._on_deadline_timeline_mode)
         self.deadline_timeline_radio_30.toggled.connect(self._on_deadline_timeline_mode)
         refresh_btn = QPushButton("Refresh")
-        refresh_btn.clicked.connect(self._refresh_deadline_timeline)
+        refresh_btn.clicked.connect(lambda _checked=False: self._refresh_deadline_timeline())
         add_btn = QPushButton("Add deadline…")
         add_btn.clicked.connect(lambda: self._show_add_deadline_dialog())
         scrape_btn = QPushButton("Scrape Outlook")
@@ -6187,7 +6187,7 @@ Current Page: {self.current_page + 1}
         except ValueError:
             return None
 
-    def _refresh_deadlines_panel(self) -> None:
+    def _refresh_deadlines_panel(self, _checked: bool = False) -> None:
         if not hasattr(self, "deadlines_tree"):
             return
         try:
@@ -9284,7 +9284,7 @@ Current Page: {self.current_page + 1}
         self._refresh_library_stats()
         self._load_library_mappings()
     
-    def _refresh_library_stats(self):
+    def _refresh_library_stats(self, _checked: bool = False):
         """Refresh component library statistics."""
         if not self.component_library:
             self.library_stats_label.setText("No database connection")
@@ -10348,6 +10348,30 @@ Current Page: {self.current_page + 1}
             self.logger.error("Welcome panel refresh failed: %s", e)
         finally:
             self._welcome_refresh_busy = False
+
+    def _refresh_welcome_live(self, _checked: bool = False) -> None:
+        """Welcome Refresh buttons. Qt passes a bool; ignore it and pull Outlook.
+
+        Redrawing the cache alone left the dashboard stale, and the bool
+        argument crashed the old handlers so the click did nothing.
+        """
+        self._expanding_to_screen = False
+        self._welcome_refresh_busy = False
+        self._welcome_refresh_scheduled = False
+        try:
+            self._load_scrape_cache_into_memory()
+        except Exception as exc:
+            self.logger.debug("Reload scrape cache before refresh failed: %s", exc)
+        self._refresh_welcome_panels(allow_db_fallback=False)
+        try:
+            self._refresh_welcome_stats()
+        except Exception as exc:
+            self.logger.debug("Welcome stats refresh failed: %s", exc)
+        if getattr(self, "_scrape_busy", False):
+            self.status_bar.showMessage("Outlook scrape already running…")
+            return
+        self.status_bar.showMessage("Refreshing from Outlook…")
+        self._start_outlook_scrape(manual=False)
 
     def _request_ui_refresh_from_raise(self) -> None:
         """AES / second-instance RAISE: prove the UI is alive and redraw Welcome."""

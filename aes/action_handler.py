@@ -626,8 +626,8 @@ def _paint_short_chip(html: str, href_prefix: str, bg: str, fg: str) -> str:
 
     border = fg if bg == "#ffffff" else bg
     pattern = _re.compile(
-        r"(<td bgcolor=')([^']*)(' style='background:)([^;']+)(; border:1px solid )([^;']+)"
-        r"(;[^']*'>\s*<a href='" + _re.escape(href_prefix) + r"[^']*' style='color:)"
+        r"(<td[^>]*bgcolor=')([^']*)('[^>]*style='background:)([^;']+)(; border:1px solid )([^;']+)"
+        r"(;[^']*'[^>]*>\s*<a href='" + _re.escape(href_prefix) + r"[^']*' style='color:)"
         r"([^;']+)(;[^']*'>)([A-Za-z]{2})(</a>)",
         _re.IGNORECASE,
     )

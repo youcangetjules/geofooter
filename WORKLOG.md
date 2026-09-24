@@ -13,6 +13,14 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.4: Welcome Refresh reloads Outlook
+- The Welcome Refresh buttons were wired to methods that reject the bool Qt sends with `clicked`, so the click did nothing and the panels stayed on the old scrape. They now call `_refresh_welcome_live`, which clears a stuck refresh, redraws, and starts an Outlook scrape.
+- Follow-up: restart GURI to pick this up. No VBA re-import.
+
+### 2026-09-24 — 1.3.3: Wider, evenly spaced Quick Action chips
+- Quick Action buttons are ~78px (about 3x). "Quick Actions:" is the left slot of a full-width row; each chip gets an equal share so the set stays centred.
+- Follow-up: rescan a message to see the new row. Re-import is not required.
+
 ### 2026-09-24 — 1.3.2: Footer quick actions and one scan per chain
 - Footer summary gains a third row: Quick Actions `<SL>` `<BA>` `<BB>` `<TS>`/`<ST>` `<NT>` (white on green; blocked BA/BB red; trusted sender is green `<ST>`). Clicking an action repaints those chips.
 - `VBA\MSCANModule1.bas` strips every earlier AES/GeoFooter scan block, including ones quoted in a reply, and writes the new result once before `</body>`. A quoted footer no longer counts as "already scanned".

@@ -17,10 +17,10 @@ SemVer (MAJOR.MINOR.PATCH) — almost everything is a PATCH:
 from __future__ import annotations
 
 # Semver: MAJOR.MINOR.PATCH
-VERSION = "1.3.2"
-VERSION_TUPLE = (1, 3, 2)
+VERSION = "1.3.4"
+VERSION_TUPLE = (1, 3, 4)
 # Local release / build timestamp for this VERSION (YYYY-MM-DD HH:MM)
-VERSION_STAMP = "2026-09-24 19:25"
+VERSION_STAMP = "2026-09-24 19:35"
 
 APP_NAME = "GURI"
 APP_FULL_NAME = "GURI - Aliniant Smart Ass Email"
@@ -34,6 +34,16 @@ COPYRIGHT_YEAR = "2026"
 # Short release notes for the About tab (newest first).
 # Each entry: (version, timestamp, notes)
 RELEASE_NOTES = (
+    (
+        "1.3.4",
+        "2026-09-24 19:35",
+        "Welcome Refresh reloads Outlook. The click was ignored because Qt passed a bool the handler rejected.",
+    ),
+    (
+        "1.3.3",
+        "2026-09-24 19:30",
+        "Quick Action chips are wider and spaced evenly, with Quick Actions: on the left of that centred row.",
+    ),
     (
         "1.3.2",
         "2026-09-24 19:25",

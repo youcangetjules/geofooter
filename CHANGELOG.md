@@ -20,6 +20,18 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.4] — 2026-09-24
+
+### Fixed
+
+- Welcome Refresh (timeline, matching emails, actions, statistics) ignored the click: Qt passed a bool into handlers that did not accept it, so the dashboard never reloaded. Refresh now redraws and pulls a fresh Outlook scrape.
+
+## [1.3.3] — 2026-09-24
+
+### Changed
+
+- Quick Action chips are about three times as wide. "Quick Actions:" sits on the left of that row; the label and the chips share the footer width in equal slots so the row stays centred.
+
 ## [1.3.2] — 2026-09-24
 
 ### Added

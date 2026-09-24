@@ -3998,62 +3998,43 @@ Live Safe Browsing lookups are optional and separate.</p>
 
         def chip(url: str, code: str, bg: str, fg: str) -> str:
             border = bg if bg != "#ffffff" else fg
+            # ~3x the original two-letter chip. width= is what Outlook honours.
             return (
-                "<td style='padding:0 1px; vertical-align:middle;'>"
-                "<table border='0' cellpadding='0' cellspacing='0' "
+                "<table border='0' cellpadding='0' cellspacing='0' width='78' align='center' "
                 "style='border-collapse:separate;'>"
-                f"<tr><td bgcolor='{bg}' "
+                f"<tr><td bgcolor='{bg}' align='center' width='78' "
                 f"style='background:{bg}; border:1px solid {border}; "
-                f"border-radius:3px; padding:1px 5px;'>"
+                f"width:78px; text-align:center; border-radius:3px; padding:3px 0;'>"
                 f"<a href='{html.escape(url, quote=True)}' "
                 f"style='color:{fg}; font-family:Arial,sans-serif; "
                 f"font-size:10px; font-weight:bold; text-decoration:none;'>"
                 f"{code}</a>"
-                "</td></tr></table></td>"
+                "</td></tr></table>"
             )
 
-        def item(caption: str, code: str, url: str, bg: str, fg: str, *, trail: bool) -> str:
-            semi = (
-                "<td style='color:#ffffff; font-family:Arial,sans-serif; "
-                "font-size:10px; font-weight:normal; padding:0 2px;'>;</td>"
-                if trail
-                else ""
-            )
-            return (
-                "<td style='color:#ffffff; font-family:Arial,sans-serif; "
-                "font-size:10px; font-weight:normal; padding:0 3px 0 6px; "
-                f"vertical-align:middle;'>{caption}</td>"
-                f"{chip(url, code, bg, fg)}{semi}"
-            )
-
-        cells: List[str] = []
-        planned: List[Tuple[str, str, str, str, str]] = []
+        planned: List[Tuple[str, str, str, str]] = []
         if links_href:
-            planned.append(("Show Links", "SL", links_href, green_bg, green_fg))
+            planned.append(("SL", links_href, green_bg, green_fg))
         if has_sender:
             planned.append((
-                "Block Attachments",
                 "BA",
                 f"aes://block-attachments?{query}",
                 red_bg if att_on else green_bg,
                 red_fg if att_on else green_fg,
             ))
             planned.append((
-                "Block Beacons",
                 "BB",
                 f"aes://block-beacons?{query}",
                 red_bg if bcn_on else green_bg,
                 red_fg if bcn_on else green_fg,
             ))
             planned.append((
-                "Trust Sender",
                 "ST" if trusted else "TS",
                 f"aes://trust-sender?{query}",
                 trust_bg if trusted else green_bg,
                 trust_fg if trusted else green_fg,
             ))
             planned.append((
-                "Mark Not Trusted",
                 "NT",
                 f"aes://untrust-sender?{query}",
                 green_bg,
@@ -4061,18 +4042,29 @@ Live Safe Browsing lookups are optional and separate.</p>
             ))
         if not planned:
             return ""
-        for i, (caption, code, url, bg, fg) in enumerate(planned):
-            cells.append(item(caption, code, url, bg, fg, trail=i < len(planned) - 1))
 
+        # Label plus one cell per chip, equal shares, so the row is centred
+        # and the gaps stay proportional.
+        slots = len(planned) + 1
+        share = int(100 / slots)
+        label = (
+            f"<td align='center' width='{share}%' "
+            "style='color:#ffffff; font-family:Arial,sans-serif; font-size:10px; "
+            "font-weight:bold; text-align:center; vertical-align:middle;'>"
+            "Quick Actions:</td>"
+        )
+        cells = []
+        for code, url, bg, fg in planned:
+            cells.append(
+                f"<td align='center' width='{share}%' "
+                "style='text-align:center; vertical-align:middle; padding:3px 0;'>"
+                f"{chip(url, code, bg, fg)}</td>"
+            )
         return (
             "<div style='font-weight:normal; margin-top:4px;'>"
-            "<table border='0' cellpadding='0' cellspacing='0' align='center' "
-            "style='border-collapse:separate; margin:0 auto;'>"
-            "<tr>"
-            "<td style='color:#ffffff; font-family:Arial,sans-serif; font-size:10px; "
-            "font-weight:bold; padding-right:2px; vertical-align:middle;'>Quick Actions:</td>"
-            f"{''.join(cells)}"
-            "</tr></table></div>"
+            "<table border='0' cellpadding='0' cellspacing='0' width='100%' align='center' "
+            "style='border-collapse:separate;'>"
+            f"<tr>{label}{''.join(cells)}</tr></table></div>"
         )
     
     def _calculate_domain_age(self, creation_date: str) -> Optional[int]:

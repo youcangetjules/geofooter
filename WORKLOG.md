@@ -13,6 +13,9 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — Move suite icons to assets/icons
+- Corrected accidental `assets/icons_tmp` path from prior commit; icons live at `assets/icons/` (`geofooter_paths.icons_dir`).
+
 ### 2026-09-24 — AesRibbonHost verify: no false CoCreate FAIL
 - `verify32.ps1` / `install.ps1`: success is CLSID + InprocServer32 present; CoCreate while Outlook holds the DLL is reported as skipped, not FAIL.
 - Explicit CLSID fallback now uses the built DLL’s FileVersion (was hard-coded 1.0.0.0).

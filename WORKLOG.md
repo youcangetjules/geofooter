@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 - 1.2.8: MSCANSelfUpdate when AccessVBOM is already 1
+
+- What: `VBA\MSCANSelfUpdate.bas` now nudges Alt+F11 and retries `Application.VBE`; if still Nothing, shows a manual File > Import checklist (clipboard + open VBA folder) via `ShowAesImportChecklist`, without blaming AccessVBOM when it is already 1.
+- Why: AccessVBOM=1 confirmed; VBE still Nothing in-process from `UpdateAesFromDisk` and from external COM.
+- Follow-up: re-import `MSCANSelfUpdate.bas` then Alt+F11 + `UpdateAesFromDisk`, or use the checklist.
 ### 2026-09-24 — 1.2.7: CRLF for all VBA modules + .gitattributes
 - What: Converted `VBA\MSCANModule1.bas` and `VBA\MSCANToolbar.bas` from LF-only to CRLF (ASCII preserved). Added `.gitattributes` locking `*.bas` / `*.cls` to `eol=crlf`. Bumped suite to 1.2.7.
 - Why: Outlook File > Import chokes on LF-only `.bas` modules; the two large modules needed CRLF so `UpdateAesFromDisk` / File > Import can load them cleanly.

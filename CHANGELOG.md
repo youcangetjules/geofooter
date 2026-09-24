@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.2.8] — 2026-09-24
+
+### Fixed
+
+- `MSCANSelfUpdate`: no longer tells you to set AccessVBOM when it is already 1. Nudges Alt+F11 and retries; if `Application.VBE` is still Nothing, opens the VBA folder and pastes a remove/import checklist (File > Import does not need VBOM access).
+
 ## [1.2.7] — 2026-09-24
 
 ### Fixed

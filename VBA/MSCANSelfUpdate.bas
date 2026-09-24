@@ -2,14 +2,14 @@ Attribute VB_Name = "MSCANSelfUpdate"
 '===============================================================================
 ' MSCANSelfUpdate - re-import AES modules from disk, from INSIDE Outlook.
 '
-' Outlook often returns Nothing for Application.VBE to external COM callers
-' (scripts\Import_VBA_to_Outlook.ps1), even with AccessVBOM=1. In-process VBA
-' can still reach the project, so this module does the sync from Alt+F8.
-'
 ' One-time: File > Import File > <install root>\VBA\MSCANSelfUpdate.bas
-' Then any time: Alt+F8 > UpdateAesFromDisk, then restart Outlook.
+' Each update: Alt+F11 once (leave the editor open), then Alt+F8 >
+'              UpdateAesFromDisk. Fully quit Outlook afterwards.
 '
-' Self-contained on purpose: it must work while the other modules are stale.
+' On some Outlook builds Application.VBE stays Nothing until the VBA editor
+' has been opened in the current session, even with AccessVBOM=1. This module
+' sends Alt+F11 and retries; if VBE is still unreachable it falls back to a
+' manual import checklist (File > Import does not need AccessVBOM).
 '===============================================================================
 Option Explicit
 
@@ -17,6 +17,7 @@ Private Const SELF_NAME As String = "MSCANSelfUpdate"
 Private Const VBEXT_CT_DOCUMENT As Long = 100
 Private Const VBE_CTL_COMPILE As Long = 578
 Private Const VBE_CTL_SAVE As Long = 3
+Private Const ACCESS_VBOM_KEY As String = "HKCU\Software\Microsoft\Office\16.0\Outlook\Security\AccessVBOM"
 
 Public Sub UpdateAesFromDisk()
     Dim root As String
@@ -27,6 +28,7 @@ Public Sub UpdateAesFromDisk()
     Dim f As Variant
     Dim ok As Long
     Dim failed As Long
+    Dim accessVal As String
 
     root = ResolveRoot()
     If Len(root) = 0 Then Exit Sub
@@ -38,14 +40,17 @@ Public Sub UpdateAesFromDisk()
         Exit Sub
     End If
 
-    On Error Resume Next
-    Set proj = Application.VBE.ActiveVBProject
-    If proj Is Nothing Then Set proj = Application.VBE.VBProjects(1)
-    On Error GoTo 0
+    accessVal = ReadAccessVbom()
+    Set proj = GetVbaProject()
     If proj Is Nothing Then
-        MsgBox "Cannot reach the VBA project (Application.VBE is Nothing)." & vbCrLf & _
-               "Set AccessVBOM=1, restart Outlook, press Alt+F11 once, then retry.", _
-               vbCritical, "AES update"
+        ' Outlook often leaves VBE unloaded until the editor is opened once.
+        NudgeVbeEditor
+        SleepMs 800
+        Set proj = GetVbaProject()
+    End If
+
+    If proj Is Nothing Then
+        ShowManualImportGuide vbaDir, files, accessVal
         Exit Sub
     End If
 
@@ -64,8 +69,73 @@ Public Sub UpdateAesFromDisk()
 
     MsgBox "Imported " & ok & " module(s), " & failed & " failed." & vbCrLf & vbCrLf & _
            report & vbCrLf & _
+           "AccessVBOM registry value: " & accessVal & vbCrLf & _
            "Now fully quit Outlook (tray too) and reopen.", _
            IIf(failed = 0, vbInformation, vbExclamation), "AES update"
+End Sub
+
+' Opens the VBA folder and copies the remove/import order to the clipboard.
+Public Sub ShowAesImportChecklist()
+    Dim root As String
+    Dim vbaDir As String
+    Dim files As Collection
+
+    root = ResolveRoot()
+    If Len(root) = 0 Then Exit Sub
+    vbaDir = root & "\VBA"
+    Set files = ReadModuleList(vbaDir & "\IMPORT.txt")
+    ShowManualImportGuide vbaDir, files, ReadAccessVbom()
+End Sub
+
+Private Function GetVbaProject() As Object
+    Dim vbe As Object
+    Dim proj As Object
+    On Error Resume Next
+    Set vbe = Application.VBE
+    If Not vbe Is Nothing Then
+        Set proj = vbe.ActiveVBProject
+        If proj Is Nothing Then Set proj = vbe.VBProjects(1)
+    End If
+    On Error GoTo 0
+    Set GetVbaProject = proj
+End Function
+
+Private Sub NudgeVbeEditor()
+    On Error Resume Next
+    CreateObject("WScript.Shell").SendKeys "%{F11}"
+    On Error GoTo 0
+End Sub
+
+Private Sub ShowManualImportGuide(ByVal vbaDir As String, ByVal files As Collection, ByVal accessVal As String)
+    Dim f As Variant
+    Dim steps As String
+    Dim i As Long
+
+    steps = "Outlook will not hand over Application.VBE to macros on this session" & vbCrLf & _
+            "(AccessVBOM registry value is already " & accessVal & " - not the problem)." & vbCrLf & vbCrLf & _
+            "Do this once, by hand, with the VBA editor open (Alt+F11):" & vbCrLf & vbCrLf & _
+            "1. In Project Explorer, REMOVE each existing MSCAN* module" & vbCrLf & _
+            "   (right-click > Remove > No). Leave ThisOutlookSession alone." & vbCrLf & _
+            "2. File > Import File, in this order:" & vbCrLf
+
+    i = 0
+    For Each f In files
+        i = i + 1
+        steps = steps & "   " & i & ". " & CStr(f) & vbCrLf
+    Next f
+
+    steps = steps & vbCrLf & _
+            "3. Debug > Compile VBAProject" & vbCrLf & _
+            "4. File > Save" & vbCrLf & _
+            "5. Fully quit Outlook (tray too) and reopen." & vbCrLf & vbCrLf & _
+            "The VBA folder will open; the same list is on the clipboard."
+
+    On Error Resume Next
+    CopyTextToClipboard steps
+    CreateObject("Shell.Application").Open vbaDir
+    On Error GoTo 0
+
+    MsgBox steps, vbExclamation, "AES update - manual import"
 End Sub
 
 Private Function ResolveRoot() As String
@@ -178,6 +248,19 @@ Private Sub RunVbeControl(ByVal ctlId As Long, ByVal label As String, ByRef repo
     End If
 End Sub
 
+Private Function ReadAccessVbom() As String
+    Dim sh As Object
+    Dim v As Variant
+    On Error Resume Next
+    Set sh = CreateObject("WScript.Shell")
+    v = sh.RegRead(ACCESS_VBOM_KEY)
+    If Err.Number <> 0 Then
+        ReadAccessVbom = "(missing)"
+    Else
+        ReadAccessVbom = CStr(v)
+    End If
+End Function
+
 Private Function ReadFirstLine(ByVal path As String) As String
     Dim fso As Object
     Dim ts As Object
@@ -196,3 +279,24 @@ Private Function FolderExists(ByVal path As String) As Boolean
     If Len(path) = 0 Then Exit Function
     FolderExists = CreateObject("Scripting.FileSystemObject").FolderExists(path)
 End Function
+
+Private Sub CopyTextToClipboard(ByVal text As String)
+    Dim html As Object
+    Dim cfg As Object
+    On Error Resume Next
+    Set html = CreateObject("htmlfile")
+    Set cfg = html.parentWindow.clipboardData
+    cfg.SetData "text", text
+    If Err.Number <> 0 Then
+        Err.Clear
+        CreateObject("WScript.Shell").Run "cmd /c echo " & Replace(Left$(text, 200), "&", "^&") & "| clip", 0, True
+    End If
+End Sub
+
+Private Sub SleepMs(ByVal ms As Long)
+    Dim t As Single
+    t = Timer
+    Do While Timer < t + (ms / 1000!)
+        DoEvents
+    Loop
+End Sub

@@ -130,17 +130,106 @@ function Ensure-AccessVBOM {
     return $false
 }
 
-function Get-OutlookApplication {
+function Test-OutlookProcessRunning {
+    return $null -ne (Get-Process -Name OUTLOOK -ErrorAction SilentlyContinue)
+}
+
+function Test-HasGetActiveObject {
+    $flags = [Reflection.BindingFlags]::Public -bor [Reflection.BindingFlags]::Static
+    return $null -ne [Runtime.InteropServices.Marshal].GetMethod("GetActiveObject", $flags)
+}
+
+function Get-ActiveOutlookCom {
+    # Windows PowerShell / .NET Framework only - missing in PowerShell 7.
+    if (-not (Test-HasGetActiveObject)) {
+        return $null
+    }
     try {
         return [Runtime.InteropServices.Marshal]::GetActiveObject("Outlook.Application")
     } catch {
-        Write-Host "Outlook not running - starting it..."
-        $app = New-Object -ComObject Outlook.Application
-        # Force MAPI init
-        $null = $app.GetNamespace("MAPI")
-        Start-Sleep -Seconds 2
-        return $app
+        return $null
     }
+}
+
+function Get-WindowsPowerShell32 {
+    $p = Join-Path $env:SystemRoot "SysWOW64\WindowsPowerShell\v1.0\powershell.exe"
+    if (Test-Path $p) { return $p }
+    return $null
+}
+
+function Ensure-CompatiblePowerShellHost {
+    # Outlook AES installs are almost always 32-bit Office. PowerShell 7 also
+    # lacks Marshal.GetActiveObject. Re-launch once under WinPS 5.1 x86.
+    if ($env:GEOFOOTER_VBA_IMPORT_RELAUNCHED -eq "1") { return }
+
+    $needRelaunch = $false
+    $reason = ""
+    if (-not (Test-HasGetActiveObject)) {
+        $needRelaunch = $true
+        $reason = "this host has no Marshal.GetActiveObject (likely PowerShell 7+)"
+    } elseif ([Environment]::Is64BitProcess -and (Test-Path (Join-Path $env:SystemRoot "SysWOW64\WindowsPowerShell\v1.0\powershell.exe"))) {
+        # Prefer 32-bit host when Outlook is under Program Files (x86).
+        $outlookPath = $null
+        try {
+            $outlookPath = (Get-Process -Name OUTLOOK -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty Path)
+        } catch {}
+        if ($outlookPath -and ($outlookPath -match '(?i)Program Files \(x86\)')) {
+            $needRelaunch = $true
+            $reason = "Outlook is 32-bit; current PowerShell is 64-bit"
+        }
+    }
+
+    if (-not $needRelaunch) { return }
+
+    $ps32 = Get-WindowsPowerShell32
+    if (-not $ps32) {
+        Write-Host "WARNING: need Windows PowerShell 5.1 x86 but SysWOW64 powershell.exe not found ($reason)."
+        return
+    }
+
+    Write-Host "Re-launching under 32-bit Windows PowerShell 5.1 ($reason)..."
+    $env:GEOFOOTER_VBA_IMPORT_RELAUNCHED = "1"
+    $argList = @(
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-File", $PSCommandPath
+    )
+    if ($Root) { $argList += @("-Root", $Root) }
+    if ($EnableAccessVBOM) { $argList += "-EnableAccessVBOM" }
+    if ($SyncThisOutlookSession) { $argList += "-SyncThisOutlookSession" }
+    if ($DryRun) { $argList += "-DryRun" }
+    if ($SkipCleanup) { $argList += "-SkipCleanup" }
+
+    $p = Start-Process -FilePath $ps32 -ArgumentList $argList -Wait -PassThru -NoNewWindow
+    exit $p.ExitCode
+}
+
+function Get-OutlookApplication {
+    $app = Get-ActiveOutlookCom
+    if ($app) { return $app }
+
+    $running = Test-OutlookProcessRunning
+    if ($running) {
+        throw (
+            "Outlook.exe is running but this PowerShell host cannot attach to it via COM.`n" +
+            "Usual causes: PowerShell 7 (no GetActiveObject), or 64-bit PowerShell vs 32-bit Outlook.`n" +
+            "Fix: run scripts\Import_VBA_to_Outlook.bat (uses SysWOW64 Windows PowerShell 5.1),`n" +
+            "or open: $env:SystemRoot\SysWOW64\WindowsPowerShell\v1.0\powershell.exe"
+        )
+    }
+
+    Write-Host "Outlook not running - starting it..."
+    try {
+        $app = New-Object -ComObject Outlook.Application
+    } catch {
+        throw (
+            "Failed to start Outlook via COM ($($_.Exception.Message)).`n" +
+            "Start Outlook manually, then re-run this script."
+        )
+    }
+    $null = $app.GetNamespace("MAPI")
+    Start-Sleep -Seconds 2
+    return $app
 }
 
 function Get-VbaProject {
@@ -265,10 +354,13 @@ function Sync-ThisOutlookSessionDocument {
 }
 
 #----- main -----
+Ensure-CompatiblePowerShellHost
+
 Write-Host "========================================"
 Write-Host "  Import AES VBA into Outlook"
 Write-Host "========================================"
 Write-Host ""
+Write-Host ("PowerShell: {0} | 64-bit process: {1}" -f $PSVersionTable.PSVersion, [Environment]::Is64BitProcess)
 
 $installRoot = Resolve-InstallRoot -Hint $Root
 $vbaDir = Join-Path $installRoot "VBA"

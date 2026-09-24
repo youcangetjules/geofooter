@@ -4650,7 +4650,9 @@ Live Safe Browsing lookups are optional and separate.</p>
         href = self._local_report_href(file_url)
         if not href:
             return inner_html
-        return self._aes_subtle_link(href, inner_html, underline=True)
+        return self._aes_subtle_link(
+            href, inner_html, font_weight="bold", font_size="12px", underline=True
+        )
 
     def _make_report_id(self, guri: str, subject: str, suffix: str = "") -> str:
         seed = f"{guri}|{subject}|{suffix}|{datetime.now(pytz.utc).isoformat()}"

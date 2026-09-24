@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.17] — 2026-09-24
+
+### Changed
+
+- Attachments, beacons, and links on the footer top row use the same 12px bold type as the rest of that line.
+
 ## [1.3.16] — 2026-09-24
 
 ### Changed

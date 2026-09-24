@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.17: Uniform top-row type
+- Metric links (attachments, beacons, links) were 11px regular inside a 12px bold row. They are now 12px bold.
+- Follow-up: rescan a mail.
+
 ### 2026-09-24 — 1.3.16: Status chip colours and email-coloured gap
 - Blocked chips stay `#d92d20`. Trusted chips are `#5dce8a` with dark text. Click-time repaint uses the same colours.
 - The footer wrapper uses 5px top padding on `#ffffff` so the gap matches the message background.

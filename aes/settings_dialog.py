@@ -945,7 +945,7 @@ def run_dialog(
     beacon_form.addRow("Blocking method", beacon_mode)
     beacon_layout.addLayout(beacon_form)
 
-    beacon_scope_all = QCheckBox("Apply to all scanned mail (untick = only senders on the per-sender block list)")
+    beacon_scope_all = QCheckBox("Apply to all scanned mail (default — a footer button on one mail overrides this)")
     beacon_scope_all.setObjectName("plainCheck")
     beacon_scope_all.setChecked(bool(beacon_cfg.get("block_all", True)))
     beacon_layout.addWidget(beacon_scope_all)
@@ -959,9 +959,9 @@ def run_dialog(
     beacon_layout.addWidget(beacon_wl_edit)
 
     beacon_note = QLabel(
-        "Per-sender rules come from the \u201cBlock beacons from sender\u201d button in AES footers "
-        f"and are stored in {_local_geofooter() / 'aes_sender_rules.json'}. "
-        "The quick-scan footer reports \u201cBeacons: X detected / Y blocked\u201d."
+        "These settings are the default for every sender. The BB button on a mail "
+        "overrides them for that sender (block, or allow when the default is block-all). "
+        f"Overrides are stored in {_local_geofooter() / 'aes_sender_rules.json'}."
     )
     beacon_note.setObjectName("hint")
     beacon_note.setWordWrap(True)

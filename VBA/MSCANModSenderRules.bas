@@ -9,7 +9,8 @@ Option Explicit
 '
 ' Rule semantics:
 '   block_attachments - quarantine + remove attachments from matching senders
-'   block_beacons     - neutralise tracking pixels from matching senders
+'   block_beacons     - force beacon blocking on (overrides the global default)
+'   allow_beacons     - force beacon blocking off (overrides the global default)
 '   trusted           - exempt from both block lists and from block-all beacons
 ' ============================================================================
 
@@ -259,7 +260,8 @@ Public Function ShouldBlockBeacons(ByVal mail As Object) As Boolean
     dom = GetMailSenderDomain(mail)
     If SenderOnRulesList("trusted", smtp, dom) Then Exit Function
 
-    ' Per-sender rule always wins, even when the global switch is off.
+    ' Footer-button overrides win over the global Beacon Blocking default.
+    If SenderOnRulesList("allow_beacons", smtp, dom) Then Exit Function
     If SenderOnRulesList("block_beacons", smtp, dom) Then
         ShouldBlockBeacons = True
         Exit Function

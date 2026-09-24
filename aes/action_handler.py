@@ -124,6 +124,7 @@ def load_rules() -> dict:
     empty = {
         "block_attachments": [],
         "block_beacons": [],
+        "allow_beacons": [],
         "trusted": [],
         "untrusted": [],
     }
@@ -140,8 +141,44 @@ def load_rules() -> dict:
     return empty
 
 
+def _global_beacon_blocks(domain: str) -> bool:
+    """Default from AES Settings → Beacon Blocking. Footer buttons override this."""
+    path = RULES_PATH.parent / "aes_beacon_blocking.json"
+    try:
+        if not path.is_file():
+            return False
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return False
+    if not isinstance(data, dict) or not data.get("enabled"):
+        return False
+    dom = (domain or "").strip().lower()
+    whitelist = {
+        str(item).strip().lower()
+        for item in (data.get("whitelist_domains") or [])
+        if str(item).strip()
+    }
+    if dom and dom in whitelist:
+        return False
+    return bool(data.get("block_all", True))
+
+
+def _listed(rules: dict, key: str, identities: list[str]) -> bool:
+    entries = [str(e).strip().lower() for e in (rules.get(key) or [])]
+    return any(ident in entries for ident in identities)
+
+
+def _beacons_blocked_now(rules: dict, identities: list[str], domain: str) -> bool:
+    """Effective beacon block: button override, else the global default."""
+    if _listed(rules, "trusted", identities) or _listed(rules, "allow_beacons", identities):
+        return False
+    if _listed(rules, "block_beacons", identities):
+        return True
+    return _global_beacon_blocks(domain)
+
+
 def save_rules(rules: dict) -> None:
-    for key in ("block_attachments", "block_beacons", "trusted", "untrusted"):
+    for key in ("block_attachments", "block_beacons", "allow_beacons", "trusted", "untrusted"):
         if not isinstance(rules.get(key), list):
             rules[key] = []
     rules["updated"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
@@ -401,14 +438,31 @@ def handle_url(url: str, logger: logging.Logger) -> int:
     # Trust clears BOTH the email and the domain from every block list — otherwise
     # a domain-level beacon block survives after trusting the mailbox address
     # (attachments appeared to "unblock" while Beacons BLOCKED stayed on).
+    beacons_on = None
     if list_key == "trusted":
         rules["trusted"] = _ensure_on_list(rules["trusted"], who)
         rules["untrusted"] = _purge_identities(rules["untrusted"], identities)
         rules["block_attachments"] = _purge_identities(rules["block_attachments"], identities)
         rules["block_beacons"] = _purge_identities(rules["block_beacons"], identities)
+        rules["allow_beacons"] = _purge_identities(rules["allow_beacons"], identities)
     elif list_key == "untrusted":
         rules["untrusted"] = _ensure_on_list(rules["untrusted"], who)
         rules["trusted"] = _purge_identities(rules["trusted"], identities)
+    elif action == "block-beacons":
+        # Toggle against the effective state so the button overrides the global default.
+        beacons_on = not _beacons_blocked_now(rules, identities, domain)
+        if beacons_on:
+            rules["block_beacons"] = _ensure_on_list(rules["block_beacons"], who)
+            rules["allow_beacons"] = _purge_identities(rules["allow_beacons"], identities)
+            rules["trusted"] = _purge_identities(rules["trusted"], identities)
+            blurb = "Tracking beacons in mail from {who} will be neutralised by AES."
+        else:
+            rules["allow_beacons"] = _ensure_on_list(rules["allow_beacons"], who)
+            rules["block_beacons"] = _purge_identities(rules["block_beacons"], identities)
+            blurb = (
+                "Beacons from {who} will not be blocked. "
+                "This overrides the global beacon rule for this sender."
+            )
     else:
         # Blocking attachments/beacons clears trusted (not untrusted).
         rules[list_key] = _ensure_on_list(rules[list_key], who)
@@ -433,6 +487,7 @@ def handle_url(url: str, logger: logging.Logger) -> int:
         sender=sender,
         domain=domain,
         logger=logger,
+        beacons_on=beacons_on,
     )
 
     state = "was already set — rule refreshed" if already else "rule saved"
@@ -455,6 +510,7 @@ def _refresh_open_mail_action_buttons(
     sender: str,
     domain: str,
     logger: logging.Logger,
+    beacons_on: bool | None = None,
 ) -> bool:
     """Rewrite AES action-button labels in the open/selected mail after a rule change.
 
@@ -527,6 +583,15 @@ def _refresh_open_mail_action_buttons(
             new_html = _paint_short_chip(new_html, "aes://trust-sender", CHIP_TRUSTED_BG, CHIP_TRUSTED_FG)
             new_html = _paint_short_chip(new_html, "aes://block-beacons", CHIP_BG, CHIP_FG)
             new_html = _paint_short_chip(new_html, "aes://block-attachments", CHIP_BG, CHIP_FG)
+        elif action == "block-beacons" and beacons_on is False:
+            new_html = _re.sub(
+                r">Beacons BLOCKED(?:\s*&#10003;|\s*✓)?<",
+                ">Block beacons from sender<",
+                new_html,
+                flags=_re.IGNORECASE,
+            )
+            new_html = _paint_action_cell(new_html, "aes://block-beacons", "#f2f8fa", "#0f6b7c")
+            new_html = _paint_short_chip(new_html, "aes://block-beacons", CHIP_BG, CHIP_FG)
         elif action == "block-beacons":
             new_html = _re.sub(
                 r">Block beacons from sender<",

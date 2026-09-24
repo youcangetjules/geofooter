@@ -3322,11 +3322,23 @@ class HTMLReportGenerator:
                 if isinstance(data, dict):
                     return {
                         key: [str(v).strip().lower() for v in (data.get(key) or [])]
-                        for key in ("block_attachments", "block_beacons", "trusted", "untrusted")
+                        for key in (
+                            "block_attachments",
+                            "block_beacons",
+                            "allow_beacons",
+                            "trusted",
+                            "untrusted",
+                        )
                     }
         except Exception as exc:
             self.logger.warning("Failed to read sender rules: %s", exc)
-        return {"block_attachments": [], "block_beacons": [], "trusted": [], "untrusted": []}
+        return {
+            "block_attachments": [],
+            "block_beacons": [],
+            "allow_beacons": [],
+            "trusted": [],
+            "untrusted": [],
+        }
 
     def _sender_block_state(
         self, sender_email: Optional[str], sender_domain: Optional[str]
@@ -3342,13 +3354,18 @@ class HTMLReportGenerator:
             return bool(domain and domain != "unknown" and domain in entries)
 
         trusted = on_list("trusted")
-        # Trusted always wins for the footer buttons: a sender on the trust list
-        # must not still show Beacons/Attachments BLOCKED after Trust was clicked.
+        # Global beacon settings are the default. A footer button override wins:
+        # allow_beacons turns blocking off for this sender, block_beacons turns
+        # it on. Trusted is itself an override that turns blocking off.
+        if trusted or on_list("allow_beacons"):
+            beacons = False
+        elif on_list("block_beacons"):
+            beacons = True
+        else:
+            beacons = self._beacon_policy_blocks_sender(domain)
         return {
             "attachments": False if trusted else on_list("block_attachments"),
-            "beacons": False if trusted else (
-                on_list("block_beacons") or self._beacon_policy_blocks_sender(domain)
-            ),
+            "beacons": beacons,
             "trusted": trusted,
             "untrusted": on_list("untrusted") and not trusted,
         }

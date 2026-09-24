@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.29] — 2026-09-24
+
+### Changed
+
+- Beacon Blocking in AES Settings is the default for every sender. The BB button on a mail overrides that default for that sender, including turning blocking off when the global rule is on.
+
 ## [1.3.28] — 2026-09-24
 
 ### Fixed

@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.29: Footer buttons override global beacon defaults
+- Beacon Blocking settings stay the default. `allow_beacons` in `aes_sender_rules.json` turns blocking off for one sender; `block_beacons` turns it on. BB toggles against the effective state. VBA `ShouldBlockBeacons` honours the same order.
+- Follow-up: re-import `VBA\MSCANModSenderRules.bas`. Rescan mail so the footer colour and blocked count follow the override.
+
 ### 2026-09-24 — 1.3.28: Blocked beacons match the detected count
 - The export often still says `blocked=0` because Outlook strips the image after the scan. If beacon blocking covers the sender, the footer uses the detected count as blocked.
 - Follow-up: rescan a mail.

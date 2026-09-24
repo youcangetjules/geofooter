@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.2.7] — 2026-09-24
+
+### Fixed
+
+- VBA modules MSCANModule1.bas and MSCANToolbar.bas were LF-only; Outlook File > Import needs CRLF. Added `.gitattributes` (`*.bas` / `*.cls` eol=crlf).
+
 ## [1.2.6] — 2026-09-24
 
 ### Added

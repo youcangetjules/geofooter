@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.2.7: CRLF for all VBA modules + .gitattributes
+- What: Converted `VBA\MSCANModule1.bas` and `VBA\MSCANToolbar.bas` from LF-only to CRLF (ASCII preserved). Added `.gitattributes` locking `*.bas` / `*.cls` to `eol=crlf`. Bumped suite to 1.2.7.
+- Why: Outlook File > Import chokes on LF-only `.bas` modules; the two large modules needed CRLF so `UpdateAesFromDisk` / File > Import can load them cleanly.
+- Follow-up: Re-run `UpdateAesFromDisk` after this lands so the two large modules import cleanly.
+
 ### 2026-09-24 — 1.2.6: In-Outlook VBA updater (scanner still dead)
 - The user reported the scanner is not firing, while GURI/Aura work. GURI/Aura only work because the reinstalled ribbon DLL launches `guri\gui.py` directly. The VBA is still yesterday's (`VbaProject.OTM` dated 2026-09-23 23:35), so `GetPythonScript` can't find `aes\geolocate_headers.py`.
 - Running `Import_VBA_to_Outlook.bat` from a non-elevated shell: COM attach OK, AccessVBOM=1, Outlook restarted after the key was set, but `Application.VBE` is still null to external callers.

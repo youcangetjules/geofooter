@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — Add docs/bug_tracker.md
+- New living bug list under `docs\` (open/closed, severity, areas, template).
+- Seeded BUG-001 (AccessVBOM missing from Trust Center UI) and BUG-002 (Outlook VBA still needs re-import after 1.2.1 package move).
+- Follow-up: keep updating this file when bugs open/close; finish VBA auto-import script docs when that lands.
+
 ### 2026-09-24 — Reorganise Python into aes/ guri/ aura/ geofooter/ packages (1.2.1)
 - **Moves:**
   - Root and `VBA\` Python → `aes/` (engine, checks, dialogs, `action_handler`, `secret_store`) and `aes/scanners/`.

@@ -67,5 +67,5 @@ Do **not** keep obsolete trees (`Old\`, `_archive\`) in the published repo, and 
 - Import order / ThisOutlookSession setup: `VBA\IMPORT.txt`
 - Dependencies: `requirements.txt`
 - Runtime data: `%LOCALAPPDATA%\GeoFooter\` (logs, jobs, sender history, settings)
-- Change history: `WORKLOG.md` · release history: `CHANGELOG.md` · current: `VERSION`
+- Change history: `WORKLOG.md` · release history: `CHANGELOG.md` · bugs: `docs/bug_tracker.md` · current: `VERSION`
 - Agent persona / skills: `SKILLS.md`

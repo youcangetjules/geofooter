@@ -10,7 +10,7 @@
 | **AesRibbonHost** | Optional COM/ribbon host for AES UI in Outlook |
 
 **Version:** see [`VERSION`](VERSION) / [`geofooter/version.py`](geofooter/version.py) — currently **1.2.1**.  
-**Changes:** [`CHANGELOG.md`](CHANGELOG.md) · day-to-day notes in [`WORKLOG.md`](WORKLOG.md).
+**Changes:** [`CHANGELOG.md`](CHANGELOG.md) · day-to-day notes in [`WORKLOG.md`](WORKLOG.md) · bugs in [`docs/bug_tracker.md`](docs/bug_tracker.md).
 
 ## Paths
 

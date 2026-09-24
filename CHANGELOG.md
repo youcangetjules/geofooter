@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.11] — 2026-09-24
+
+### Changed
+
+- The selected tab is a shade darker than the window background.
+
 ## [1.3.10] — 2026-09-24
 
 ### Changed

@@ -278,8 +278,10 @@ QTabBar::tab {{
     font-weight: 600;
 }}
 QTabBar::tab:selected {{
+    background: #e4eaee;
     color: {PALETTE['accent']};
     border-bottom: 2px solid {PALETTE['accent']};
+    border-radius: 6px 6px 0 0;
 }}
 QTabBar::tab:hover:!selected {{
     color: {PALETTE['text']};

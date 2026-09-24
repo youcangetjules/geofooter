@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.11: Selected tab shade
+- Selected tab background is #e4eaee, a step darker than the window #f4f6f8.
+- Follow-up: restart GURI.
+
 ### 2026-09-24 — 1.3.10: Timeline day watermark and midnight bar
 - Email timeline paints the day of the month at 72pt and 20% opacity behind each day's hours.
 - The column edge between 23:00 and 00:00 is a 3px dark bar.

@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-25 — 1.3.34: Vertically centre the footer top row
+- Each top-row label and green dot is a 16px-tall cell with the same exact line-height, so Outlook cannot drop the dots or the links off the text line.
+- Follow-up: rescan a mail.
+
 ### 2026-09-24 — 1.3.33: Embed the footer A so Outlook shows it
 - The mark used a `file://` image. Outlook blocks that and paints an empty bar. The footer now references `cid:aesfootermark`, and after the footer is applied a short follow-up attaches `aes_status_mark.png` with that id.
 - Follow-up: rescan the open message and leave it open for a few seconds.

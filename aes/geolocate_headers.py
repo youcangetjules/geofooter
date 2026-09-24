@@ -610,26 +610,52 @@ AES_CHIP_TRUSTED_BG = "#5dce8a"
 AES_CHIP_TRUSTED_FG = "#0f1f2a"
 
 
-def strip_separators(inner_html: str, *, color: str, size: str, weight: str) -> str:
+def strip_separators(
+    inner_html: str,
+    *,
+    color: str,
+    size: str,
+    weight: str,
+    line_height: str = "",
+) -> str:
     """Turn ' | ' into a green dot with a 5px cell on each side.
 
     Outlook drops padding on a span, so the gap is a 5px-wide table cell.
+    A shared line-height keeps every label and dot on one vertical centre.
     """
+    lock = ""
+    height_attr = ""
+    if line_height:
+        lock = (
+            f"height:{line_height}; line-height:{line_height}; "
+            "mso-line-height-rule:exactly; vertical-align:middle; "
+        )
+        height_attr = " height='16'"
     cell = (
-        f"<td align='center' valign='middle' style='color:{color}; "
+        f"<td align='center' valign='middle'{height_attr} style='color:{color}; "
         f"font-family:{AES_STRIP_FONT}; font-size:{size}; font-weight:{weight}; "
-        f"white-space:nowrap;'>"
+        f"{lock}white-space:nowrap; padding:0;'>"
     )
     spacer = (
-        "<td width='5' valign='middle' "
-        "style='width:5px; font-size:1px; line-height:1px;'>&nbsp;</td>"
+        f"<td width='5' valign='middle'{height_attr} "
+        "style='width:5px; font-size:1px; line-height:1px; padding:0;'>&nbsp;</td>"
     )
     dot = (
-        f"<td align='center' valign='middle' "
+        f"<td align='center' valign='middle'{height_attr} "
         f"style='color:{AES_STRIP_DOT}; font-family:{AES_STRIP_FONT}; "
-        f"font-size:8px; line-height:8px;'>&#9679;</td>"
+        f"font-size:8px; {lock}padding:0;'>&#9679;</td>"
     )
     parts = (inner_html or "").split(" | ")
+    if line_height:
+        parts = [
+            (
+                f"<span style='font-family:{AES_STRIP_FONT}; font-size:{size}; "
+                f"font-weight:{weight}; line-height:{line_height}; "
+                f"mso-line-height-rule:exactly; vertical-align:middle;'>"
+                f"{part}</span>"
+            )
+            for part in parts
+        ]
     gap = f"</td>{spacer}{dot}{spacer}{cell}"
     return (
         "<table border='0' cellpadding='0' cellspacing='0' align='center' "
@@ -4735,7 +4761,8 @@ Live Safe Browsing lookups are optional and separate.</p>
             f'<a href="{html.escape(href, quote=True)}" target="_blank" '
             f'style="color:{color};text-decoration:{deco};background:transparent;border:none;'
             f'padding:0;margin:0;font-weight:{font_weight};font-size:{font_size};'
-            f"font-family:{AES_STRIP_FONT};\">"
+            f"line-height:{font_size}; mso-line-height-rule:exactly; "
+            f"vertical-align:middle; font-family:{AES_STRIP_FONT};\">"
             f"{inner_html}</a>"
         )
 
@@ -5342,7 +5369,11 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             AES_STRIP_BG,
         )
         summary_line1 = strip_separators(
-            summary_line1, color=AES_STRIP_TEXT, size="12px", weight="bold"
+            summary_line1,
+            color=AES_STRIP_TEXT,
+            size="12px",
+            weight="bold",
+            line_height="16px",
         )
         summary_line2 = strip_separators(
             summary_line2, color=AES_STRIP_MUTED, size="12px", weight="normal"
@@ -5371,9 +5402,10 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
             f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
             f"border-collapse:collapse;'>"
-            f"<tr><td style='padding:{row_pad}; text-align:center; "
+            f"<tr><td valign='middle' style='padding:{row_pad}; text-align:center; "
             f"color:{AES_STRIP_TEXT}; font-family:{AES_STRIP_FONT}; font-size:12px; "
-            f"font-weight:bold; letter-spacing:0.3px; line-height:1.4;'>{summary_line1}</td></tr>"
+            f"font-weight:bold; letter-spacing:0.3px; line-height:16px; "
+            f"mso-line-height-rule:exactly; vertical-align:middle;'>{summary_line1}</td></tr>"
             f"{rule_row}"
             f"<tr><td style='padding:{row_pad}; text-align:center; "
             f"color:{AES_STRIP_MUTED}; font-family:{AES_STRIP_FONT}; font-size:12px; "

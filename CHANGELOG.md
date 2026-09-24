@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.34] — 2026-09-25
+
+### Changed
+
+- Footer top-row labels, counts, and the green dots share one vertical centre.
+
 ## [1.3.33] — 2026-09-24
 
 ### Fixed

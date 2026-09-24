@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.23: Even footer rows and a second hairline
+- Each content row uses 10px vertical padding. The same inset rule sits between rows 1–2 and 2–3.
+- Follow-up: rescan a mail.
+
 ### 2026-09-24 — 1.3.22: Coloured attachment counts
 - The count is no longer plain white beside a coloured OK. Zero or all-clear is `N OK` in green; not-ok files are `N NOK` in red.
 - Follow-up: rescan a mail.

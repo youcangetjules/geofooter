@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.23] — 2026-09-24
+
+### Changed
+
+- The three footer rows use the same vertical padding. The hairline between the detail line and Quick Actions is repeated between the title line and the detail line, at the same width.
+
 ## [1.3.22] — 2026-09-24
 
 ### Changed

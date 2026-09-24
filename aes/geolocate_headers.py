@@ -5263,22 +5263,28 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         summary_line2 = strip_separators(
             summary_line2, color=AES_STRIP_MUTED, size="12px", weight="normal"
         )
+        rule_row = (
+            f"<tr><td style='padding:0 16px;'>"
+            f"<div style='border-top:1px solid {AES_STRIP_RULE}; margin:0; "
+            f"font-size:1px; line-height:1px;'>&nbsp;</div></td></tr>"
+        )
+        row_pad = "10px 16px"
         actions_row = ""
         if quick_actions:
             actions_row = (
-                f"<tr><td style='padding:0 16px 7px 16px;'>"
-                f"<div style='border-top:1px solid {AES_STRIP_RULE}; margin:0 0 5px 0; "
-                f"font-size:1px; line-height:1px;'>&nbsp;</div>"
+                f"{rule_row}"
+                f"<tr><td style='padding:{row_pad}; text-align:center;'>"
                 f"{quick_actions}</td></tr>"
             )
         summary_block = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
             f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
             f"border-collapse:collapse;'>"
-            f"<tr><td style='padding:12px 16px 3px 16px; text-align:center; "
+            f"<tr><td style='padding:{row_pad}; text-align:center; "
             f"color:{AES_STRIP_TEXT}; font-family:{AES_STRIP_FONT}; font-size:12px; "
             f"font-weight:bold; letter-spacing:0.3px; line-height:1.4;'>{summary_line1}</td></tr>"
-            f"<tr><td style='padding:0 16px 12px 16px; text-align:center; "
+            f"{rule_row}"
+            f"<tr><td style='padding:{row_pad}; text-align:center; "
             f"color:{AES_STRIP_MUTED}; font-family:{AES_STRIP_FONT}; font-size:12px; "
             f"font-weight:normal; line-height:1.5;'>{summary_line2}</td></tr>"
             f"{actions_row}"

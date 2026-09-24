@@ -234,11 +234,12 @@ CONFIG = {
         "ipv6": ["zen.spamhaus.org"]
     },
     # Mail risk bands (upper-inclusive until High+mitigate):
-    #   0–25 Low, 26–50 Raised, 51–70 High, >70 High + strip/text-only.
+    #   0–25 Low (light green), 26–50 Raised (amber), 51–75 High (red),
+    #   >75 High + strip/text-only, with a link to restore HTML.
     "risk_thresholds": {
         "low_max": 25,
         "raised_max": 50,
-        "high_max": 70,
+        "high_max": 75,
     },
     "domain_age_thresholds": {
         "extremely_new": 10,
@@ -537,7 +538,27 @@ def risk_level_for_score(score: int, domain_age_flag: Optional[str] = None) -> s
 def risk_requires_mitigation(score: int) -> bool:
     """Scores above high_max trigger attachment strip + text-only conversion."""
     thresholds = CONFIG["risk_thresholds"]
-    return int(score) > int(thresholds.get("high_max", 70))
+    return int(score) > int(thresholds.get("high_max", 75))
+
+
+def risk_statement_color(score: int, level: str = "") -> str:
+    """Footer colour for the risk words and score."""
+    thresholds = CONFIG["risk_thresholds"]
+    low_max = int(thresholds.get("low_max", 25))
+    raised_max = int(thresholds.get("raised_max", 50))
+    name = str(level or "").upper()
+    s = int(score or 0)
+    if name == "LOW" or (not name and s <= low_max):
+        return "#90EE90"
+    if name == "RAISED" or (not name and s <= raised_max):
+        return "#FFC107"
+    if name == "HIGH" or s > raised_max:
+        return "#FF4444"
+    if s <= low_max:
+        return "#90EE90"
+    if s <= raised_max:
+        return "#FFC107"
+    return "#FF4444"
 
 
 def risk_color_for_level(level: str) -> str:
@@ -4632,12 +4653,13 @@ Live Safe Browsing lookups are optional and separate.</p>
         font_weight: str = "normal",
         font_size: str = "11px",
         underline: bool = False,
+        color: str = "#ffffff",
     ) -> str:
         """Footer link styled as plain text (real href, no box)."""
         deco = "underline" if underline else "none"
         return (
             f'<a href="{html.escape(href, quote=True)}" target="_blank" '
-            f'style="color:#ffffff;text-decoration:{deco};background:transparent;border:none;'
+            f'style="color:{color};text-decoration:{deco};background:transparent;border:none;'
             f'padding:0;margin:0;font-weight:{font_weight};font-size:{font_size};'
             f"font-family:{AES_STRIP_FONT};\">"
             f"{inner_html}</a>"
@@ -5148,6 +5170,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         )
 
         risk_label = f"Risk {risk} ({score}/100)"
+        risk_color = risk_statement_color(int(score or 0), str(risk or ""))
         risk_report_url = self._write_risk_report_file(data, risk, score)
         if risk_report_url:
             risk_html = self._aes_subtle_link(
@@ -5156,9 +5179,13 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
                 font_weight="bold",
                 font_size="12px",
                 underline=True,
+                color=risk_color,
             )
         else:
-            risk_html = html.escape(risk_label)
+            risk_html = (
+                f"<span style='color:{risk_color};font-weight:bold;'>"
+                f"{html.escape(risk_label)}</span>"
+            )
         if "{{AES_RISK}}" in summary_line1:
             summary_line1 = summary_line1.replace("{{AES_RISK}}", risk_html)
         else:
@@ -5397,7 +5424,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         thresholds = CONFIG["risk_thresholds"]
         low_max = int(thresholds.get("low_max", 25))
         raised_max = int(thresholds.get("raised_max", 50))
-        high_max = int(thresholds.get("high_max", 70))
+        high_max = int(thresholds.get("high_max", 75))
         domain_flag = data.get("domain_age_flag") or ""
         domain_note = (
             f"<p style='margin:8px 0;font-size:12px;'><strong>Domain caution:</strong> "
@@ -5438,9 +5465,10 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"<ul style='margin:4px 0 8px 18px;padding:0;'>"
             f"<li>LOW: score 0–{low_max}</li>"
             f"<li>RAISED: score {low_max + 1}–{raised_max}</li>"
-            f"<li>HIGH: score {raised_max + 1}–100, or a domain-age caution flag is set</li>"
+            f"<li>HIGH: score {raised_max + 1}–{high_max} (red), or a domain-age caution flag is set</li>"
             f"<li>Score above {raised_max}: full analysis is embedded in the mail footer</li>"
-            f"<li>Score above {high_max}: attachments quarantined and mail converted to text-only</li>"
+            f"<li>Score above {high_max}: attachments quarantined, mail converted to text, "
+            f"with a link to restore the HTML</li>"
             f"</ul>"
             f"<strong>Typical point rules</strong>"
             f"<ul style='margin:4px 0 0 18px;padding:0;'>"

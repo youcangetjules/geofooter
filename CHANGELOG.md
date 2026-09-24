@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.20] — 2026-09-24
+
+### Changed
+
+- The risk words and score are colour-coded: **LOW** light green, **RAISED** (26–50) amber, **HIGH** (51–75) red.
+- A score above 75 still strips attachments and converts the message to text. That text includes a link to restore the original HTML.
+
 ## [1.3.19] — 2026-09-24
 
 ### Changed

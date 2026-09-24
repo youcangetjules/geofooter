@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.20: Coloured risk statement, text above 75
+- `high_max` is 75. LOW `#90EE90`, RAISED `#FFC107`, HIGH `#FF4444` on the footer risk label and score.
+- Scores above 75 still convert the mail to text; the plain footer includes Restore original HTML.
+- Follow-up: rescan a mail. No VBA re-import.
+
 ### 2026-09-24 — 1.3.19: Footer status colours for beacons and links
 - Beacons: `0 Blocked` in `#90EE90`; any blocked count is `N Blocked` in `#FF4444`.
 - Links: clear count is `N OK` in green; dangerous links add `N NOK` in red. Zero links is `0 OK`.

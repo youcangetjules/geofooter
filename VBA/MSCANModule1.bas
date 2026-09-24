@@ -24,7 +24,7 @@ Private Const AES_BANNER_CID As String = "aesstatusbanner"
 Private Const AES_BANNER_MARKER As String = "<!-- AES-Banner-Img: "
 Private Const AES_BANNER_FILE_PREFIX As String = "aes_status_"
 ' Compact auto-scan still needs body for link/beacon counts, but reading huge
-' HTMLBody on the UI thread freezes Outlook — cap the sidecar write.
+' HTMLBody on the UI thread freezes Outlook - cap the sidecar write.
 Private Const AES_COMPACT_BODY_CAP As Long = 400000
 
 '===============================================================================
@@ -65,7 +65,7 @@ Public Sub ReconcileAsyncJobs()
         If m_AsyncJobs.Exists(keys(i)) Then
             Set job = m_AsyncJobs(keys(i))
             If fso.FileExists(CStr(job("FooterPath"))) Then
-                ' Wait until the file has content — Python creates/truncates on open
+                ' Wait until the file has content - Python creates/truncates on open
                 ' before writing, so FileExists alone can race an empty file.
                 If fso.GetFile(CStr(job("FooterPath"))).Size > 0 Then
                     If JobOutputLooksReady(job) Then
@@ -411,7 +411,7 @@ Public Sub CompleteAsyncFooter(ByVal jobId As String)
         Exit Sub
     End If
 
-    ' Deep Scan: report only — never modify the email body/footer.
+    ' Deep Scan: report only - never modify the email body/footer.
     ' Always popup when done so the user can open/display the HTML report.
     If LCase$(mode) = "deep" Then
         Dim reportTarget As String
@@ -668,7 +668,7 @@ Private Sub OpenDeepScanReport(ByVal target As String)
     If InStr(1, pathOrUrl, "file:///", vbTextCompare) = 1 Then
         pathOrUrl = Mid$(pathOrUrl, 9)
         pathOrUrl = Replace(pathOrUrl, "/", "\")
-        ' file:///C:/... → C:\...
+        ' file:///C:/... -> C:\...
     ElseIf InStr(1, pathOrUrl, "file://", vbTextCompare) = 1 Then
         pathOrUrl = Mid$(pathOrUrl, 8)
         pathOrUrl = Replace(pathOrUrl, "/", "\")
@@ -684,7 +684,7 @@ End Sub
 
 ' Read-only header export for Python (except optional beacon neutralize on heavyExport).
 ' deepMode marks AES-Scan-Mode: deep. heavyExport saves attachments and may rewrite
-' HTML to neutralize beacons — skip both on the automatic compact path so new-mail
+' HTML to neutralize beacons - skip both on the automatic compact path so new-mail
 ' queue ticks stay short on Outlook's UI thread.
 Private Function ExportHeadersForGeolocation(ByVal mail As Object, _
     Optional ByVal deepMode As Boolean = False, _
@@ -785,7 +785,7 @@ Private Function ExportHeadersForGeolocation(ByVal mail As Object, _
     Dim deepPreamble As String
     deepPreamble = ""
 
-    ' Per-sender attachment blocking — quarantine + remove before export so
+    ' Per-sender attachment blocking - quarantine + remove before export so
     ' nothing is left on the mail (cheap when the sender is not blocked).
     Dim quarantinedCount As Long
     quarantinedCount = 0
@@ -949,7 +949,7 @@ Private Function ExportAttachmentsForScan(ByVal mail As Object) As String
         If Err.Number = 0 Then
             savedCount = savedCount + 1
         Else
-            MSCANModLogging.WriteLog "ExportAttachmentsForScan: Failed to save " & att.FileName & " — " & Err.Description
+            MSCANModLogging.WriteLog "ExportAttachmentsForScan: Failed to save " & att.FileName & " - " & Err.Description
             Err.Clear
         End If
         On Error GoTo EH
@@ -1103,7 +1103,7 @@ Private Function FormatBeaconSummary(ByVal beaconCount As Long, ByVal blockedCou
     If beaconCount = 0 Then
         FormatBeaconSummary = "count=0; status=None"
     Else
-        ' Keep blocked= before urls= — Python's urls regex consumes to end of line.
+        ' Keep blocked= before urls= - Python's urls regex consumes to end of line.
         FormatBeaconSummary = "count=" & beaconCount & "; status=Detected; blocked=" & _
             blockedCount & "; urls=" & beaconUrls
     End If
@@ -1302,7 +1302,7 @@ Private Function WaitForMailReady(ByVal mail As Object) As Boolean
     Const PR_TRANSPORT_MESSAGE_HEADERS As String = "http://schemas.microsoft.com/mapi/proptag/0x007D001F"
     Dim attempt As Long
 
-    ' Keep this short — WaitForMailReady runs on the Outlook UI thread.
+    ' Keep this short - WaitForMailReady runs on the Outlook UI thread.
     ' Prefer requeue (ProcessEmail) over multi-second busy-waits.
     For attempt = 1 To 3
         On Error Resume Next
@@ -1493,7 +1493,7 @@ Private Function StartAsyncGeolocationJob(ByVal mail As Object, ByVal headerFile
 
     Dim shell As Object
     Set shell = CreateObject("WScript.Shell")
-    ' WaitOnReturn=False — Outlook returns immediately; WScript blocks on Python instead.
+    ' WaitOnReturn=False - Outlook returns immediately; WScript blocks on Python instead.
     shell.Run "wscript.exe //B //Nologo """ & vbsPath & """", 0, False
 
     MSCANModLogging.WriteLog "StartAsyncGeolocationJob: launched job " & jobId & " mode=" & footerMode & " subject=" & SafeSubject(mail)
@@ -1510,7 +1510,7 @@ End Function
 ' This Outlook build does not expose ThisOutlookSession publics on the COM
 ' Application object (and Outlook has no Application.Run), so the script cannot
 ' call back into VBA directly. Instead: on failure it drops a "<output>.fail"
-' marker, then "nudges" Outlook by reading inbox items — that fires
+' marker, then "nudges" Outlook by reading inbox items - that fires
 ' Application_ItemLoad inside Outlook, whose handler runs NudgeAsyncWork, which
 ' reconciles pending jobs (applies the footer / clears the busy icon).
 '
@@ -1544,7 +1544,7 @@ Private Function WriteAsyncGeoJobScript(ByVal vbsPath As String, ByVal workDir A
     ts.WriteLine "prev = sh.CurrentDirectory"
     ts.WriteLine "sh.CurrentDirectory = " & VbsQuoteString(workDir)
     ts.WriteLine "Err.Clear"
-    ' Do not WaitOnReturn — pythonw can hang after writing the report.
+    ' Do not WaitOnReturn - pythonw can hang after writing the report.
     ts.WriteLine "code = sh.Run(" & VbsQuoteString(commandLine) & ", 0, False)"
     ts.WriteLine "If Err.Number <> 0 Then code = 99"
     ts.WriteLine "sh.CurrentDirectory = prev"
@@ -1750,14 +1750,14 @@ Private Function ApplyFooterToMail(ByVal mail As Object, ByVal footerPath As Str
 
     ' Score > 70: quarantine every attachment and force text-only. Do this
     ' before any HTML insert so we never leave a cid banner on a mitigated mail.
-    ' Trusted senders are exempt — do not flatten their HTML to plain text.
+    ' Trusted senders are exempt - do not flatten their HTML to plain text.
     Dim wantsMitigate As Boolean
     wantsMitigate = (Len(footerHTML) > 0 And FooterRequestsMitigation(footerHTML))
     If wantsMitigate Then
         On Error Resume Next
         If MSCANModSenderRules.IsSenderTrusted(mail) Then
             wantsMitigate = False
-            MSCANModLogging.WriteLog "ApplyFooterToMail: skip text-strip — trusted sender: " & SafeSubject(mail)
+            MSCANModLogging.WriteLog "ApplyFooterToMail: skip text-strip - trusted sender: " & SafeSubject(mail)
         End If
         Err.Clear
         On Error GoTo 0
@@ -1973,7 +1973,7 @@ End Function
 
 ' Undo a prior text-only mitigation when we are about to stamp a normal HTML footer.
 ' IMAP/Gmail often reports BodyFormat=HTML after a plain conversion (wrapper), so
-' detect by content + restore-html?id= / subject — not BodyFormat alone.
+' detect by content + restore-html?id= / subject - not BodyFormat alone.
 Private Function TryRestoreMitigatedHtml(ByVal mail As Object) As Boolean
     On Error GoTo EH
     TryRestoreMitigatedHtml = False
@@ -2135,7 +2135,7 @@ Private Function FindMitigatedHtmlBackup(ByVal mail As Object, ByVal dir As Stri
 EH:
 End Function
 
-' Write HTMLBody + Save with fresh-item retries — IMAP/Gmail reading pane races
+' Write HTMLBody + Save with fresh-item retries - IMAP/Gmail reading pane races
 ' cause #-2147221239 "message has been changed" otherwise.
 Private Function CommitMailHtml(ByRef mail As Object, ByVal entryId As String, ByVal newHtml As String) As Boolean
     On Error Resume Next
@@ -2537,7 +2537,7 @@ Private Function InsertFooterIntoMail(mail As Object, footerPath As String) As B
         Err.Clear
         On Error GoTo ErrHandler
 
-        ' Never force BodyFormat — on IMAP/Google that flattens the message to text.
+        ' Never force BodyFormat - on IMAP/Google that flattens the message to text.
         Dim bodyHtml As String: bodyHtml = mail.HTMLBody
         bodyHtml = StripAesTopBannersFromBody(bodyHtml)
         bodyHtml = DisableRiskTableLinksInHtml(bodyHtml, footerHTML)
@@ -2623,7 +2623,7 @@ Private Function ReplaceAesFooterInMail(ByVal mail As Object, ByVal footerPath A
     Const FOOTER_START_LEGACY As String = "<!-- GeoFooter Start -->"
     Const FOOTER_END_LEGACY As String = "<!-- GeoFooter End -->"
 
-    ' ReportItem has no HTMLBody / BodyFormat — append/replace in Body text.
+    ' ReportItem has no HTMLBody / BodyFormat - append/replace in Body text.
     If Not TypeOf mail Is Outlook.MailItem Then
         Dim rptBody As String
         On Error Resume Next
@@ -2656,7 +2656,7 @@ Private Function ReplaceAesFooterInMail(ByVal mail As Object, ByVal footerPath A
         Exit Function
     End If
 
-    ' Never force BodyFormat while an HTML body exists — on IMAP/Google
+    ' Never force BodyFormat while an HTML body exists - on IMAP/Google
     ' stores that regenerates the body from the plain-text copy and
     ' flattens the whole message to text.
     On Error Resume Next
@@ -2676,7 +2676,7 @@ Private Function ReplaceAesFooterInMail(ByVal mail As Object, ByVal footerPath A
 
     Dim bodyHtml As String: bodyHtml = mail.HTMLBody
     If Len(Trim$(bodyHtml)) = 0 Then
-        ' Do NOT flip BodyFormat here — that flattens IMAP/Google mail to text.
+        ' Do NOT flip BodyFormat here - that flattens IMAP/Google mail to text.
         bodyHtml = mail.HTMLBody
     End If
     bodyHtml = StripAesTopBannersFromBody(bodyHtml)
@@ -2709,7 +2709,7 @@ Private Function ReplaceAesFooterInMail(ByVal mail As Object, ByVal footerPath A
         End If
     End If
 
-    ' Attachments.Add (banner) dirties the item — keep the same object for the
+    ' Attachments.Add (banner) dirties the item - keep the same object for the
     ' HTMLBody write so the inline part is not lost; CommitMailHtml retries
     ' with a fresh item only if Save hits "message has been changed".
     Dim bannerForBody As String
@@ -2719,7 +2719,7 @@ Private Function ReplaceAesFooterInMail(ByVal mail As Object, ByVal footerPath A
     Dim finalHtml As String
     finalHtml = InjectAesTopBanner(replacedBody, bannerForBody)
     If Not CommitMailHtml(mail, entryId, finalHtml) Then
-        ' Second try without cid attach — avoids dirty-item races on IMAP/Gmail.
+        ' Second try without cid attach - avoids dirty-item races on IMAP/Gmail.
         MSCANModLogging.WriteLog "ReplaceAesFooterInMail: retrying CommitMailHtml without banner attach"
         Set mail = ResolveMailByEntryID(entryId)
         If mail Is Nothing Then
@@ -2831,7 +2831,7 @@ Private Function InjectFullScanAction(ByVal mail As Object, ByVal footerHTML As 
     On Error GoTo EH
 
     ' New footers already include a "Show Full Scan" link to a pre-built report.
-    ' Only strip a leftover placeholder — do not launch a re-scan.
+    ' Only strip a leftover placeholder - do not launch a re-scan.
     Const MARKER As String = "{{AES_FULLSCAN}}"
     If InStr(1, footerHTML, MARKER, vbBinaryCompare) = 0 Then
         InjectFullScanAction = footerHTML
@@ -2919,7 +2919,7 @@ Public Function MailHasFooter(ByVal mail As Object) As Boolean
     MailHasFooter = MailAlreadyHasFooter(mail)
 End Function
 
-' Fast path for queue/catch-up — avoids reading HTMLBody.
+' Fast path for queue/catch-up - avoids reading HTMLBody.
 Public Function IsAesScanned(ByVal mail As Object) As Boolean
     On Error Resume Next
     IsAesScanned = False

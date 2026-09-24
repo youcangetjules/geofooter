@@ -344,7 +344,7 @@ Private Function ShowInputBoxSettingsDialog() As Boolean
         Dim prompt As String
         prompt = BuildSettingsPrompt()
         Dim choice As String
-        choice = Trim$(InputBox(prompt, "AES Settings — Scan Accounts", ""))
+        choice = Trim$(InputBox(prompt, "AES Settings - Scan Accounts", ""))
 
         If Len(choice) = 0 Then
             cancelled = True

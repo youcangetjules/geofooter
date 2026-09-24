@@ -20,6 +20,14 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.2.5] — 2026-09-24
+
+### Fixed
+- Garbled punctuation (`â€”`) in VBA dialog titles and messages. All `VBA\*.bas` / `*.cls` are now pure ASCII (97 replacements), because the VBA editor imports them as ANSI.
+
+### Added
+- CI smoke test `test_vba_modules_are_ascii` so non-ASCII can't creep back into VBA modules.
+
 ## [1.2.4] — 2026-09-24
 
 ### Fixed

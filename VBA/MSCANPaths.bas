@@ -1,6 +1,6 @@
 Attribute VB_Name = "MSCANPaths"
 '===============================================================================
-' MSCANPaths — install-root resolution (no hard-coded C:\GeoFooter).
+' MSCANPaths - install-root resolution (no hard-coded C:\GeoFooter).
 '
 ' Pointer file (written by GURI Database tab / geofooter.paths.set_install_root):
 '   %LOCALAPPDATA%\GeoFooter\install_root.txt

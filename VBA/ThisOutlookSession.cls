@@ -44,7 +44,7 @@ Private Sub Application_ItemSend(ByVal Item As Object, Cancel As Boolean)
     Exit Sub
 
 EH:
-    ' Do not Resume Next — a missing/broken handler must not silently send unmarked mail.
+    ' Do not Resume Next - a missing/broken handler must not silently send unmarked mail.
     Dim errNum As Long
     Dim errDesc As String
     errNum = Err.Number
@@ -69,14 +69,14 @@ End Sub
 ' Fires whenever any item loads (user clicks, or a helper VBS "nudges" Outlook
 ' by reading an inbox item). Drives async-job completion and queue drain,
 ' because external scripts cannot call VBA directly in this Outlook build.
-' Do NOT touch Item here — its properties are not accessible during ItemLoad.
+' Do NOT touch Item here - its properties are not accessible during ItemLoad.
 Private Sub Application_ItemLoad(ByVal Item As Object)
     On Error Resume Next
     MSCANModule1.NudgeAsyncWork
 End Sub
 
 '-------------------------------------------------------------------------------
-' External automation bridge (legacy — kept for Outlook builds that expose
+' External automation bridge (legacy - kept for Outlook builds that expose
 ' ThisOutlookSession publics on the Application object; this build does NOT,
 ' so helper scripts use the ItemLoad nudge above instead).
 '-------------------------------------------------------------------------------

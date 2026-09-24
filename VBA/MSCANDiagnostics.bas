@@ -114,7 +114,7 @@ Private Function TryShowPythonDiagnosticsDialog() As Boolean
     contextPath = Environ$("LOCALAPPDATA") & "\GeoFooter\aes_diagnostics_context.json"
     If Not WriteDiagnosticsContextJson(contextPath) Then Exit Function
 
-    ' Launch WITHOUT waiting — a modal Wait freezes Outlook for the whole
+    ' Launch WITHOUT waiting - a modal Wait freezes Outlook for the whole
     ' dialog session (no ItemLoad / queue / timers). Live Controls need Outlook
     ' responsive so diag commands + VBS nudges can run.
     cmd = """" & pythonExe & """ """ & scriptPath & """ --context " & _
@@ -210,7 +210,7 @@ Private Function GetRecentAutoScanLogExcerpt() As String
         Exit Function
     End If
 
-    ' Only read the tail — full ReadAll of a multi-MB log freezes Outlook.
+    ' Only read the tail - full ReadAll of a multi-MB log freezes Outlook.
     fileSize = CLng(fso.GetFile(path).Size)
     startAt = fileSize - 180000
     If startAt < 0 Then startAt = 0
@@ -865,7 +865,7 @@ Private Function GetAesScannerInfo() As String
     Set fso = CreateObject("Scripting.FileSystemObject")
     
     info = "--- AES SCANNER / PYTHON ---" & vbCrLf
-    info = info & "Python (default): C:\Python313\python.exe — " & FileExistsLabel(fso, "C:\Python313\python.exe") & vbCrLf
+    info = info & "Python (default): C:\Python313\python.exe - " & FileExistsLabel(fso, "C:\Python313\python.exe") & vbCrLf
     Dim geoPath As String, guriPath As String, pgCfg As String, myCfg As String, outDir As String
     geoPath = MSCANPaths.GetGeolocateScript()
     guriPath = MSCANPaths.InstallPath("guri", "core.py")
@@ -873,12 +873,12 @@ Private Function GetAesScannerInfo() As String
     myCfg = MSCANPaths.InstallPath("guri_mysql_config.json")
     outDir = MSCANPaths.InstallPath("output")
     info = info & "Install root: " & MSCANPaths.GetInstallRoot() & vbCrLf
-    info = info & "aes\geolocate_headers.py: " & geoPath & " — " & FileExistsLabel(fso, geoPath) & vbCrLf
-    info = info & "guri\core.py: " & guriPath & " — " & FileExistsLabel(fso, guriPath) & vbCrLf
-    info = info & "guri_postgres_config.json: " & pgCfg & " — " & FileExistsLabel(fso, pgCfg) & vbCrLf
-    info = info & "guri_mysql_config.json (legacy): " & myCfg & " — " & FileExistsLabel(fso, myCfg) & vbCrLf
-    info = info & "Output folder: " & outDir & " — " & FolderExistsLabel(fso, outDir) & vbCrLf
-    info = info & "VBA log: " & MSCANModLogging.logPath() & " — " & FileExistsLabel(fso, MSCANModLogging.logPath()) & vbCrLf
+    info = info & "aes\geolocate_headers.py: " & geoPath & " - " & FileExistsLabel(fso, geoPath) & vbCrLf
+    info = info & "guri\core.py: " & guriPath & " - " & FileExistsLabel(fso, guriPath) & vbCrLf
+    info = info & "guri_postgres_config.json: " & pgCfg & " - " & FileExistsLabel(fso, pgCfg) & vbCrLf
+    info = info & "guri_mysql_config.json (legacy): " & myCfg & " - " & FileExistsLabel(fso, myCfg) & vbCrLf
+    info = info & "Output folder: " & outDir & " - " & FolderExistsLabel(fso, outDir) & vbCrLf
+    info = info & "VBA log: " & MSCANModLogging.logPath() & " - " & FileExistsLabel(fso, MSCANModLogging.logPath()) & vbCrLf
     info = info & vbCrLf
     GetAesScannerInfo = info
 End Function

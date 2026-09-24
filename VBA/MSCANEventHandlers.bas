@@ -20,7 +20,7 @@ Private m_FormReadNotify As Boolean
 Private m_FormReadNotifySuffix As String
 
 '===============================================================================
-' NEW MAIL (Application.NewMailEx) — backup when Items.ItemAdd is missed
+' NEW MAIL (Application.NewMailEx) - backup when Items.ItemAdd is missed
 '===============================================================================
 
 Public Sub HandleNewMailEx(ByVal entryIdCollection As String)
@@ -53,7 +53,7 @@ Public Sub HandleNewMailEx(ByVal entryIdCollection As String)
 
         If itm Is Nothing Then
             skipped = skipped + 1
-            MSCANModLogging.WriteLogDebug "NewMailEx: skip — GetItemFromID failed for " & Left$(entryId, 24)
+            MSCANModLogging.WriteLogDebug "NewMailEx: skip - GetItemFromID failed for " & Left$(entryId, 24)
             GoTo NextNewMailPart
         End If
         If Not MSCANModule1.IsScannableItem(itm) Then
@@ -61,7 +61,7 @@ Public Sub HandleNewMailEx(ByVal entryIdCollection As String)
             MSCANModLogging.WriteLogDebug "NewMailEx: skip non-scannable class=" & CStr(itm.MessageClass)
             GoTo NextNewMailPart
         End If
-        ' Account filter before any body/header work — HTMLBody freezes Outlook.
+        ' Account filter before any body/header work - HTMLBody freezes Outlook.
         If Not MSCANSettings.IsMailItemAccountScanEnabled(itm) Then
             skipped = skipped + 1
             MSCANModLogging.WriteLog "NewMailEx: skip (account scan OFF) - " & Left$(CStr(itm.Subject), 60)
@@ -330,8 +330,8 @@ Private Sub ApplyReadNotifyWithConflictRetry( _
             LogSendDiagnostics mail, "ReadNotify-retry"
             DoEvents
         Else
-            MSCANCore.Log "ReadNotify: giving up after conflict/failure — send continues without re-stamp."
-            MSCANModLogging.WriteLog "ReadNotify: giving up after conflict/failure — send continues without re-stamp."
+            MSCANCore.Log "ReadNotify: giving up after conflict/failure - send continues without re-stamp."
+            MSCANModLogging.WriteLog "ReadNotify: giving up after conflict/failure - send continues without re-stamp."
         End If
     Next attempt
     Exit Sub

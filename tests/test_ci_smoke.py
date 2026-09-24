@@ -49,6 +49,16 @@ def test_version_aligned_with_version_file() -> None:
     assert text == VERSION
 
 
+def test_vba_modules_are_ascii() -> None:
+    # The VBA editor imports .bas/.cls as ANSI; UTF-8 punctuation becomes mojibake.
+    bad = []
+    for path in sorted((ROOT / "VBA").glob("*.[bc][al][ss]")):
+        for lineno, line in enumerate(path.read_bytes().splitlines(), 1):
+            if any(b > 0x7F for b in line):
+                bad.append(f"{path.name}:{lineno}")
+    assert not bad, "non-ASCII in VBA modules: " + ", ".join(bad[:20])
+
+
 def test_install_root_markers() -> None:
     assert (ROOT / "aes" / "geolocate_headers.py").is_file()
     assert (ROOT / "guri" / "gui.py").is_file()

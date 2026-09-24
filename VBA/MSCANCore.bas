@@ -150,7 +150,7 @@ Public Function DetectClassification(ByVal subjectLine As String) As String
         Exit Function
     End If
     
-    ' Only known tags count as classified (unknown [SEC…] must not skip the send dialog).
+    ' Only known tags count as classified (unknown [SEC...] must not skip the send dialog).
     Dim i As Long
     For i = 1 To TAG_COUNT
         If InStr(1, subjectLine, m_ClassificationTags(i), vbTextCompare) > 0 Then
@@ -187,7 +187,7 @@ Public Function GetExistingClassification(ByVal subjectLine As String) As String
 End Function
 
 Private Function ExtractTagByPattern(ByVal subjectLine As String) As String
-    '''Used by RemoveClassification to strip leftover [SEC…] / [NR/E] bracket text.
+    '''Used by RemoveClassification to strip leftover [SEC...] / [NR/E] bracket text.
     '''Not used for HasClassification / DetectClassification (known tags only).
     
     Dim startPos As Long
@@ -279,7 +279,7 @@ Public Function ApplyClassificationByTag(ByVal subjectLine As String, ByVal clas
 
     idx = GetTagIndex(classificationTag)
     If idx < 1 Then
-        ' Reject unknown tags — do not stamp arbitrary bracket text onto subjects.
+        ' Reject unknown tags - do not stamp arbitrary bracket text onto subjects.
         ApplyClassificationByTag = subjectLine
         Exit Function
     End If
@@ -436,8 +436,8 @@ End Function
 
 Public Function GetDetectionPattern() As String
     '''Returns a description of the classification detection pattern
-    '''Used for diagnostics — detection matches known tags only.
-    GetDetectionPattern = "Known tags only: [NR/E] or [SEC1]…[SEC7] (exact)"
+    '''Used for diagnostics - detection matches known tags only.
+    GetDetectionPattern = "Known tags only: [NR/E] or [SEC1]...[SEC7] (exact)"
 End Function
 
 '===============================================================================

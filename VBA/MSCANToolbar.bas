@@ -52,7 +52,7 @@ Public Sub CreateToolbar()
         ResolveIconPath("aes_full_scan.bmp"), ResolveIconPath("aes_full_scan_mask.bmp")
 
     EnsureButton bar, TAG_DEEPSCAN, "AES Deep Scan", "DeepScanEmail", _
-        "AES: manual deep analysis — opens a report; does not change the email", 1000, False, 1
+        "AES: manual deep analysis - opens a report; does not change the email", 1000, False, 1
     ApplyButtonPicture FindButtonByTag(bar, TAG_DEEPSCAN), _
         ResolveIconPath("aes_deep_scan.bmp"), ResolveIconPath("aes_deep_scan_mask.bmp")
 
@@ -62,7 +62,7 @@ Public Sub CreateToolbar()
         ResolveIconPath("aes_guri.bmp"), ResolveIconPath("aes_guri_mask.bmp")
 
     EnsureButton bar, TAG_AURA, "Aura", "ShowAuraGui", _
-        "Aura — Aliniant Universal Removal Application (data-broker opt-out tracking)", 1088, False, 1
+        "Aura - Aliniant Universal Removal Application (data-broker opt-out tracking)", 1088, False, 1
     ApplyButtonPicture FindButtonByTag(bar, TAG_AURA), _
         ResolveIconPath("aes_aura.bmp"), ResolveIconPath("aes_aura_mask.bmp")
 
@@ -579,7 +579,7 @@ Private Function BuildDeepScanStatusLine(ByVal completed As Long, ByVal skipped 
     msg = ""
 
     If completed > 0 Then
-        msg = "AES Deep Scan started for " & completed & " email(s) — report opens when ready"
+        msg = "AES Deep Scan started for " & completed & " email(s) - report opens when ready"
     End If
 
     If skipped > 0 Then
@@ -631,7 +631,7 @@ Public Sub ShortScanEmail()
 
         ' Clicking Short Scan is an explicit request, so an existing result is
         ' rescanned and replaced rather than left alone.
-        ' ProcessEmail is async — footer is applied when Python finishes.
+        ' ProcessEmail is async - footer is applied when Python finishes.
         MSCANModule1.ProcessEmail mail, True
 
         If isRescan Then
@@ -665,12 +665,12 @@ Private Function BuildShortScanStatusLine(ByVal completed As Long, ByVal rescann
     msg = ""
 
     If completed > 0 Then
-        msg = "AES Short Scan started for " & completed & " email(s) — footer applies when ready"
+        msg = "AES Short Scan started for " & completed & " email(s) - footer applies when ready"
     End If
 
     If rescanned > 0 Then
         If Len(msg) > 0 Then msg = msg & "; "
-        msg = msg & "rescanning " & rescanned & " email(s) — existing result will be replaced"
+        msg = msg & "rescanning " & rescanned & " email(s) - existing result will be replaced"
     End If
 
     If skipped > 0 Then
@@ -787,7 +787,7 @@ Public Sub ShowGuriGui()
 
     If Len(py) = 0 Or Len(script) = 0 Then
         MSCANModLogging.WriteLog "ShowGuriGui: python or guri\gui.py not found (py=" & py & " script=" & script & " root=" & MSCANPaths.GetInstallRoot() & ")."
-        MSCANModStatus.ShowStatus "GURI GUI not found — set Install root in GURI Database tab"
+        MSCANModStatus.ShowStatus "GURI GUI not found - set Install root in GURI Database tab"
         Exit Sub
     End If
 
@@ -798,7 +798,7 @@ Public Sub ShowGuriGui()
     shell.CurrentDirectory = workDir
     shell.Run cmd, 0, False
     MSCANModLogging.WriteLog "ShowGuriGui: launched " & cmd & " cwd=" & workDir
-    MSCANModStatus.ShowStatus "Opening GURI…"
+    MSCANModStatus.ShowStatus "Opening GURI..."
     Exit Sub
 
 EH:
@@ -857,7 +857,7 @@ Public Sub ShowAuraGui()
 
     If Len(py) = 0 Or Len(script) = 0 Then
         MSCANModLogging.WriteLog "ShowAuraGui: python or guri\gui.py not found (py=" & py & " script=" & script & " root=" & MSCANPaths.GetInstallRoot() & ")."
-        MSCANModStatus.ShowStatus "Aura GUI not found — set Install root in GURI Database tab"
+        MSCANModStatus.ShowStatus "Aura GUI not found - set Install root in GURI Database tab"
         Exit Sub
     End If
 
@@ -868,7 +868,7 @@ Public Sub ShowAuraGui()
     shell.CurrentDirectory = workDir
     shell.Run cmd, 0, False
     MSCANModLogging.WriteLog "ShowAuraGui: launched " & cmd & " cwd=" & workDir
-    MSCANModStatus.ShowStatus "Opening Aura…"
+    MSCANModStatus.ShowStatus "Opening Aura..."
     Exit Sub
 
 EH:
@@ -916,7 +916,7 @@ Public Sub UpdateServiceButtonCaption()
     WriteServiceStateFile
 End Sub
 
-''' Rebuild the AES CommandBar after a VBA re-import (Alt+F8 → RecoverAesUi).
+''' Rebuild the AES CommandBar after a VBA re-import (Alt+F8 -> RecoverAesUi).
 Public Sub RecoverAesUi()
     On Error GoTo EH
     MSCANModLogging.WriteLog "RecoverAesUi: rebuilding AES toolbar and refreshing service UI."
@@ -930,7 +930,7 @@ Public Sub RecoverAesUi()
 EH:
     MSCANModLogging.WriteLog "RecoverAesUi error: #" & Err.Number & " - " & Err.Description
     MsgBox "Could not recover AES toolbar: " & Err.Description & vbCrLf & vbCrLf & _
-           "Alt+F11 → Debug → Compile VBAProject, fix errors, then run RecoverAesUi again.", _
+           "Alt+F11 -> Debug -> Compile VBAProject, fix errors, then run RecoverAesUi again.", _
            vbExclamation, "AES"
 End Sub
 
@@ -998,7 +998,7 @@ Public Sub ApplyServiceBusyAppearance()
         ApplyButtonPicture btn, ResolveIconPath("aes_service_busy.bmp"), ResolveIconPath("aes_service_busy_mask.bmp")
     ElseIf isOn And MSCANModWatchers.GetWatcherCount() = 0 Then
         btn.Caption = "AES ON (0 inboxes!)"
-        btn.TooltipText = "AES is ON but NO inboxes are being watched — all accounts are disabled. Open AES Settings and enable at least one account."
+        btn.TooltipText = "AES is ON but NO inboxes are being watched - all accounts are disabled. Open AES Settings and enable at least one account."
         ApplyButtonPicture btn, ResolveIconPath("aes_service_off.bmp"), ResolveIconPath("aes_service_off_mask.bmp")
     ElseIf isOn Then
         btn.Caption = "AES ON"
@@ -1044,9 +1044,9 @@ Private Sub EnsureServiceButton(ByVal bar As CommandBar, ByVal isOn As Boolean)
         btn.TooltipText = "AES is processing " & pending & " scan(s). Footer/report applies when ready."
         btn.FaceId = 1087
     ElseIf isOn And watcherCount = 0 Then
-        ' Service is ON but nothing is actually being watched — make that visible.
+        ' Service is ON but nothing is actually being watched - make that visible.
         btn.Caption = "AES ON (0 inboxes!)"
-        btn.TooltipText = "AES is ON but NO inboxes are being watched — all accounts are disabled. Open AES Settings and enable at least one account."
+        btn.TooltipText = "AES is ON but NO inboxes are being watched - all accounts are disabled. Open AES Settings and enable at least one account."
         btn.FaceId = 1088  ' warning-style fallback icon
     ElseIf isOn Then
         btn.Caption = "AES ON"

@@ -41,7 +41,7 @@ Public Function ShowDialog( _
         Exit Function
     End If
 
-    ' Fallback: InputBox (legacy) — default ReadNotify from TRACKED levels when Aliniant
+    ' Fallback: InputBox (legacy) - default ReadNotify from TRACKED levels when Aliniant
     ShowDialog = ShowInputBoxDialog(originalSubject, defaultChoice, selectedTag, updatedSubject)
     If Not ShowDialog Then
         readNotify = isAliniantSend And MSCANCore.RequiresTracking(MSCANCore.GetTagIndex(selectedTag))
@@ -264,7 +264,7 @@ Private Function ResolvePythonExe() As String
     Dim fso As Object
     Set fso = CreateObject("Scripting.FileSystemObject")
 
-    ' Dialog MUST use pythonw.exe — python.exe always opens a console.
+    ' Dialog MUST use pythonw.exe - python.exe always opens a console.
     Dim paths As Variant
     paths = Array( _
         "C:\Python313\pythonw.exe", _

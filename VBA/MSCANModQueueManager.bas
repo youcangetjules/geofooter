@@ -10,7 +10,7 @@ Private Const STARTUP_QUIET_MS As Long = 90000
 Private Const QUEUE_TICK_DELAY_MS As Long = 2500
 ' Async delay before looking for a post-send inbox copy.
 Private Const POST_SEND_DRAIN_MS As Long = 12000
-' Cap concurrent Python jobs — each job's nudge VBS also hammers ItemLoad.
+' Cap concurrent Python jobs - each job's nudge VBS also hammers ItemLoad.
 Private Const MAX_INFLIGHT_SCANS As Long = 1
 
 Private m_MailQueue As Collection
@@ -74,7 +74,7 @@ Public Sub BeginStartupQuietPeriod()
     ' Call after watchers attach so sync-driven ItemAdd floods do not
     ' monopolize Outlook while the inbox is still loading.
     ' Mail is still queued during quiet; processing resumes when quiet ends.
-    ' Drop stale backlog from a prior session — it only blocks new mail.
+    ' Drop stale backlog from a prior session - it only blocks new mail.
     If Not m_MailQueue Is Nothing Then
         If m_MailQueue.Count > 0 Then
             MSCANModLogging.WriteLog "BeginStartupQuietPeriod: clearing " & m_MailQueue.Count & " stale queued item(s)."
@@ -132,7 +132,7 @@ Public Sub QueueMailForProcessing(ByVal item As Object, Optional ByVal highPrior
     ' During quiet: keep the mail, do not start processing yet (resume VBS will drain).
     If IsStartupQuiet() Then Exit Sub
 
-    ' Always defer off NewMailEx/ItemAdd — never ProcessEmail on the mail event
+    ' Always defer off NewMailEx/ItemAdd - never ProcessEmail on the mail event
     ' thread. Immediate DeferredProcessQueue was freezing Outlook on every new
     ' message (header/body/attachment export runs on the UI thread).
     LaunchDelayedQueueTick
@@ -210,7 +210,7 @@ Public Sub DeferredProcessQueue()
         Exit Sub
     End If
 
-    ' One item per tick — keeps Send responsive; schedule another tick if more remain.
+    ' One item per tick - keeps Send responsive; schedule another tick if more remain.
     ProcessQueue
 
     If Not m_MailQueue Is Nothing Then
@@ -304,18 +304,18 @@ Public Sub ProcessQueue()
             End If
             startedScan = True
         ElseIf MSCANModule1.IsAesScanned(mail) Then
-            ' Footer already present — stamped; keep draining backlog this tick.
+            ' Footer already present - stamped; keep draining backlog this tick.
             footerSkips = footerSkips + 1
             ClearNotReadyRetry entryKey
         Else
-            ' Async geo job started (or export failed) — one real scan per tick.
+            ' Async geo job started (or export failed) - one real scan per tick.
             startedScan = True
             ClearNotReadyRetry entryKey
         End If
 
         NextQueueItem:
         Set mail = Nothing
-        ' Do NOT DoEvents here — it re-enters ItemLoad → CompleteAsyncFooter /
+        ' Do NOT DoEvents here - it re-enters ItemLoad -> CompleteAsyncFooter /
         ' nested ProcessQueue and freezes Outlook for many seconds.
     Loop
 
@@ -408,7 +408,7 @@ Public Sub ForceResumeProcessing()
     ScheduleDeferredProcessQueue
 End Sub
 
-' Called from ItemSend — must NOT do heavy work (no inbox scan / ProcessQueue).
+' Called from ItemSend - must NOT do heavy work (no inbox scan / ProcessQueue).
 Public Sub SchedulePostSendFooterScan(ByVal subject As String)
     On Error GoTo EH
 
@@ -541,7 +541,7 @@ Private Sub MaybeDrainQueueIfStale()
     End If
 End Sub
 
-' Queue tick: sleep briefly, then retry inbox nudges — single GetFirst often misses ItemLoad.
+' Queue tick: sleep briefly, then retry inbox nudges - single GetFirst often misses ItemLoad.
 Private Function WriteQueueTickScript(ByVal vbsPath As String, ByVal sleepMs As Long) As Boolean
     On Error GoTo EH
 
@@ -597,7 +597,7 @@ End Function
 
 ' Called from MSCANModule1.NudgeAsyncWork on every Application_ItemLoad.
 ' Delayed VBS pings land here indirectly (they nudge Outlook by reading an
-' item). Casual browsing ItemLoads must stay cheap — only latch-driven nudges
+' item). Casual browsing ItemLoads must stay cheap - only latch-driven nudges
 ' may CatchUp / ProcessQueue (HTMLBody + geo work freeze the UI).
 Private Function QueueTickIsDue() As Boolean
     On Error Resume Next
@@ -651,7 +651,7 @@ Public Sub NudgeQueueWork()
         DrainPostSendSubjects
     End If
     ' Catch-up is expensive (Restrict + walk every inbox). Only on heartbeat /
-    ' quiet resume — NEVER on every 2.5s queue tick (that froze Outlook while
+    ' quiet resume - NEVER on every 2.5s queue tick (that froze Outlook while
     ' the backlog drained). Missed ItemAdd still recovers within ~90s.
     If hadQuietResume Or hadCatchUpBeat Then
         CatchUpMissedInboxMail
@@ -722,13 +722,13 @@ Public Function GetAutoScanDiagnostics() As String
     info = info & "In-flight scans: " & MSCANModule1.PendingAsyncJobCount() & vbCrLf
     If m_LastItemAddAt > 0 Then
         info = info & "Last ItemAdd: " & Format$(m_LastItemAddAt, "yyyy-mm-dd hh:nn:ss") & _
-               " — " & m_LastItemAddSubject & vbCrLf
+               " - " & m_LastItemAddSubject & vbCrLf
     Else
         info = info & "Last ItemAdd: (none this session)" & vbCrLf
     End If
     If m_LastNewMailExAt > 0 Then
         info = info & "Last NewMailEx: " & Format$(m_LastNewMailExAt, "yyyy-mm-dd hh:nn:ss") & _
-               " — " & m_LastNewMailExSubject & vbCrLf
+               " - " & m_LastNewMailExSubject & vbCrLf
     Else
         info = info & "Last NewMailEx: (none this session)" & vbCrLf
     End If
@@ -744,8 +744,8 @@ Public Function GetAutoScanDiagnostics() As String
         info = info & "Last queue activity: " & Format$(m_LastQueueActivityAt, "yyyy-mm-dd hh:nn:ss") & vbCrLf
     End If
     info = info & "Catch-up window: " & CATCHUP_WINDOW_MIN & " min lookback, " & _
-           CATCHUP_PER_INBOX & " newest/inbox, unread ≤" & CATCHUP_UNREAD_MAX_MIN & _
-           " min / read ≤" & CATCHUP_READ_MAX_MIN & " min" & vbCrLf
+           CATCHUP_PER_INBOX & " newest/inbox, unread <=" & CATCHUP_UNREAD_MAX_MIN & _
+           " min / read <=" & CATCHUP_READ_MAX_MIN & " min" & vbCrLf
     info = info & "Heartbeat every: " & (CATCHUP_HEARTBEAT_MS \ 1000) & "s" & vbCrLf
     info = info & vbCrLf
     GetAutoScanDiagnostics = info
@@ -828,7 +828,7 @@ Public Sub CatchUpMissedInboxMail(Optional ByVal force As Boolean = False)
             unread = itm.UnRead
             If Err.Number <> 0 Or received = 0 Then
                 Err.Clear
-                ' No ReceivedTime — only recover if still unread.
+                ' No ReceivedTime - only recover if still unread.
                 If Not unread Then
                     skippedOld = skippedOld + 1
                     GoTo NextCatchUpItem
@@ -884,7 +884,7 @@ End Sub
 ' Newest-first inbox items from the last windowMinutes.
 '
 ' Sorting inboxFolder.Items directly orders the whole folder on Outlook's UI
-' thread — up to 70k items for one account here, ~135k across all accounts per
+' thread - up to 70k items for one account here, ~135k across all accounts per
 ' pass. Restrict first so only recent mail is ordered. Callers that want the
 ' newest N still get the same items, because anything outside the window is
 ' older than all of them.
@@ -900,7 +900,7 @@ Private Function RecentInboxItemsDesc(ByVal inboxFolder As Outlook.folder, ByVal
     Err.Clear
     Set result = inboxFolder.Items.Restrict(restrictFilter)
     If Err.Number <> 0 Or result Is Nothing Then
-        ' Never Sort the unrestricted inbox — that freezes Outlook on large stores.
+        ' Never Sort the unrestricted inbox - that freezes Outlook on large stores.
         ' Callers walk GetFirst/GetNext with their own count caps.
         Err.Clear
         MSCANModLogging.WriteLog "RecentInboxItemsDesc: Restrict unsupported; returning unsorted Items (no full Sort)."
@@ -968,7 +968,7 @@ End Sub
 
 ' Idle heartbeat: recover mail when ItemAdd/NewMailEx never fired and the user
 ' is not clicking messages (no ItemLoad). Same ItemLoad-nudge technique as the
-' queue tick — external COM cannot call VBA on this Outlook build.
+' queue tick - external COM cannot call VBA on this Outlook build.
 Private Sub LaunchCatchUpHeartbeat()
     On Error GoTo EH
 
@@ -1068,7 +1068,7 @@ Private Sub LaunchDelayedPostSendDrain()
 
     Dim shell As Object
     Set shell = CreateObject("WScript.Shell")
-    ' Async — must not block ItemSend.
+    ' Async - must not block ItemSend.
     shell.Run "wscript.exe //Nologo //B " & Chr$(34) & vbsPath & Chr$(34), 0, False
     MSCANModLogging.WriteLog "LaunchDelayedPostSendDrain: scheduled async drain (" & POST_SEND_DRAIN_MS & " ms)."
     Exit Sub
@@ -1134,7 +1134,7 @@ EH:
 End Sub
 
 '===============================================================================
-' Diagnostics live controls — Python dialog writes aes_diag_commands.json;
+' Diagnostics live controls - Python dialog writes aes_diag_commands.json;
 ' ItemLoad nudge drains it here (Outlook has no Application.Run from COM).
 '===============================================================================
 

@@ -220,7 +220,7 @@ Public Sub RefreshServiceUI()
         MSCANModLogging.WriteLogDebug "RefreshServiceUI: gRibbon is Nothing (customUI onLoad not hooked)."
     End If
 
-    ' COM Ribbon host (Home large icons) — invalidate after VBA toggle
+    ' COM Ribbon host (Home large icons) - invalidate after VBA toggle
     NotifyAesRibbonHost
 End Sub
 

@@ -1,7 +1,7 @@
 Attribute VB_Name = "MSCANModStatus"
 '===============================================================================
 ' MSCANModStatus - Show AES messages in the Outlook status bar
-' Note: Outlook.Explorer.Caption is read-only in this Outlook build — do not assign it.
+' Note: Outlook.Explorer.Caption is read-only in this Outlook build - do not assign it.
 ' ON/OFF is shown via status-bar text and the AES ribbon, not the window title.
 '===============================================================================
 Option Explicit
@@ -65,7 +65,7 @@ Public Sub RestorePersistentStatusIfDue()
     If gRestoreDue = 0 Then Exit Sub
 
     If Now < gRestoreDue Then
-        ' Early nudge — reschedule for the remaining time.
+        ' Early nudge - reschedule for the remaining time.
         gRestoreNudgePending = False
         ScheduleStatusRestoreNudge
         Exit Sub
@@ -78,7 +78,7 @@ End Sub
 
 ' Kept for callers; Explorer.Caption cannot be written on this Outlook build.
 Public Sub UpdateExplorerCaptions(ByVal isOn As Boolean)
-    ' no-op — Caption is read-only
+    ' no-op - Caption is read-only
 End Sub
 
 Public Sub ClearStatus()
@@ -112,7 +112,7 @@ Private Function FormatStatusText(ByVal msg As String) As String
     Dim t As String
     t = Trim$(msg & "")
 
-    ' Strip repeated AES / AES: prefixes from callers so we never show "AES: AES …".
+    ' Strip repeated AES / AES: prefixes from callers so we never show "AES: AES ...".
     Do While Len(t) > 0
         If StrComp(Left$(t, 5), "AES: ", vbTextCompare) = 0 Then
             t = Trim$(Mid$(t, 6))

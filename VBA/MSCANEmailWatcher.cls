@@ -22,7 +22,7 @@ Public Function Init(ByVal Items As Outlook.Items, Optional ByVal folderLabel As
     End If
 
     mFolderLabel = folderLabel
-    ' Do not touch Items.Count or FolderPath — both can enumerate huge stores.
+    ' Do not touch Items.Count or FolderPath - both can enumerate huge stores.
     Set WatchedItems = Items
     If WatchedItems Is Nothing Then
         MSCANModLogging.WriteLog "MSCANEmailWatcher.Init: failed to bind Items for " & folderLabel
@@ -64,7 +64,7 @@ Private Sub WatchedItems_ItemAdd(ByVal item As Object)
 
     MSCANModLogging.WriteLog "WatchedItems_ItemAdd: new mail in " & mFolderLabel & " class=" & item.MessageClass
     MSCANModQueueManager.NoteItemAddEvent CStr(item.Subject), mFolderLabel
-    ' Do not DrainPostSendSubjects here — that Restrict/Sort/HTMLBody work freezes
+    ' Do not DrainPostSendSubjects here - that Restrict/Sort/HTMLBody work freezes
     ' Outlook on the ItemAdd thread. Post-send drain stays on its delayed VBS tick.
     ' Queue even during startup quiet; processing resumes when quiet ends.
     MSCANModQueueManager.QueueMailForProcessing item, True
@@ -80,7 +80,7 @@ Private Function IsRecentMail(ByVal item As Object) As Boolean
         received = item.ReceivedTime
         unread = item.UnRead
     Else
-        ' ReportItem has no ReceivedTime — use MAPI delivery time, then CreationTime.
+        ' ReportItem has no ReceivedTime - use MAPI delivery time, then CreationTime.
         received = item.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x0E060040")
         If Err.Number <> 0 Or received = 0 Then
             Err.Clear

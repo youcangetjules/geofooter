@@ -59,7 +59,7 @@ Public Function AreWatchersActive() As Boolean
     AreWatchersActive = (GetWatcherCount() > 0)
 End Function
 
-' Legacy name — same path as staggered so queue/watcher init cannot diverge.
+' Legacy name - same path as staggered so queue/watcher init cannot diverge.
 Public Sub InitializeWatchers()
     InitializeWatchersStaggered
 End Sub
@@ -175,7 +175,7 @@ Private Sub AttachWatcherForAccount(ByVal acc As Outlook.Account)
     Set watcher = New MSCANEmailWatcher
     initOk = watcher.Init(inboxFolder.Items, label)
     If Not initOk Or Not watcher.IsWatching Then
-        MSCANModLogging.WriteLog "AttachWatcher: Init failed for '" & label & "' — not counted."
+        MSCANModLogging.WriteLog "AttachWatcher: Init failed for '" & label & "' - not counted."
         Set watcher = Nothing
         Exit Sub
     End If

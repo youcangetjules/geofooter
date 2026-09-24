@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.2.5: ASCII-only VBA modules (mojibake in Outlook dialogs)
+- The user saw the old InputBox "AES Settings â€" Scan Accounts" dialog. `%APPDATA%\Microsoft\Outlook\VbaProject.OTM` was last saved 2026-09-23 23:35, so none of today's imports were saved. Outlook runs yesterday's code, which looks for the deleted `aes_settings_dialog.py`, so it falls back to the InputBox.
+- Converted all `VBA\*.bas` / `*.cls` to pure ASCII (97 replacements of em-dashes, arrows, quotes). The VBA editor imports them as ANSI, which garbled the punctuation.
+- Added `test_vba_modules_are_ascii` to `tests/test_ci_smoke.py`.
+- Follow-up: re-run `scripts\Import_VBA_to_Outlook.bat`, confirm `File > Save: done` (or Ctrl+S in the VBA editor), then restart Outlook.
+
 ### 2026-09-24 — 1.2.4: VBA import compiles + saves (buttons ran stale code)
 - Logs showed buttons firing but running pre-1.2.1 VBA ("guri_gui.py not found", "geolocate_headers.py not found"): the import was never saved, so an Outlook restart reloaded the old `VbaProject.OTM`.
 - `scripts/Import_VBA_to_Outlook.ps1` now executes VBE Compile (control 578) and Save (control 3) after importing, with a loud manual fallback message.

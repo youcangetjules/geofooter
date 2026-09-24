@@ -275,7 +275,7 @@ Private Function BuildStampedFields( _
                     changed(slot) = changed(slot) + 1
                 End If
             ElseIf Len(Trim$(recip.Name)) > 0 Then
-                ' No SMTP — keep the original token rather than inventing
+                ' No SMTP - keep the original token rather than inventing
                 ' Name.read-notify.com.
                 MSCANModLogging.WriteLog "ReadNotify: skipped non-SMTP recipient '" & recip.Name & "'"
                 kept(slot) = AppendAddress(kept(slot), recip.Name)

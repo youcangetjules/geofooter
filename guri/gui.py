@@ -2039,16 +2039,20 @@ class GURIViewerGUI(QMainWindow):
         self.conn_label.setStyleSheet(f"color: {PALETTE['muted']};")
         conn_layout.addWidget(self.conn_label)
 
-        conn_layout.addStretch()
+        conn_layout.addStretch(1)
 
-        pg_btn = QPushButton("PostgreSQL")
-        pg_btn.clicked.connect(self._show_postgres_connection_dialog)
-        conn_layout.addWidget(pg_btn)
+        self.now_label = QLabel()
+        self.now_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.now_label.setStyleSheet(
+            f"color: {PALETTE['text']}; font-weight: 600; font-size: 11pt;"
+        )
+        conn_layout.addWidget(self.now_label)
+        self._tick_now_clock()
+        self.now_timer = QTimer(self)
+        self.now_timer.timeout.connect(self._tick_now_clock)
+        self.now_timer.start(1000)
 
-        db_tab_btn = QPushButton("Database…")
-        db_tab_btn.setToolTip("Open the Database browser tab")
-        db_tab_btn.clicked.connect(self._focus_database_tab)
-        conn_layout.addWidget(db_tab_btn)
+        conn_layout.addStretch(1)
 
         self.ingest_pill = QPushButton("Pull")
         self.ingest_pill.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -2069,6 +2073,13 @@ class GURIViewerGUI(QMainWindow):
         self.main_layout.setSpacing(8)
         central_widget.setLayout(self.main_layout)
         self.main_layout.addWidget(conn_frame)
+
+    def _tick_now_clock(self) -> None:
+        label = getattr(self, "now_label", None)
+        if label is None:
+            return
+        stamp = datetime.now().strftime("%d %B %Y; %H:%M:%S").lstrip("0")
+        label.setText(f"Now: {stamp}")
 
     def _set_conn_status(self, text: str, ok: bool) -> None:
         """Update connection bar text + dot color (and status bar summary)."""
@@ -2238,6 +2249,18 @@ class GURIViewerGUI(QMainWindow):
         here.clicked.connect(self._toggle_ingest_mode)
         mode_layout.addWidget(here, alignment=Qt.AlignmentFlag.AlignLeft)
         root.addWidget(mode_box)
+
+        db_box = QGroupBox("Database")
+        db_layout = QHBoxLayout(db_box)
+        pg_btn = QPushButton("PostgreSQL")
+        pg_btn.clicked.connect(self._show_postgres_connection_dialog)
+        db_layout.addWidget(pg_btn)
+        db_tab_btn = QPushButton("Database…")
+        db_tab_btn.setToolTip("Open the Database browser tab")
+        db_tab_btn.clicked.connect(self._focus_database_tab)
+        db_layout.addWidget(db_tab_btn)
+        db_layout.addStretch(1)
+        root.addWidget(db_box)
         root.addStretch(1)
 
     def _create_about_tab(self):

@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.7] — 2026-09-24
+
+### Changed
+
+- The top bar shows a centred live clock, for example **Now: 24 September 2026; 20:08:56**.
+- **PostgreSQL** and **Database…** moved from the top bar into the Settings tab.
+
 ## [1.3.6] — 2026-09-24
 
 ### Changed

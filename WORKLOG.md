@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.7: Centred clock on the top bar
+- The connection bar shows `Now: 24 September 2026; 20:08:56`, centred between the status and the right-hand buttons, ticking every second.
+- PostgreSQL and Database… moved off the top bar onto the Settings tab.
+- Follow-up: restart GURI.
+
 ### 2026-09-24 — 1.3.6: One Refresh, Push/Pull pill, Settings tab
 - Removed the Welcome Refresh buttons. One Refresh is on the top-right bar, next to a Push/Pull pill. Push waits for AES (`PUSH` on the GURI local socket). Pull keeps the Outlook poll timer.
 - Settings is the last tab, after Ollama.

@@ -20,6 +20,14 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.19] — 2026-09-24
+
+### Changed
+
+- Attachments still show a green **OK** when there are none or every file is fine.
+- Beacons show **0 Blocked** in that same green. If any beacon is blocked, that count is **Blocked** in red.
+- Links show the clear count as **OK** in green. Dangerous links add **NOK** in red beside it.
+
 ## [1.3.18] — 2026-09-24
 
 ### Fixed

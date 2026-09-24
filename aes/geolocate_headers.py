@@ -3707,21 +3707,28 @@ class HTMLReportGenerator:
 
         total = len(link_findings or [])
         if total == 0:
-            return ("Links: none found", "<span style='color: #888888;'>No links in message body</span>")
+            return (
+                'Links: <span style="color:#90EE90;font-weight:bold;">0 OK</span>',
+                "<span style='color: #888888;'>No links in message body</span>",
+            )
 
         highs = [f for f in link_findings if str(field(f, "risk_level")) == "high"]
         meds = [f for f in link_findings if str(field(f, "risk_level")) == "medium"]
 
+        ok_style = "color:#90EE90;font-weight:bold;"
+        bad_style = "color:#FF4444;font-weight:bold;"
+        ok_n = total - (len(highs) + len(meds))
+        line = f'Links: <span style="{ok_style}">{ok_n} OK</span>'
+        bad = len(highs) + len(meds)
+        if bad:
+            line += f' <span style="{bad_style}">{bad} NOK</span>'
         if not highs and not meds:
-            line = f"Links: {total} OK"
             detail = (
                 f"<span style='color: #008000;'>{total} link{'s' if total != 1 else ''} checked "
                 f"&#10003; no heuristic flags</span>"
             )
             return (line, detail)
 
-        bad = len(highs) + len(meds)
-        line = f"Links: {bad} of {total} suspicious &#9888;"
         parts = [
             f"<span style='color: {'#FF0000' if highs else '#CC7A00'};'>"
             f"{total} checked &mdash; {len(highs)} high risk, {len(meds)} suspicious</span>"
@@ -4843,13 +4850,16 @@ Scanned: {scanned_at} | GURI: {html.escape(guri)}</div>
         report_url = self._write_beacon_report_files(
             report_id, beacon_count, beacon_urls, subject, sender_email, sender_domain, guri
         )
-        if beacon_count <= 0:
-            label = "Beacons: None"
+        ok_style = "color:#90EE90;font-weight:bold;"
+        bad_style = "color:#FF4444;font-weight:bold;"
+        blocked = int(beacon_blocked or 0)
+        if blocked > 0:
+            status = f'<span style="{bad_style}">{blocked} Blocked</span>'
         else:
-            label = f"Beacons: {beacon_count} detected"
-            if beacon_blocked is not None:
-                label = f"{label} / {beacon_blocked} blocked"
-        return self._metric_report_link(report_url, html.escape(label)), report_url
+            status = f'<span style="{ok_style}">0 Blocked</span>'
+        detected = f"{beacon_count} detected " if beacon_count > 0 else ""
+        label = f"Beacons: {detected}{status}"
+        return self._metric_report_link(report_url, label), report_url
 
     def _ensure_aes_static_pages(self) -> None:
         """Ensure fallback pages exist for beacon viewing without AES installed."""

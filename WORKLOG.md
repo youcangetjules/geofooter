@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.19: Footer status colours for beacons and links
+- Beacons: `0 Blocked` in `#90EE90`; any blocked count is `N Blocked` in `#FF4444`.
+- Links: clear count is `N OK` in green; dangerous links add `N NOK` in red. Zero links is `0 OK`.
+- Attachments unchanged: green OK when none or all files are fine.
+- Follow-up: rescan a mail.
+
 ### 2026-09-24 — 1.3.18: Forced gap above the footer
 - Outlook ignores padding on the footer div, so the strip stayed glued to the message. A 12px white table row (`height='12'`) is now the first thing in the footer.
 - Follow-up: rescan a mail. No VBA re-import.

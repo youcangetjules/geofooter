@@ -78,7 +78,7 @@ All of the API Keys for the Threat websites have free tiers. We did that on purp
 ## License / ownership
 
 © Aliniant — internal / product suite. Public mirror: [youcangetjules/geofooter](https://github.com/youcangetjules/geofooter).
-If you can download it and install it - have fun!
-Need help with it - julian.garrett@aliniant.com
-I take cash and card. And feature requests.
+If you can download it and install it - have fun!  
+Need help with it - julian.garrett@aliniant.com  
+I take cash and card. And feature requests.  
 Rule for life - drive it like its stolen :)

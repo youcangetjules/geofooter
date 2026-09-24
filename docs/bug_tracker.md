@@ -39,8 +39,8 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 - **Reported:** 2026-09-24
 - **Summary:** Outlook still runs the pre-restructure module set until the updated `.bas`/`.cls` files are imported. Scans may still look for old script paths (`VBA\geolocate_headers.py`, root `guri_gui.py`, etc.).
 - **Repro:** Edit `VBA\MSCANPaths.bas` (or pull 1.2.1+); open Outlook without re-import; trigger a scan or Settings/GURI from the toolbar.
-- **Workaround:** Re-import per `VBA\IMPORT.txt`, or use `scripts\Import_VBA_to_Outlook.ps1` once AccessVBOM is enabled. Then Debug → Compile VBAProject → Save → restart Outlook.
-- **Follow-up:** Finish documenting the auto-import script; confirm AccessVBOM registry path on this Outlook build.
+- **Workaround:** Run `scripts\Import_VBA_to_Outlook.bat` with Outlook open (use `-EnableAccessVBOM` once if needed, quit Outlook fully, then run again). Or re-import manually per `VBA\IMPORT.txt`. Then Debug → Compile VBAProject → Save → restart Outlook.
+- **Follow-up:** Operator still needs to run the import on each machine after pull.
 
 ### BUG-001 — Outlook Trust Center UI has no “Trust access to the VBA project object model” checkbox
 - **Severity:** S3
@@ -53,7 +53,8 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
   New-Item -Path "HKCU:\Software\Microsoft\Office\16.0\Outlook\Security" -Force | Out-Null
   Set-ItemProperty -Path "HKCU:\Software\Microsoft\Office\16.0\Outlook\Security" -Name "AccessVBOM" -Type DWord -Value 1
   ```
-  Fully quit Outlook (tray too), reopen, then run `scripts\Import_VBA_to_Outlook.ps1 -EnableAccessVBOM` if needed.
+  Fully quit Outlook (tray too), reopen, then run `scripts\Import_VBA_to_Outlook.bat`
+  (or `Import_VBA_to_Outlook.ps1 -EnableAccessVBOM` once to set the key).
 - **Notes:** “Enable all macros” only allows macros to *run*; it does not grant project object model access.
 
 ---

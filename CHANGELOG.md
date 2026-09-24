@@ -20,6 +20,15 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.2.2] — 2026-09-24
+
+### Added
+- `scripts/Import_VBA_to_Outlook.ps1` (+ `.bat`) to remove/re-import AES `MSCAN*` modules into the running Outlook VBA project (AccessVBOM required; optional `-SyncThisOutlookSession`).
+- `docs/bug_tracker.md` for open/closed suite defects.
+
+### Changed
+- `VBA/IMPORT.txt`, README, and AGENTS point at the automated import path.
+
 ## [1.2.1] — 2026-09-24
 
 ### Changed

@@ -53,7 +53,7 @@ Do **not** keep obsolete trees (`Old\`, `_archive\`) in the published repo, and 
 ## Operating constraints agents must respect
 
 1. **Outlook UI thread** — never run `ProcessEmail` / heavy export synchronously from `ItemAdd` / `NewMailEx`. Queue + delayed VBS tick only.
-2. **VBA changes require re-import** into Outlook (`VBA\IMPORT.txt`). Editing `.bas` on disk does nothing until imported.
+2. **VBA changes require re-import** into Outlook (`VBA\IMPORT.txt`, or `scripts\Import_VBA_to_Outlook.bat`). Editing `.bas` on disk does nothing until imported. First-time auto-import needs AccessVBOM (see `docs/bug_tracker.md` BUG-001).
 3. **Keep modules in sync** — e.g. `MSCANModule1` calling `MSCANModSenderRules.QuarantineAllAttachments` needs that module imported too.
 4. **Compact vs full/deep** — automatic new-mail scans are compact/lite (lighter hop/AV/export). Full/Deep keep heavy fidelity.
 5. **Commit + push after each patch** — when a meaningful patch lands, create a captioned git commit and `git push` to `origin` in the same turn (unless the user says not to for that change). Never commit secrets (DPAPI settings written by `aes\secret_store.py`, API keys, `*.dpapi`, live DB configs, `datastore\`).

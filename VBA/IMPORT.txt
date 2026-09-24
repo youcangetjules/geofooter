@@ -106,8 +106,22 @@ Microsoft Outlook Objects should remain.
 
 Future updates
 --------------
-After the one-time ThisOutlookSession setup, re-import .bas / .cls files only.
-Logic changes go in MSCANAppBootstrap.bas and other modules, not in ThisOutlookSession.
+Prefer the automated sync (Outlook must be running):
+
+  scripts\Import_VBA_to_Outlook.bat
+  scripts\Import_VBA_to_Outlook.bat -EnableAccessVBOM
+      (first time only if AccessVBOM is not set; then quit Outlook fully and re-run)
+  scripts\Import_VBA_to_Outlook.bat -SyncThisOutlookSession
+      (also overwrites the built-in ThisOutlookSession from VBA\ThisOutlookSession.cls)
+
+Or PowerShell:
+  powershell -File scripts\Import_VBA_to_Outlook.ps1
+  powershell -File scripts\Import_VBA_to_Outlook.ps1 -WhatIf
+
+Manual fallback: File > Import File for each .bas / .cls listed above.
+After the one-time ThisOutlookSession setup, re-import .bas / .cls files only
+(or use -SyncThisOutlookSession). Logic changes go in MSCANAppBootstrap.bas
+and other modules, not in ThisOutlookSession.
 
 After import
 ------------

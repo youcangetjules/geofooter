@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — Automated Outlook VBA import script (1.2.2)
+- Added `scripts\Import_VBA_to_Outlook.ps1` + `.bat`: syncs all MSCAN modules from `VBA\` into the running Outlook project; optional `-SyncThisOutlookSession`; `-EnableAccessVBOM` sets the registry key when the Trust Center UI omits it.
+- Documented in `VBA\IMPORT.txt`, README, AGENTS; bug_tracker workarounds updated.
+- Follow-up: run the bat once on this machine after AccessVBOM (closes BUG-002 when done); Compile + Save in VBA editor.
+
 ### 2026-09-24 — Add docs/bug_tracker.md
 - New living bug list under `docs\` (open/closed, severity, areas, template).
 - Seeded BUG-001 (AccessVBOM missing from Trust Center UI) and BUG-002 (Outlook VBA still needs re-import after 1.2.1 package move).

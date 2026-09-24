@@ -9,7 +9,7 @@
 | **Aura** | Aliniant Universal Removal Application (broker opt-out workspace) |
 | **AesRibbonHost** | Optional COM/ribbon host for AES UI in Outlook |
 
-**Version:** see [`VERSION`](VERSION) / [`geofooter/version.py`](geofooter/version.py) — currently **1.2.1**.  
+**Version:** see [`VERSION`](VERSION) / [`geofooter/version.py`](geofooter/version.py) — currently **1.2.2**.  
 **Changes:** [`CHANGELOG.md`](CHANGELOG.md) · day-to-day notes in [`WORKLOG.md`](WORKLOG.md) · bugs in [`docs/bug_tracker.md`](docs/bug_tracker.md).
 
 ## Paths
@@ -41,7 +41,7 @@ Override with env `GEOFOOTER_ROOT`. See `geofooter/paths.py` / `VBA\MSCANPaths.b
 ## Quick start
 
 1. Copy `guri_postgres_config.example.json` → `guri_postgres_config.json` and set local credentials (**never commit** the real file).
-2. Import VBA modules per [`VBA/IMPORT.txt`](VBA/IMPORT.txt).
+2. Import VBA modules per [`VBA/IMPORT.txt`](VBA/IMPORT.txt), or run [`scripts/Import_VBA_to_Outlook.bat`](scripts/Import_VBA_to_Outlook.bat) with Outlook open (AccessVBOM required — see [`docs/bug_tracker.md`](docs/bug_tracker.md)).
 3. Register the `aes://` footer actions: `.venv\Scripts\python.exe aes\action_handler.py --register`.
 4. Ribbon: close Outlook → `AesRibbonHost\install.ps1` → reopen.
 5. GURI: `scripts\Launch_GURI_GUI.bat` (or `python guri\gui.py` from the install root).

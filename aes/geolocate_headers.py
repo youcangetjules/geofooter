@@ -4720,22 +4720,13 @@ Live Safe Browsing lookups are optional and separate.</p>
         """Build attachment count + OK/Not OK labels for the footer."""
         ok_style = "color:#90EE90;font-weight:bold;"
         bad_style = "color:#FF4444;font-weight:bold;"
-        parts = [f"Attachments: {total}"]
-
-        if total == 0:
-            parts.append(f'<span style="{ok_style}">OK</span>')
+        parts = ["Attachments:"]
+        if not_ok_count <= 0:
+            parts.append(f'<span style="{ok_style}">{total} OK</span>')
         else:
             if ok_count > 0:
-                if ok_count == total:
-                    parts.append(f'<span style="{ok_style}">OK</span>')
-                else:
-                    parts.append(f'<span style="{ok_style}">{ok_count} OK</span>')
-            if not_ok_count > 0:
-                if not_ok_count == total:
-                    parts.append(f'<span style="{bad_style}">Not OK</span>')
-                else:
-                    parts.append(f'<span style="{bad_style}">{not_ok_count} Not OK</span>')
-
+                parts.append(f'<span style="{ok_style}">{ok_count} OK</span>')
+            parts.append(f'<span style="{bad_style}">{not_ok_count} NOK</span>')
         return " ".join(parts)
 
     def _create_attachment_assets(

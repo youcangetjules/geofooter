@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.22] — 2026-09-24
+
+### Changed
+
+- Attachment counts sit inside the status colour: green with **OK**, red with **NOK**.
+
 ## [1.3.21] — 2026-09-24
 
 ### Fixed

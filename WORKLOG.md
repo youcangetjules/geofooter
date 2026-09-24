@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.22: Coloured attachment counts
+- The count is no longer plain white beside a coloured OK. Zero or all-clear is `N OK` in green; not-ok files are `N NOK` in red.
+- Follow-up: rescan a mail.
+
 ### 2026-09-24 — 1.3.21: BB red when global beacon blocking applies
 - `_sender_block_state` treats beacons as blocked when `aes_beacon_blocking.json` is enabled, `block_all` is on, and the sender domain is not whitelisted. Trusted senders stay exempt.
 - Follow-up: rescan the Valla mail. No VBA re-import.

@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.16] — 2026-09-24
+
+### Changed
+
+- Quick Action chips show status: blocked attachments or beacons are red, a trusted sender is a lighter solid green. The 5px gap above the footer is the email background (white), not the slate of the strip.
+
 ## [1.3.15] — 2026-09-24
 
 ### Changed

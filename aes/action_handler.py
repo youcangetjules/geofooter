@@ -524,7 +524,7 @@ def _refresh_open_mail_action_buttons(
             new_html = _paint_action_cell(new_html, "aes://block-beacons", "#f2f8fa", "#0f6b7c")
             new_html = _paint_action_cell(new_html, "aes://block-attachments", "#f2f8fa", "#0f6b7c")
             new_html = _re.sub(r">TS<", ">ST<", new_html)
-            new_html = _paint_short_chip(new_html, "aes://trust-sender", CHIP_TRUSTED_BG, "#ffffff")
+            new_html = _paint_short_chip(new_html, "aes://trust-sender", CHIP_TRUSTED_BG, CHIP_TRUSTED_FG)
             new_html = _paint_short_chip(new_html, "aes://block-beacons", CHIP_BG, CHIP_FG)
             new_html = _paint_short_chip(new_html, "aes://block-attachments", CHIP_BG, CHIP_FG)
         elif action == "block-beacons":
@@ -603,7 +603,8 @@ def _refresh_open_mail_action_buttons(
 CHIP_BG = "#ffffff"
 CHIP_FG = "#0f1f2a"
 CHIP_BLOCKED_BG = "#d92d20"
-CHIP_TRUSTED_BG = "#1b7a3d"
+CHIP_TRUSTED_BG = "#5dce8a"
+CHIP_TRUSTED_FG = "#0f1f2a"
 
 
 def _paint_action_cell(html: str, href_prefix: str, bg: str, fg: str) -> str:

@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.16: Status chip colours and email-coloured gap
+- Blocked chips stay `#d92d20`. Trusted chips are `#5dce8a` with dark text. Click-time repaint uses the same colours.
+- The footer wrapper uses 5px top padding on `#ffffff` so the gap matches the message background.
+- Follow-up: rescan a mail. No VBA re-import.
+
 ### 2026-09-24 — 1.3.15: Segoe UI footer, real dot gaps
 - Footer font is Segoe UI. Green-dot separators are table cells with a 5px spacer on each side, because Outlook drops padding on a span.
 - Strip background `#39444d` (10% darker). Second line 12px. Chip padding `2px 0` (+4px height).

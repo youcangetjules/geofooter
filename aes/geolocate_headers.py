@@ -555,7 +555,8 @@ AES_STRIP_FONT = "Segoe UI, Arial, sans-serif"
 AES_CHIP_BG = "#ffffff"
 AES_CHIP_FG = "#0f1f2a"
 AES_CHIP_BLOCKED_BG = "#d92d20"
-AES_CHIP_TRUSTED_BG = "#1b7a3d"
+AES_CHIP_TRUSTED_BG = "#5dce8a"
+AES_CHIP_TRUSTED_FG = "#0f1f2a"
 
 
 def strip_separators(inner_html: str, *, color: str, size: str, weight: str) -> str:
@@ -4068,7 +4069,7 @@ Live Safe Browsing lookups are optional and separate.</p>
         green_bg, green_fg = AES_CHIP_BG, AES_CHIP_FG
         red_bg, red_fg = AES_CHIP_BLOCKED_BG, "#ffffff"
         # Trusted sender: the chip fills green so it reads at a glance.
-        trust_bg, trust_fg = AES_CHIP_TRUSTED_BG, "#ffffff"
+        trust_bg, trust_fg = AES_CHIP_TRUSTED_BG, AES_CHIP_TRUSTED_FG
 
         def chip(url: str, code: str, bg: str, fg: str) -> str:
             border = bg if bg != "#ffffff" else fg
@@ -5273,7 +5274,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
                 f"{mitigate_markers}"
                 f"<!-- AES Start -->\n"
                 f"<a id='aes-footer-start' name='aes-footer-start'></a>\n"
-                f"<div style='margin:5px 0 0 0; padding:0; background:#fff; font-family:{AES_STRIP_FONT}; "
+                f"<div style='margin:0; padding:5px 0 0 0; background:#ffffff; font-family:{AES_STRIP_FONT}; "
                 f"font-size:11px; color:#333;'>{summary_block}</div>\n"
                 f"<a id='aes-footer-end' name='aes-footer-end'></a>\n"
                 f"<!-- AES End -->"
@@ -5285,7 +5286,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"{mitigate_markers}"
             f"<!-- AES Start -->\n"
             f"<a id='aes-footer-start' name='aes-footer-start'></a>\n"
-            f"<div style='margin:5px 0 0 0; padding:0; background:#fff; font-family:{AES_STRIP_FONT}; "
+            f"<div style='margin:0; padding:5px 0 0 0; background:#ffffff; font-family:{AES_STRIP_FONT}; "
             f"font-size:11px; color:#333;'>"
             f"{summary_block}\n"
             f"<!-- AES Full Start -->\n"

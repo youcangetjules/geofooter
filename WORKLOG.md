@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.24: HRE count beside Links
+- Footer line 1 appends `HRE: N` after Links. Colour is `#90EE90` at 0, `#FFC107` at 1–3, `#FF4444` above 3. The tally is the existing high-risk element count (risky links + beacons + bad attachments).
+- Follow-up: rescan a mail.
+
 ### 2026-09-24 — 1.3.23: Even footer rows and a second hairline
 - Each content row uses 10px vertical padding. The same inset rule sits between rows 1–2 and 2–3.
 - Follow-up: rescan a mail.

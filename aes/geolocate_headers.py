@@ -3045,6 +3045,19 @@ class HTMLReportGenerator:
         )
         if links_summary_html:
             summary_line1_html = f"{summary_line1_html} | {links_summary_html}"
+        hre = self._count_high_risk_elements(
+            link_findings, beacon_count, attachment_not_ok
+        )
+        if hre <= 0:
+            hre_color = "#90EE90"
+        elif hre <= 3:
+            hre_color = "#FFC107"
+        else:
+            hre_color = "#FF4444"
+        summary_line1_html = (
+            f"{summary_line1_html} | HRE: "
+            f"<span style='color:{hre_color};font-weight:bold;'>{hre}</span>"
+        )
         sender_ip_part = f"Sender IP {sender_ip_plain}"
         if sender_host_plain:
             sender_ip_part = f"{sender_ip_part} {sender_host_plain}"

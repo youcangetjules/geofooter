@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.24] — 2026-09-24
+
+### Added
+
+- **HRE** (high-risk elements) is shown to the right of Links. The count is green at 0, yellow at 1–3, and red above that.
+
 ## [1.3.23] — 2026-09-24
 
 ### Changed

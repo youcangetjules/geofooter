@@ -217,10 +217,18 @@ function Get-OutlookApplication {
     if ($running) {
         $errText = if ($result.Errors.Count) { ($result.Errors -join "`n  ") } else { "(no detail)" }
         $elev = Test-IsElevated
+        $elevationHint = ""
+        if ($elev) {
+            $elevationHint = (
+                "`n*** This PowerShell is ELEVATED (Administrator) but Outlook usually is not.`n" +
+                "*** Close this window and re-run the bat from a normal (non-admin) prompt.`n"
+            )
+        }
         throw (
             "Outlook.exe is running but COM attach failed from this host.`n" +
             "  Host: Windows PowerShell $($PSVersionTable.PSVersion) | 64-bit process=$([Environment]::Is64BitProcess) | elevated=$elev`n" +
             "  Outlook: $outlookPath`n" +
+            $elevationHint +
             "  Attempts:`n  $errText`n" +
             "Common fixes:`n" +
             "  - Start Outlook normally (not 'Run as administrator'), then re-run this bat (also not elevated) - or elevate BOTH.`n" +

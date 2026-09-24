@@ -12,6 +12,9 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 ```
 
 ---
+### 2026-09-24 — Import_VBA: highlight elevated-shell COM failure
+- When elevated=True, print a clear re-run-from-normal-prompt hint (MK_E_UNAVAILABLE).
+
 ### 2026-09-24 - Import_VBA: multi-path Outlook COM attach diagnostics
 - Try GetActiveObject, VB GetObject, and New-Object; surface each failure instead of a generic bitness message.
 - Follow-up: run DryRun/import with Outlook open; enable AccessVBOM if VBE still unavailable.

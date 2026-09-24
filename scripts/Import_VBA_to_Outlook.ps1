@@ -235,7 +235,38 @@ function Get-OutlookApplication {
 function Get-VbaProject {
     param($OutlookApp)
     try {
-        return $OutlookApp.Application.VBE.ActiveVBProject
+        # GetActiveObject returns Outlook.Application already - prefer .VBE directly.
+        $vbe = $null
+        try { $vbe = $OutlookApp.VBE } catch {}
+        if (-not $vbe) {
+            try { $vbe = $OutlookApp.Application.VBE } catch {}
+        }
+        if (-not $vbe) {
+            throw "Outlook.VBE is unavailable (AccessVBOM may still be off, or macros disabled)."
+        }
+
+        $project = $null
+        try { $project = $vbe.ActiveVBProject } catch {}
+        if (-not $project) {
+            # ActiveVBProject is often empty until the editor has focus; take the first project.
+            try {
+                if ($vbe.VBProjects.Count -ge 1) {
+                    $project = $vbe.VBProjects.Item(1)
+                }
+            } catch {}
+        }
+        if (-not $project) {
+            foreach ($p in @($vbe.VBProjects)) {
+                if ($p.Name -match '(?i)VbaProject|Project') {
+                    $project = $p
+                    break
+                }
+            }
+        }
+        if (-not $project) {
+            throw "No VBA project found. Open Outlook, press Alt+F11 once to load the VBA project, then re-run."
+        }
+        return $project
     } catch {
         $detail = $_.Exception.Message
         throw (
@@ -243,7 +274,8 @@ function Get-VbaProject {
             "Fix:`n" +
             "  1. Run:  .\Import_VBA_to_Outlook.ps1 -EnableAccessVBOM`n" +
             "  2. Fully quit Outlook (including tray) and reopen`n" +
-            "  3. Run this script again without -EnableAccessVBOM`n" +
+            "  3. Press Alt+F11 once so the VBA project loads`n" +
+            "  4. Run this script again without -EnableAccessVBOM`n" +
             "Underlying error: $detail"
         )
     }

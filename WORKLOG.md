@@ -12,6 +12,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 ```
 
 ---
+### 2026-09-24 — Import_VBA: resolve VBProject when ActiveVBProject is empty
+- Fall back to VBE.VBProjects.Item(1); clearer Alt+F11 hint.
+- Follow-up: user re-runs bat with Outlook open (Alt+F11 once if needed).
+
 
 ### 2026-09-24 — Import_VBA: attach via 32-bit Windows PowerShell 5.1
 - Bat now prefers `SysWOW64\WindowsPowerShell\v1.0\powershell.exe` (bare `powershell` was PowerShell 7 with no `GetActiveObject`).

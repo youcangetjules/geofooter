@@ -1787,10 +1787,10 @@ Private Function ApplyFooterToMail(ByVal mail As Object, ByVal footerPath As Str
         Exit Function
     End If
 
-    ' Full No Trust is plain text. Do not put HTML back, and do not open
-    ' the restore link. A new mail from an FNT sender is converted here.
-    If BodyHasFullNoTrust(mail) Then
-        MSCANModLogging.WriteLog "ApplyFooterToMail: full no trust text left as-is: " & SafeSubject(mail)
+    ' Already text-only (high-risk mitigation or Full No Trust). Do not put
+    ' HTML back. The restore link is not opened from here.
+    If BodyIsLockedAsText(mail) Then
+        MSCANModLogging.WriteLog "ApplyFooterToMail: text-only mail left as-is: " & SafeSubject(mail)
         ApplyFooterToMail = True
         Exit Function
     End If
@@ -1816,6 +1816,20 @@ Private Function ApplyFooterToMail(ByVal mail As Object, ByVal footerPath As Str
         ApplyFooterToMail = ReplaceAesFooterInMail(mail, footerPath)
     Else
         ApplyFooterToMail = InsertFooterIntoMail(mail, footerPath)
+    End If
+End Function
+
+Private Function BodyIsLockedAsText(ByVal mail As Object) As Boolean
+    On Error Resume Next
+    BodyIsLockedAsText = False
+    Dim probe As String
+    probe = CStr(mail.Body)
+    If InStr(1, probe, "AES FULL NO TRUST", vbTextCompare) > 0 Then
+        BodyIsLockedAsText = True
+        Exit Function
+    End If
+    If InStr(1, probe, "AES HIGH RISK MITIGATION", vbTextCompare) > 0 Then
+        BodyIsLockedAsText = True
     End If
 End Function
 

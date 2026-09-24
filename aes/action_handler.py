@@ -541,22 +541,41 @@ def handle_url(url: str, logger: logging.Logger) -> int:
     refreshed = False
     converted = False
     replaced = False
+    locked = False
     if convert_fnt:
         converted = _apply_full_no_trust_text(logger)
     else:
-        refreshed = _refresh_open_mail_action_buttons(
-            action=action,
-            sender=sender,
-            domain=domain,
-            logger=logger,
-            beacons_on=beacons_on,
-        )
-        if replace_footer:
+        try:
+            _outlook, open_item = _outlook_mail_item()
+            locked = _mail_is_locked_text(open_item)
+        except Exception:
+            locked = False
+        if locked:
+            logger.info("Leaving text-only mail unchanged after %s", action)
+        elif replace_footer:
+            # One writer. Painting HTML and scanning at the same time flips the
+            # message between text and HTML ("message has been changed").
             replaced = _replace_open_footer(logger)
+            if not replaced:
+                refreshed = _refresh_open_mail_action_buttons(
+                    action=action,
+                    sender=sender,
+                    domain=domain,
+                    logger=logger,
+                    beacons_on=beacons_on,
+                )
+        else:
+            refreshed = _refresh_open_mail_action_buttons(
+                action=action,
+                sender=sender,
+                domain=domain,
+                logger=logger,
+                beacons_on=beacons_on,
+            )
 
     state = "was already set — rule refreshed" if already else "rule saved"
-    if converted:
-        extra = "\nThis message is now plain text. The restore link is not opened unless you click it."
+    if converted or locked:
+        extra = "\nThis message stays text. The restore link is not opened unless you click it."
     elif replaced:
         extra = "\nThe footer on this message is being replaced."
     elif refreshed:
@@ -569,6 +588,18 @@ def handle_url(url: str, logger: logging.Logger) -> int:
         f"Rules file: {RULES_PATH}",
     )
     return 0
+
+
+def _mail_is_locked_text(item) -> bool:
+    """True when this mail was converted to text and must not be put back to HTML."""
+    if item is None:
+        return False
+    try:
+        body = str(getattr(item, "Body", "") or "")
+    except Exception:
+        return False
+    upper = body.upper()
+    return "AES HIGH RISK MITIGATION" in upper or "AES FULL NO TRUST" in upper
 
 
 def _outlook_mail_item():

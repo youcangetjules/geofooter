@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.31] — 2026-09-24
+
+### Fixed
+
+- A mail already converted to text stays text. A footer button no longer writes HTML into that message and starts a scan at the same time, which was flipping it back and forth.
+
 ## [1.3.30] — 2026-09-24
 
 ### Changed

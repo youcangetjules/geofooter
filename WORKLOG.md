@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.2: Footer quick actions and one scan per chain
+- Footer summary gains a third row: Quick Actions `<SL>` `<BA>` `<BB>` `<TS>`/`<ST>` `<NT>` (white on green; blocked BA/BB red; trusted sender is green `<ST>`). Clicking an action repaints those chips.
+- `VBA\MSCANModule1.bas` strips every earlier AES/GeoFooter scan block, including ones quoted in a reply, and writes the new result once before `</body>`. A quoted footer no longer counts as "already scanned".
+- Follow-up: re-import `MSCANModule1.bas` into Outlook.
+
 ### 2026-09-24 — 1.3.1: Master installer
 - Added `scripts/Install_GeoFooter.bat` and `scripts/Install-GeoFooter.ps1`. One run installs the AES email tool (`aes://`, VBA import, ribbon) and the GURI GUI (shared `.venv`, desktop shortcut). `Launch_GURI_GUI.bat` and `start_guri_gui.bat` prefer that venv.
 - Why: a second PC needs both products from one installer, and GURI requires PostgreSQL. The script says so up front, checks for a local server, and copies the example config when `guri_postgres_config.json` is absent.

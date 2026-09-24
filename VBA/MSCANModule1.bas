@@ -263,10 +263,29 @@ Public Sub ProcessEmail(ByVal mail As Object, Optional ByVal forceRescan As Bool
         Exit Sub
     End If
 
-    If MailAlreadyHasFooter(mail) And Not forceRescan Then
-        MarkAesScanned mail
-        MSCANModLogging.WriteLog "ProcessEmail: Footer already present, skipping: " & SafeSubject(mail)
-        Exit Sub
+    ' A quoted chain still contains older AES footers. Those markers are not
+    ' this message's scan. Only the user property means we already stamped it.
+    ' More than one result means a back-and-forth still has old scans: rescan
+    ' and collapse them to a single footer at the bottom.
+    If IsAesScanned(mail) And Not forceRescan Then
+        Dim chainCount As Long
+        chainCount = 0
+        On Error Resume Next
+        If TypeOf mail Is Outlook.MailItem Then
+            chainCount = CountAesScanResults(CStr(mail.HTMLBody))
+        Else
+            chainCount = CountAesScanResults(CStr(mail.Body))
+        End If
+        Err.Clear
+        On Error GoTo EH
+        If chainCount > 1 Then
+            forceRescan = True
+            MSCANModLogging.WriteLog "ProcessEmail: reply chain has " & CStr(chainCount) & _
+                " scan results; replacing with one at the bottom: " & SafeSubject(mail)
+        Else
+            MSCANModLogging.WriteLog "ProcessEmail: already scanned, skipping: " & SafeSubject(mail)
+            Exit Sub
+        End If
     End If
 
     If forceRescan Then
@@ -1775,26 +1794,19 @@ Private Function ApplyFooterToMail(ByVal mail As Object, ByVal footerPath As Str
     Err.Clear
     On Error GoTo 0
 
-    If mode = "full" Then
-        If MailAlreadyHasFooter(mail) Then
-            ApplyFooterToMail = ReplaceAesFooterInMail(mail, footerPath)
-        Else
-            ApplyFooterToMail = InsertFooterIntoMail(mail, footerPath)
+    ' Quoted reply chains contain older scan blocks. Strip every one and
+    ' leave the new result at the bottom. Skip only when THIS item was
+    ' already stamped and this is not an explicit rescan or a full scan.
+    If mode <> "full" And IsAesScanned(mail) And Not forceReplace Then
+        MSCANModLogging.WriteLog "ApplyFooterToMail: compact footer already present, skipping: " & SafeSubject(mail)
+        ApplyFooterToMail = True
+    ElseIf IsAesScanned(mail) Or MailBodyHasAesFooter(mail) Then
+        If forceReplace Then
+            MSCANModLogging.WriteLog "ApplyFooterToMail: rescan replacing existing footer: " & SafeSubject(mail)
         End If
+        ApplyFooterToMail = ReplaceAesFooterInMail(mail, footerPath)
     Else
-        If MailAlreadyHasFooter(mail) Then
-            ' Skipping is the default so an automatic scan cannot downgrade a
-            ' full footer to a compact one; an explicit rescan must replace.
-            If forceReplace Then
-                MSCANModLogging.WriteLog "ApplyFooterToMail: rescan replacing existing footer: " & SafeSubject(mail)
-                ApplyFooterToMail = ReplaceAesFooterInMail(mail, footerPath)
-            Else
-                MSCANModLogging.WriteLog "ApplyFooterToMail: compact footer already present, skipping: " & SafeSubject(mail)
-                ApplyFooterToMail = True
-            End If
-        Else
-            ApplyFooterToMail = InsertFooterIntoMail(mail, footerPath)
-        End If
+        ApplyFooterToMail = InsertFooterIntoMail(mail, footerPath)
     End If
 End Function
 
@@ -2171,7 +2183,8 @@ End Function
 
 ' Locate AES footer block. IMAP often strips <!-- comments -->, so also use
 ' durable anchor ids and the visible "Aliniant AES Scan Result" heading.
-Private Sub FindAesFooterBounds(ByVal bodyHtml As String, ByRef startPos As Long, ByRef endPos As Long, ByRef endLen As Long)
+Private Sub FindAesFooterBounds(ByVal bodyHtml As String, ByRef startPos As Long, ByRef endPos As Long, ByRef endLen As Long, _
+                                Optional ByVal allowBodyFallback As Boolean = True)
     startPos = 0
     endPos = 0
     endLen = 0
@@ -2236,7 +2249,7 @@ Private Sub FindAesFooterBounds(ByVal bodyHtml As String, ByRef startPos As Long
             End If
         End If
     End If
-    If endPos = 0 Then
+    If endPos = 0 And allowBodyFallback Then
         ' Fall back: cut from start through </body> (caller appends before it).
         endPos = InStrRev(bodyHtml, "</body>", , vbTextCompare)
         If endPos > 0 Then
@@ -2348,9 +2361,60 @@ End Function
 Private Function StripAesMarkupFromBody(ByVal bodyHtml As String) As String
     Dim s As String
     s = StripAesTopBannersFromBody(bodyHtml)
-    s = StripBlockBetween(s, "<!-- AES Start -->", "<!-- AES End -->")
+    StripAesMarkupFromBody = StripAllAesScanResults(s)
+End Function
+
+' How many AES / legacy scan blocks are in this body (quoted chain included).
+Private Function CountAesScanResults(ByVal bodyHtml As String) As Long
+    CountAesScanResults = CountMarker(bodyHtml, "<!-- AES Start -->")
+    If CountAesScanResults > 0 Then Exit Function
+    CountAesScanResults = CountMarker(bodyHtml, "<!-- GeoFooter Start -->")
+    If CountAesScanResults > 0 Then Exit Function
+    CountAesScanResults = CountMarker(bodyHtml, "id='aes-footer-start'") + _
+                          CountMarker(bodyHtml, "id=""aes-footer-start""")
+End Function
+
+Private Function CountMarker(ByVal src As String, ByVal marker As String) As Long
+    Dim n As Long
+    Dim p As Long
+    n = 0
+    p = 0
+    If Len(marker) = 0 Or Len(src) = 0 Then Exit Function
+    Do
+        p = InStr(p + 1, src, marker, vbTextCompare)
+        If p = 0 Then Exit Do
+        n = n + 1
+    Loop
+    CountMarker = n
+End Function
+
+Private Function MailBodyHasAesFooter(ByVal mail As Object) As Boolean
+    On Error Resume Next
+    MailBodyHasAesFooter = False
+    If mail Is Nothing Then Exit Function
+    MailBodyHasAesFooter = (CountAesScanResults(ItemBodyText(mail)) > 0)
+End Function
+
+' Remove every previous AES scan result, including ones quoted in a reply
+' chain. Only bounded blocks are removed so a missing end marker cannot
+' delete the rest of the message.
+Private Function StripAllAesScanResults(ByVal bodyHtml As String) As String
+    Dim s As String
+    Dim guard As Long
+    Dim startPos As Long
+    Dim endPos As Long
+    Dim endLen As Long
+
+    s = StripBlockBetween(bodyHtml, "<!-- AES Start -->", "<!-- AES End -->")
     s = StripBlockBetween(s, "<!-- GeoFooter Start -->", "<!-- GeoFooter End -->")
-    StripAesMarkupFromBody = s
+    guard = 0
+    Do While guard < 40
+        FindAesFooterBounds s, startPos, endPos, endLen, False
+        If startPos = 0 Or endPos <= startPos Or endLen <= 0 Then Exit Do
+        s = Left$(s, startPos - 1) & Mid$(s, endPos + endLen)
+        guard = guard + 1
+    Loop
+    StripAllAesScanResults = s
 End Function
 
 ' Removes the status strip from the footer payload and returns it. The strip
@@ -2510,16 +2574,6 @@ Private Function InsertFooterIntoMail(mail As Object, footerPath As String) As B
         footerHTML = FOOTER_MARKER_AES & vbCrLf & footerHTML
     End If
 
-    If MailAlreadyHasFooter(mail) Then
-        MarkAesScanned mail
-        MSCANModLogging.WriteLog "InsertFooterIntoMail: Footer marker already present - skipping duplicate for subject: " & SafeSubject(mail)
-        On Error Resume Next
-        fso.DeleteFile footerPath
-        On Error GoTo ErrHandler
-        InsertFooterIntoMail = True
-        Exit Function
-    End If
-
     ' Normal mail: HTML body. ReportItem (ReadNotify IPNRN etc.): Body only.
     If TypeOf mail Is Outlook.MailItem Then
         On Error Resume Next
@@ -2540,6 +2594,7 @@ Private Function InsertFooterIntoMail(mail As Object, footerPath As String) As B
         ' Never force BodyFormat - on IMAP/Google that flattens the message to text.
         Dim bodyHtml As String: bodyHtml = mail.HTMLBody
         bodyHtml = StripAesTopBannersFromBody(bodyHtml)
+        bodyHtml = StripAllAesScanResults(bodyHtml)
         bodyHtml = DisableRiskTableLinksInHtml(bodyHtml, footerHTML)
 
         Dim newBody As String
@@ -2637,17 +2692,8 @@ Private Function ReplaceAesFooterInMail(ByVal mail As Object, ByVal footerPath A
             rptStart = InStr(1, rptBody, FOOTER_START_LEGACY, vbTextCompare)
             rptEndMarker = FOOTER_END_LEGACY
         End If
-        If rptStart > 0 Then
-            rptEnd = InStr(rptStart, rptBody, rptEndMarker, vbTextCompare)
-            If rptEnd > 0 Then
-                rptEndLen = Len(rptEndMarker)
-                mail.Body = Left$(rptBody, rptStart - 1) & footerHTML & Mid$(rptBody, rptEnd + rptEndLen)
-            Else
-                mail.Body = Left$(rptBody, rptStart - 1) & footerHTML
-            End If
-        Else
-            mail.Body = rptBody & vbCrLf & vbCrLf & footerHTML
-        End If
+        rptBody = StripAllAesScanResults(rptBody)
+        mail.Body = rptBody & vbCrLf & vbCrLf & footerHTML
         mail.Save
         MSCANModLogging.WriteLog "ReplaceAesFooterInMail: AES footer replaced (report) for subject: " & SafeSubject(mail)
         On Error Resume Next
@@ -2680,33 +2726,18 @@ Private Function ReplaceAesFooterInMail(ByVal mail As Object, ByVal footerPath A
         bodyHtml = mail.HTMLBody
     End If
     bodyHtml = StripAesTopBannersFromBody(bodyHtml)
+    ' Drop every earlier scan, including ones quoted in the reply chain,
+    ' then place this scan once, at the bottom.
+    bodyHtml = StripAllAesScanResults(bodyHtml)
     bodyHtml = DisableRiskTableLinksInHtml(bodyHtml, footerHTML)
 
-    Dim startPos As Long
-    Dim endPos As Long
-    Dim endMarkerLen As Long
-    FindAesFooterBounds bodyHtml, startPos, endPos, endMarkerLen
-
     Dim replacedBody As String
-    If startPos > 0 And endPos > startPos Then
-        replacedBody = Left$(bodyHtml, startPos - 1) & footerHTML & Mid$(bodyHtml, endPos + endMarkerLen)
-    ElseIf startPos > 0 Then
-        Dim closeBody As Long
-        closeBody = InStrRev(bodyHtml, "</body>", , vbTextCompare)
-        If closeBody > startPos Then
-            replacedBody = Left$(bodyHtml, startPos - 1) & footerHTML & Mid$(bodyHtml, closeBody)
-        Else
-            replacedBody = Left$(bodyHtml, startPos - 1) & footerHTML
-        End If
+    Dim insPos As Long
+    insPos = InStrRev(bodyHtml, "</body>", , vbTextCompare)
+    If insPos > 0 Then
+        replacedBody = Left$(bodyHtml, insPos - 1) & footerHTML & Mid$(bodyHtml, insPos)
     Else
-        MSCANModLogging.WriteLog "ReplaceAesFooterInMail: No AES footer block found; appending instead."
-        Dim insPos As Long
-        insPos = InStrRev(bodyHtml, "</body>", , vbTextCompare)
-        If insPos > 0 Then
-            replacedBody = Left$(bodyHtml, insPos - 1) & footerHTML & Mid$(bodyHtml, insPos)
-        Else
-            replacedBody = bodyHtml & "<hr>" & footerHTML
-        End If
+        replacedBody = bodyHtml & "<hr>" & footerHTML
     End If
 
     ' Attachments.Add (banner) dirties the item - keep the same object for the

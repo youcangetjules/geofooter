@@ -20,6 +20,16 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.2] — 2026-09-24
+
+### Added
+
+- Footer third row, **Quick Actions**: Show Links `<SL>`, Block Attachments `<BA>`, Block Beacons `<BB>`, Trust Sender `<TS>`, Mark Not Trusted `<NT>`. Chips are white on green. `<BA>` / `<BB>` turn red when that block is already on. A trusted sender shows `<ST>` in green instead of `<TS>`.
+
+### Fixed
+
+- A reply chain no longer keeps every earlier AES scan. Previous results are removed and one scan result is placed at the bottom of the message.
+
 ## [1.3.1] — 2026-09-24
 
 ### Added

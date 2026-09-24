@@ -523,6 +523,10 @@ def _refresh_open_mail_action_buttons(
             new_html = _paint_action_cell(new_html, "aes://trust-sender", "#2e7d32", "#ffffff")
             new_html = _paint_action_cell(new_html, "aes://block-beacons", "#f2f8fa", "#0f6b7c")
             new_html = _paint_action_cell(new_html, "aes://block-attachments", "#f2f8fa", "#0f6b7c")
+            new_html = _re.sub(r">TS<", ">ST<", new_html)
+            new_html = _paint_short_chip(new_html, "aes://trust-sender", "#ffffff", "#1b7a3d")
+            new_html = _paint_short_chip(new_html, "aes://block-beacons", "#1b7a3d", "#ffffff")
+            new_html = _paint_short_chip(new_html, "aes://block-attachments", "#1b7a3d", "#ffffff")
         elif action == "block-beacons":
             new_html = _re.sub(
                 r">Block beacons from sender<",
@@ -531,6 +535,9 @@ def _refresh_open_mail_action_buttons(
                 flags=_re.IGNORECASE,
             )
             new_html = _paint_action_cell(new_html, "aes://block-beacons", "#b71c1c", "#ffffff")
+            new_html = _re.sub(r">ST<", ">TS<", new_html)
+            new_html = _paint_short_chip(new_html, "aes://block-beacons", "#c62828", "#ffffff")
+            new_html = _paint_short_chip(new_html, "aes://trust-sender", "#1b7a3d", "#ffffff")
             new_html = _re.sub(
                 r">Sender Trusted(?:\s*&#10003;|\s*✓)?<",
                 ">Trust sender<",
@@ -546,6 +553,9 @@ def _refresh_open_mail_action_buttons(
                 flags=_re.IGNORECASE,
             )
             new_html = _paint_action_cell(new_html, "aes://block-attachments", "#b71c1c", "#ffffff")
+            new_html = _re.sub(r">ST<", ">TS<", new_html)
+            new_html = _paint_short_chip(new_html, "aes://block-attachments", "#c62828", "#ffffff")
+            new_html = _paint_short_chip(new_html, "aes://trust-sender", "#1b7a3d", "#ffffff")
             new_html = _re.sub(
                 r">Sender Trusted(?:\s*&#10003;|\s*✓)?<",
                 ">Trust sender<",
@@ -574,6 +584,9 @@ def _refresh_open_mail_action_buttons(
             )
             new_html = _paint_action_cell(new_html, "aes://untrust-sender", "#ef6c00", "#ffffff")
             new_html = _paint_action_cell(new_html, "aes://trust-sender", "#f2f8fa", "#0f6b7c")
+            new_html = _re.sub(r">ST<", ">TS<", new_html)
+            new_html = _paint_short_chip(new_html, "aes://trust-sender", "#1b7a3d", "#ffffff")
+            new_html = _paint_short_chip(new_html, "aes://untrust-sender", "#1b7a3d", "#ffffff")
 
         if new_html == html:
             return False
@@ -605,6 +618,28 @@ def _paint_action_cell(html: str, href_prefix: str, bg: str, fg: str) -> str:
         return chunk
 
     return pattern.sub(repl, html, count=1)
+
+
+def _paint_short_chip(html: str, href_prefix: str, bg: str, fg: str) -> str:
+    """Restyle a two-letter Quick Action chip (<SL>, <BA>, <BB>, <TS>, <ST>, <NT>)."""
+    import re as _re
+
+    border = fg if bg == "#ffffff" else bg
+    pattern = _re.compile(
+        r"(<td bgcolor=')([^']*)(' style='background:)([^;']+)(; border:1px solid )([^;']+)"
+        r"(;[^']*'>\s*<a href='" + _re.escape(href_prefix) + r"[^']*' style='color:)"
+        r"([^;']+)(;[^']*'>)([A-Za-z]{2})(</a>)",
+        _re.IGNORECASE,
+    )
+
+    def repl(match) -> str:
+        return (
+            f"{match.group(1)}{bg}{match.group(3)}{bg}{match.group(5)}{border}"
+            f"{match.group(7)}{fg}{match.group(9)}{match.group(10)}{match.group(11)}"
+        )
+
+    return pattern.sub(repl, html)
+
 
 def register_protocol(logger: logging.Logger) -> int:
     """Register the aes:// URL protocol for the current user."""

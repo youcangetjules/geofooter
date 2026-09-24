@@ -3960,6 +3960,120 @@ Live Safe Browsing lookups are optional and separate.</p>
             "style='border-collapse:separate;'>"
             f"<tr>{''.join(cells)}</tr></table></div>"
         )
+
+    def _build_quick_actions_row_html(
+        self,
+        sender_email: Optional[str],
+        sender_domain: Optional[str],
+        guri: str,
+        block_state: Optional[Dict[str, bool]] = None,
+        links_report_url: str = "",
+    ) -> str:
+        """Third footer row: short Quick Action chips.
+
+        Default chips are white text on green. Attachments/beacons that are
+        already blocked stay <BA>/<BB> but turn red. A trusted sender shows
+        <ST> in green instead of <TS>.
+        """
+        sender = (sender_email or "").strip()
+        domain = (sender_domain or "").strip()
+        has_sender = bool(sender or (domain and domain != "Unknown"))
+        links_href = ""
+        if links_report_url:
+            links_href = self._local_report_href(links_report_url) or links_report_url
+        if not has_sender and not links_href:
+            return ""
+
+        block_state = block_state or {}
+        att_on = bool(block_state.get("attachments"))
+        bcn_on = bool(block_state.get("beacons"))
+        trusted = bool(block_state.get("trusted"))
+        query = urllib.parse.urlencode(
+            {"sender": sender, "domain": domain, "guri": guri or ""}
+        )
+        green_bg, green_fg = "#1b7a3d", "#ffffff"
+        red_bg, red_fg = "#c62828", "#ffffff"
+        # Trusted state is the letters themselves in green, not white-on-green.
+        trust_bg, trust_fg = "#ffffff", "#1b7a3d"
+
+        def chip(url: str, code: str, bg: str, fg: str) -> str:
+            border = bg if bg != "#ffffff" else fg
+            return (
+                "<td style='padding:0 1px; vertical-align:middle;'>"
+                "<table border='0' cellpadding='0' cellspacing='0' "
+                "style='border-collapse:separate;'>"
+                f"<tr><td bgcolor='{bg}' "
+                f"style='background:{bg}; border:1px solid {border}; "
+                f"border-radius:3px; padding:1px 5px;'>"
+                f"<a href='{html.escape(url, quote=True)}' "
+                f"style='color:{fg}; font-family:Arial,sans-serif; "
+                f"font-size:10px; font-weight:bold; text-decoration:none;'>"
+                f"{code}</a>"
+                "</td></tr></table></td>"
+            )
+
+        def item(caption: str, code: str, url: str, bg: str, fg: str, *, trail: bool) -> str:
+            semi = (
+                "<td style='color:#ffffff; font-family:Arial,sans-serif; "
+                "font-size:10px; font-weight:normal; padding:0 2px;'>;</td>"
+                if trail
+                else ""
+            )
+            return (
+                "<td style='color:#ffffff; font-family:Arial,sans-serif; "
+                "font-size:10px; font-weight:normal; padding:0 3px 0 6px; "
+                f"vertical-align:middle;'>{caption}</td>"
+                f"{chip(url, code, bg, fg)}{semi}"
+            )
+
+        cells: List[str] = []
+        planned: List[Tuple[str, str, str, str, str]] = []
+        if links_href:
+            planned.append(("Show Links", "SL", links_href, green_bg, green_fg))
+        if has_sender:
+            planned.append((
+                "Block Attachments",
+                "BA",
+                f"aes://block-attachments?{query}",
+                red_bg if att_on else green_bg,
+                red_fg if att_on else green_fg,
+            ))
+            planned.append((
+                "Block Beacons",
+                "BB",
+                f"aes://block-beacons?{query}",
+                red_bg if bcn_on else green_bg,
+                red_fg if bcn_on else green_fg,
+            ))
+            planned.append((
+                "Trust Sender",
+                "ST" if trusted else "TS",
+                f"aes://trust-sender?{query}",
+                trust_bg if trusted else green_bg,
+                trust_fg if trusted else green_fg,
+            ))
+            planned.append((
+                "Mark Not Trusted",
+                "NT",
+                f"aes://untrust-sender?{query}",
+                green_bg,
+                green_fg,
+            ))
+        if not planned:
+            return ""
+        for i, (caption, code, url, bg, fg) in enumerate(planned):
+            cells.append(item(caption, code, url, bg, fg, trail=i < len(planned) - 1))
+
+        return (
+            "<div style='font-weight:normal; margin-top:4px;'>"
+            "<table border='0' cellpadding='0' cellspacing='0' align='center' "
+            "style='border-collapse:separate; margin:0 auto;'>"
+            "<tr>"
+            "<td style='color:#ffffff; font-family:Arial,sans-serif; font-size:10px; "
+            "font-weight:bold; padding-right:2px; vertical-align:middle;'>Quick Actions:</td>"
+            f"{''.join(cells)}"
+            "</tr></table></div>"
+        )
     
     def _calculate_domain_age(self, creation_date: str) -> Optional[int]:
         """Calculate domain age in days."""
@@ -5007,11 +5121,19 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
                 show_link = "<span style='text-decoration:underline;'>Show Full Scan</span>"
             summary_line2 = summary_line2.replace("{{AES_FULLSCAN}}", show_link)
 
+        quick_actions = self._build_quick_actions_row_html(
+            str(data.get("sender_email") or ""),
+            str(data.get("sender_domain") or ""),
+            str(data.get("guri") or ""),
+            block_state,
+            str(data.get("links_report_url") or ""),
+        )
         summary_block = (
             f"<div style='background:{risk_bg}; color:#fff; font-weight:bold; font-size:12px; "
             f"padding:4px 6px; text-align:center; line-height:1.35;'>"
             f"<div>{summary_line1}</div>"
             f"<div style='font-size:10px; font-weight:normal; margin-top:2px;'>{summary_line2}</div>"
+            f"{quick_actions}"
             f"</div>"
         )
 

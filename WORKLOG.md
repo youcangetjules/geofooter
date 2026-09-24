@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.9: Quick Actions label contrast
+- The label colour is chosen from the strip background (near-black on the green-to-red gradient, white only on a dark strip). White on low-risk green was about 2.8:1.
+- Follow-up: rescan a mail to see it. No VBA re-import.
+
 ### 2026-09-24 — 1.3.8: Quick Action chips grouped with 20px gaps
 - The footer row no longer stretches each chip across the bar. Quick Actions and the chips are one centred group, with a 20px spacer between chips.
 - Follow-up: a new scan is required before an existing mail shows the tighter row. No VBA re-import.

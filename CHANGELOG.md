@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.9] — 2026-09-24
+
+### Changed
+
+- **Quick Actions:** uses near-black or white, whichever contrasts with the scan-strip colour. White on the low-risk green was washing out.
+
 ## [1.3.8] — 2026-09-24
 
 ### Changed

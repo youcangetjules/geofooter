@@ -543,6 +543,37 @@ def risk_requires_mitigation(score: int) -> bool:
 def risk_color_for_level(level: str) -> str:
     return RISK_LEVEL_COLORS.get(str(level or "").upper(), "#888888")
 
+
+def contrasting_text_color(background: str) -> str:
+    """Near-black or white, whichever meets contrast on this banner colour.
+
+    The scan strip runs from medium green to red. White on that green is
+    about 2.8:1, so a fixed white label disappears.
+    """
+    text = str(background or "").strip().lower()
+    rgb = None
+    if text.startswith("rgb"):
+        nums = re.findall(r"\d+", text)
+        if len(nums) >= 3:
+            rgb = tuple(int(n) for n in nums[:3])
+    elif text.startswith("#") and len(text) >= 7:
+        try:
+            rgb = (int(text[1:3], 16), int(text[3:5], 16), int(text[5:7], 16))
+        except ValueError:
+            rgb = None
+    if rgb is None:
+        return "#1a1a1a"
+
+    def channel(value: int) -> float:
+        s = value / 255.0
+        if s <= 0.04045:
+            return s / 12.92
+        return ((s + 0.055) / 1.055) ** 2.4
+
+    r, g, b = (channel(c) for c in rgb)
+    luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    return "#1a1a1a" if luminance > 0.179 else "#ffffff"
+
 _SENDER_STATUS_CONFIG_CACHE: Optional[Dict[str, Any]] = None
 
 
@@ -3968,6 +3999,7 @@ Live Safe Browsing lookups are optional and separate.</p>
         guri: str,
         block_state: Optional[Dict[str, bool]] = None,
         links_report_url: str = "",
+        banner_bg: str = "",
     ) -> str:
         """Third footer row: short Quick Action chips.
 
@@ -4048,10 +4080,11 @@ Live Safe Browsing lookups are optional and separate.</p>
         spacer = (
             "<td width='20' style='width:20px; font-size:1px; line-height:1px;'>&nbsp;</td>"
         )
+        label_color = contrasting_text_color(banner_bg)
         parts = [
-            "<td style='color:#ffffff; font-family:Arial,sans-serif; font-size:10px; "
+            "<td style='font-family:Arial,sans-serif; font-size:10px; "
             "font-weight:bold; white-space:nowrap; vertical-align:middle;'>"
-            "Quick Actions:</td>"
+            f"<span style='color:{label_color};'>Quick Actions:</span></td>"
         ]
         for code, url, bg, fg in planned:
             parts.append(spacer)
@@ -5118,6 +5151,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             str(data.get("guri") or ""),
             block_state,
             str(data.get("links_report_url") or ""),
+            risk_bg,
         )
         summary_block = (
             f"<div style='background:{risk_bg}; color:#fff; font-weight:bold; font-size:12px; "

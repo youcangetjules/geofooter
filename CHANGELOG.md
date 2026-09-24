@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.1] — 2026-09-24
+
+### Added
+
+- Master installer `scripts/Install_GeoFooter.bat` (runs `scripts/Install-GeoFooter.ps1`) installs both the AES email tool (venv, `aes://`, Outlook VBA, ribbon) and the GURI GUI (same venv, desktop shortcut, `Launch_GURI_GUI.bat` uses `.venv`). It tells you PostgreSQL is required and copies `guri_postgres_config.example.json` when the real config is missing.
+
 ## [1.3.0] — 2026-09-24
 
 ### Added

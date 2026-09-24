@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.1: Master installer
+- Added `scripts/Install_GeoFooter.bat` and `scripts/Install-GeoFooter.ps1`. One run installs the AES email tool (`aes://`, VBA import, ribbon) and the GURI GUI (shared `.venv`, desktop shortcut). `Launch_GURI_GUI.bat` and `start_guri_gui.bat` prefer that venv.
+- Why: a second PC needs both products from one installer, and GURI requires PostgreSQL. The script says so up front, checks for a local server, and copies the example config when `guri_postgres_config.json` is absent.
+- Follow-up: run `scripts\Install_GeoFooter.bat`. Edit the postgres password before opening GURI. Reopen Outlook after the ribbon step.
+
 ### 2026-09-24 — 1.3.0: Aura email automation up to user review
 - New `aura/automation.py` (prepare / sync_sent / regenerate / skip / open_draft, CLI `--prepare` / `--sync`) and `aura/settings.py` (`detect_since` 2026-09-24, send account, 30-day follow-up).
 - `aura/store.py`: `draft_entry_id` column plus `latest_for_broker()`. `aura/pending.py`: filters on `received_at` against `detect_since`. `aes/geolocate_headers.py`: auto-queues broker hits from the mail's `Date:` header. `aes/action_handler.py`: reports mail outside the window.

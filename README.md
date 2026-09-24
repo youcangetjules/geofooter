@@ -9,7 +9,7 @@
 | **Aura**            | Aliniant Universal Removal Application (broker opt-out workspace)          |
 | **AesRibbonHost**   | Optional COM/ribbon host for AES UI in Outlook                             |
 
-**Version:** see [`VERSION`](VERSION) / [`geofooter/version.py`](geofooter/version.py) — currently **1.3.0**.  
+**Version:** see [`VERSION`](VERSION) / [`geofooter/version.py`](geofooter/version.py) — currently **1.3.1**.  
 **Changes:** [`CHANGELOG.md`](CHANGELOG.md) · day-to-day notes in [`WORKLOG.md`](WORKLOG.md) · bugs in [`docs/bug_tracker.md`](docs/bug_tracker.md).
 
 ## Paths / Conda
@@ -44,10 +44,14 @@ pip install pywin32>=306
 
 - Windows + Microsoft Outlook (classic)
 - Python 3.10+ with deps from [`requirements.txt`](requirements.txt)
-- Optional: PostgreSQL for GURI (`guri_postgres_config.example.json`)
+- PostgreSQL for GURI (`guri_postgres_config.example.json`). SQLite is deprecated.
 - Optional: .NET Framework 4.8 SDK to build `AesRibbonHost`
 
 ## Quick start
+
+On Windows, run [`scripts/Install_GeoFooter.bat`](scripts/Install_GeoFooter.bat). One run installs both products: the **AES email tool** (Python scan engine, `aes://`, Outlook VBA, ribbon) and the **GURI GUI** (desktop shortcut plus `scripts\Launch_GURI_GUI.bat`). **PostgreSQL is required** for GURI. Install it from [postgresql.org/download/windows](https://www.postgresql.org/download/windows/), create database `guri_db`, and set the password in `guri_postgres_config.json`.
+
+Manual steps, if you prefer:
 
 1. Copy `guri_postgres_config.example.json` → `guri_postgres_config.json` and set local credentials (**never commit** the real file).
 2. Import VBA modules per [`VBA/IMPORT.txt`](VBA/IMPORT.txt), or run [`scripts/Import_VBA_to_Outlook.bat`](scripts/Import_VBA_to_Outlook.bat) with Outlook open (AccessVBOM required — see [`docs/bug_tracker.md`](docs/bug_tracker.md)).

@@ -7,11 +7,13 @@ echo   GURI Database Viewer ^& Manager
 echo ========================================
 echo.
 
-REM Check if Python is installed
-python --version >nul 2>&1
+REM Prefer the venv created by Install_GeoFooter.bat
+set "PY=%~dp0..\.venv\Scripts\python.exe"
+if not exist "%PY%" set "PY=python"
+
+"%PY%" --version >nul 2>&1
 if errorlevel 1 (
-    echo ERROR: Python is not installed or not in PATH
-    echo Please install Python 3.7+ from https://python.org
+    echo ERROR: Python is not installed. Run scripts\Install_GeoFooter.bat first.
     pause
     exit /b 1
 )
@@ -19,8 +21,7 @@ if errorlevel 1 (
 echo Starting GURI GUI...
 echo.
 
-REM Run the GUI
-python "%~dp0..\guri\gui.py"
+"%PY%" "%~dp0..\guri\gui.py"
 
 if errorlevel 1 (
     echo.

@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.13] — 2026-09-24
+
+### Added
+
+- AES Settings → Logging has **Max log size** in MiB. The default is 0, which means unlimited. When `VBA_Log.txt` grows past the limit, the oldest lines are removed.
+
 ## [1.3.12] — 2026-09-24
 
 ### Changed

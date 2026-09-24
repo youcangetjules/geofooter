@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.13: Max log file size
+- AES Settings → Logging stores `max_mib` in `aes_logging.json` (default 0 = unlimited).
+- `MSCANModLogging.WriteLogLevel` trims `VBA_Log.txt` to about 80% of that cap by dropping the oldest lines.
+- Follow-up: re-import `VBA\MSCANModLogging.bas` into Outlook.
+
 ### 2026-09-24 — 1.3.12: Footer strip redesign
 - `aes/geolocate_headers.py`: summary block is a single `#0f1f2a` table. Line 1 white 12px bold with a risk-coloured dot; line 2 muted 10px; hairline rule above the Quick Actions row. `strip_separators` swaps ` | ` for muted dividers. Chip defaults are white/slate, blocked `#d92d20`, trusted `#1b7a3d` (new `AES_STRIP_*` / `AES_CHIP_*` constants).
 - `aes/action_handler.py`: `CHIP_*` constants mirror those colours so click-time repaint stays consistent.

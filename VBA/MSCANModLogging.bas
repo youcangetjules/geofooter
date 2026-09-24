@@ -10,6 +10,7 @@ Private mLevelInfo As Boolean
 Private mLevelAudit As Boolean
 Private mLevelWarn As Boolean
 Private mLevelDebug As Boolean
+Private mMaxLogMiB As Long
 Private mCaptureActive As Boolean
 Private mCapturePath As String
 
@@ -84,6 +85,7 @@ Public Sub WriteLogLevel(ByVal level As String, ByVal msg As String)
     Open logPath For Append As #f
     Print #f, line
     Close #f
+    TrimLogIfNeeded
 
     If mCaptureActive And Len(mCapturePath) > 0 Then
         On Error Resume Next
@@ -103,6 +105,7 @@ Private Sub EnsureLoggingSettingsLoaded()
 
     ' Defaults: on, info/audit/warn, debug off
     mLoggingEnabled = True
+    mMaxLogMiB = 0
     mLevelInfo = True
     mLevelAudit = True
     mLevelWarn = True
@@ -153,6 +156,70 @@ Private Sub ApplyLoggingJson(ByVal raw As String)
     mLevelAudit = JsonLevelEnabled(raw, "audit", mLevelAudit)
     mLevelWarn = JsonLevelEnabled(raw, "warn", mLevelWarn)
     mLevelDebug = JsonLevelEnabled(raw, "debug", mLevelDebug)
+    mMaxLogMiB = JsonNonNegativeLong(raw, "max_mib", 0)
+End Sub
+
+Private Function JsonNonNegativeLong(ByVal raw As String, ByVal key As String, ByVal defaultValue As Long) As Long
+    On Error Resume Next
+    Dim region As String
+    Dim value As Long
+    region = ExtractJsonBoolRegion(raw, key)
+    If Len(Trim$(region)) = 0 Then
+        JsonNonNegativeLong = defaultValue
+        Exit Function
+    End If
+    value = CLng(Val(region))
+    If value < 0 Then value = 0
+    JsonNonNegativeLong = value
+End Function
+
+Private Sub TrimLogIfNeeded()
+    ' 0 means unlimited. When over the cap, drop the oldest lines and
+    ' keep about 80 percent so the file is not rewritten on every line.
+    On Error Resume Next
+    If mMaxLogMiB <= 0 Then Exit Sub
+
+    Dim fso As Object
+    Dim p As String
+    Dim limitBytes As Double
+    Dim keepBytes As Double
+    Dim fileSize As Double
+    Dim ts As Object
+    Dim raw As String
+    Dim startAt As Long
+    Dim nl As Long
+
+    p = logPath
+    If Len(p) = 0 Then Exit Sub
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If fso Is Nothing Then Exit Sub
+    If Not fso.FileExists(p) Then Exit Sub
+
+    limitBytes = CDbl(mMaxLogMiB) * 1048576#
+    fileSize = CDbl(fso.GetFile(p).Size)
+    If fileSize <= limitBytes Then Exit Sub
+
+    keepBytes = limitBytes * 0.8
+    If keepBytes > 2000000000# Then keepBytes = 2000000000#
+    Set ts = fso.OpenTextFile(p, 1, False)
+    If ts Is Nothing Then Exit Sub
+    raw = ts.ReadAll
+    ts.Close
+    If Len(raw) = 0 Then Exit Sub
+
+    startAt = Len(raw) - CLng(keepBytes)
+    If startAt < 1 Then Exit Sub
+    nl = InStr(startAt, raw, vbCrLf)
+    If nl > 0 Then
+        raw = Mid$(raw, nl + 2)
+    Else
+        raw = Mid$(raw, startAt)
+    End If
+
+    Set ts = fso.OpenTextFile(p, 2, True)
+    If ts Is Nothing Then Exit Sub
+    ts.Write raw
+    ts.Close
 End Sub
 
 Private Function JsonLevelEnabled(ByVal raw As String, ByVal key As String, ByVal defaultValue As Boolean) As Boolean

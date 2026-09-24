@@ -33,6 +33,7 @@ DEFAULT_ROUTE_RISK: Dict[str, Any] = {
 
 DEFAULT_LOGGING: Dict[str, Any] = {
     "enabled": True,
+    "max_mib": 0,
     "levels": {
         "info": True,
         "audit": True,
@@ -681,12 +682,17 @@ def _normalize_route_risk(raw: Any) -> Dict[str, Any]:
 def _normalize_logging(raw: Any) -> Dict[str, Any]:
     cfg = {
         "enabled": bool(DEFAULT_LOGGING["enabled"]),
+        "max_mib": int(DEFAULT_LOGGING["max_mib"]),
         "levels": dict(DEFAULT_LOGGING["levels"]),
     }
     if not isinstance(raw, dict):
         return cfg
     if "enabled" in raw:
         cfg["enabled"] = bool(raw.get("enabled"))
+    try:
+        cfg["max_mib"] = max(0, int(raw.get("max_mib", 0) or 0))
+    except (TypeError, ValueError):
+        cfg["max_mib"] = 0
     levels = raw.get("levels")
     if isinstance(levels, dict):
         for key in ("info", "audit", "warn", "debug"):
@@ -1123,6 +1129,25 @@ def run_dialog(
     log_enabled.setToolTip("Master switch for AES log file output.")
     log_layout.addWidget(log_enabled)
 
+    size_row = QHBoxLayout()
+    size_row.setSpacing(8)
+    size_lbl = QLabel("Max log size")
+    size_spin = QSpinBox()
+    size_spin.setRange(0, 10240)
+    size_spin.setSingleStep(1)
+    size_spin.setSuffix(" MiB")
+    size_spin.setValue(int(logging_cfg.get("max_mib") or 0))
+    size_spin.setToolTip(
+        "Maximum size of VBA_Log.txt in mebibytes. "
+        "0 is unlimited. When the file grows past this, the oldest lines are removed."
+    )
+    size_hint = QLabel("0 = unlimited. Oldest lines are removed once the file passes this size.")
+    size_hint.setObjectName("hint")
+    size_row.addWidget(size_lbl)
+    size_row.addWidget(size_spin)
+    size_row.addWidget(size_hint, stretch=1)
+    log_layout.addLayout(size_row)
+
     levels_heading = QLabel("Levels to write")
     levels_heading.setObjectName("section")
     log_layout.addWidget(levels_heading)
@@ -1298,6 +1323,7 @@ def run_dialog(
     def collect_logging() -> Dict[str, Any]:
         return {
             "enabled": bool(log_enabled.isChecked()),
+            "max_mib": int(size_spin.value()),
             "levels": {key: bool(cb.isChecked()) for key, cb in level_checks.items()},
         }
 

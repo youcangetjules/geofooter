@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.25] — 2026-09-24
+
+### Fixed
+
+- A mail converted to text was being turned back into HTML on the next scan, then converted to text again. Scans no longer restore that HTML. Use the restore link in the text to put the HTML back.
+
 ## [1.3.24] — 2026-09-24
 
 ### Added

@@ -1787,12 +1787,8 @@ Private Function ApplyFooterToMail(ByVal mail As Object, ByVal footerPath As Str
         Exit Function
     End If
 
-    ' If a prior false-positive mitigation left this mail as plain text, put the
-    ' HTML back before stamping a normal footer.
-    On Error Resume Next
-    TryRestoreMitigatedHtml mail
-    Err.Clear
-    On Error GoTo 0
+    ' Do not put HTML back here. A later scan with a lower score was restoring
+    ' the backup, then the next pass converted it to text again.
 
     ' Quoted reply chains contain older scan blocks. Strip every one and
     ' leave the new result at the bottom. Skip only when THIS item was
@@ -1850,6 +1846,17 @@ Private Function ApplyHighRiskTextOnlyMail(ByVal mail As Object, ByVal footerPat
     restoreId = ""
 
     If TypeOf mail Is Outlook.MailItem Then
+        On Error Resume Next
+        Dim alreadyPlain As String
+        alreadyPlain = CStr(mail.Body)
+        Err.Clear
+        On Error GoTo ErrHandler
+        If InStr(1, alreadyPlain, "AES HIGH RISK MITIGATION", vbTextCompare) > 0 Then
+            MarkAesScanned mail
+            MSCANModLogging.WriteLog "ApplyHighRiskTextOnlyMail: already text-only, leaving it: " & SafeSubject(mail)
+            ApplyHighRiskTextOnlyMail = True
+            Exit Function
+        End If
         ' Prefer the existing plain-text body. If we only have HTML, strip our
         ' own prior AES markup first so a rescan does not nest notices.
         On Error Resume Next
@@ -2577,7 +2584,6 @@ Private Function InsertFooterIntoMail(mail As Object, footerPath As String) As B
     ' Normal mail: HTML body. ReportItem (ReadNotify IPNRN etc.): Body only.
     If TypeOf mail Is Outlook.MailItem Then
         On Error Resume Next
-        TryRestoreMitigatedHtml mail
         If MSCANModSenderRules.ShouldBlockBeacons(mail) Then
             MSCANModSenderRules.NeutralizeBeaconsInMail mail
         End If
@@ -2706,7 +2712,6 @@ Private Function ReplaceAesFooterInMail(ByVal mail As Object, ByVal footerPath A
     ' stores that regenerates the body from the plain-text copy and
     ' flattens the whole message to text.
     On Error Resume Next
-    TryRestoreMitigatedHtml mail
     If MSCANModSenderRules.ShouldBlockBeacons(mail) Then
         MSCANModSenderRules.NeutralizeBeaconsInMail mail
     End If

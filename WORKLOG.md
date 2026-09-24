@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.25: Stop text/HTML flip on rescan
+- `ApplyFooterToMail`, insert, and replace no longer call `TryRestoreMitigatedHtml`. A lower score on the plain-text body was restoring HTML, then the HTML scan mitigated it again.
+- A mail that already contains the high-risk text notice is left as text.
+- Follow-up: re-import `VBA\MSCANModule1.bas`.
+
 ### 2026-09-24 — 1.3.24: HRE count beside Links
 - Footer line 1 appends `HRE: N` after Links. Colour is `#90EE90` at 0, `#FFC107` at 1–3, `#FF4444` above 3. The tally is the existing high-risk element count (risky links + beacons + bad attachments).
 - Follow-up: rescan a mail.

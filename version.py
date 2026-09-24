@@ -7,15 +7,20 @@ shipping a meaningful change; mirror the same version in:
   - VERSION (plain text)
   - CHANGELOG.md
   - AesRibbonHost/AesRibbonHost.csproj <Version>
+
+SemVer (MAJOR.MINOR.PATCH) — almost everything is a PATCH:
+  PATCH (~90%)  bugfixes, wording, icons, scoring tweaks, docs
+  MINOR         new backward-compatible features (tabs, ribbon buttons, modes)
+  MAJOR         rare — breaking Outlook/VBA contracts, schema, or public CLI
 """
 
 from __future__ import annotations
 
 # Semver: MAJOR.MINOR.PATCH
-VERSION = "2.0.0"
-VERSION_TUPLE = (2, 0, 0)
+VERSION = "1.2.0"
+VERSION_TUPLE = (1, 2, 0)
 # Local release / build timestamp for this VERSION (YYYY-MM-DD HH:MM)
-VERSION_STAMP = "2026-09-24 15:10"
+VERSION_STAMP = "2026-09-24 15:25"
 
 APP_NAME = "GURI"
 APP_FULL_NAME = "GURI - Aliniant Smart Ass Email"
@@ -30,8 +35,8 @@ COPYRIGHT_YEAR = "2026"
 # Each entry: (version, timestamp, notes)
 RELEASE_NOTES = (
     (
-        "2.0.0",
-        "2026-09-24 15:10",
+        "1.2.0",
+        "2026-09-24 15:25",
         "Aura (data-broker removal) ribbon + GURI tab; threat-intel RiskTable "
         "consensus scoring; Create-GURI DB persist (avg_risk TEXT); clickable "
         "footer metrics; IP allocation decode; suite versioning + public GitHub.",
@@ -52,7 +57,7 @@ RELEASE_NOTES = (
 
 
 def version_string() -> str:
-    """Human-readable version with timestamp, e.g. 2.0.0 (2026-09-24 15:10)."""
+    """Human-readable version with timestamp, e.g. 1.2.0 (2026-09-24 15:25)."""
     stamp = (VERSION_STAMP or "").strip()
     if stamp:
         return f"{VERSION} ({stamp})"

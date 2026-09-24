@@ -13,10 +13,15 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
-### 2026-09-24 — Suite 2.0.0 versioning + public GitHub
-- SemVer source of truth: `VERSION`, `version.py`, `CHANGELOG.md`, AesRibbonHost `2.0.0`.
+### 2026-09-24 — Correct suite version to 1.2.0 (patch-first SemVer)
+- Suite is **1.2.0**, not 2.0.0 — SemVer MAJOR.MINOR.PATCH with ~90% patches.
+- Commit messages must open with a caption of what was done (`AGENTS.md`).
+- Retagged GitHub release `v1.2.0`; removed mistaken `v2.0.0`.
+
+### 2026-09-24 — Suite versioning + public GitHub
+- SemVer source of truth: `VERSION`, `version.py`, `CHANGELOG.md`, AesRibbonHost assembly version.
 - Hardened `.gitignore` (DB configs, secrets, build junk). Published clean tree to https://github.com/youcangetjules/geofooter (no live credentials).
-- Follow-up: rotate Postgres/MySQL passwords that existed in older local commits; tag `v2.0.0`.
+- Follow-up: rotate Postgres/MySQL passwords that existed in older local commits.
 
 ### 2026-09-24 — Create GURI must persist to database
 - Root cause: `guri_records.avg_risk` was `VARCHAR(50)` but Create-GURI stores document file paths there — inserts failed silently while the UI still said success.

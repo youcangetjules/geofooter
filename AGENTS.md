@@ -46,11 +46,13 @@ Prefer **`VBA\geolocate_headers.py`** and other scripts under `VBA\` over stale 
 4. **Compact vs full/deep** — automatic new-mail scans are compact/lite (lighter hop/AV/export). Full/Deep keep heavy fidelity.
 5. **Do not commit** unless the user asks. Avoid pushing secrets (`aes_secrets`, DPAPI settings, API keys).
 6. **Work log** — whenever you make meaningful code or project-doc changes, append an entry to **`WORKLOG.md`** (newest first). Include what changed, why, and any follow-up (e.g. VBA re-import). Skip trivial typos-only edits unless the user asks.
+7. **Versioning** — SemVer `MAJOR.MINOR.PATCH` in `VERSION` + `version.py` + `CHANGELOG.md` + AesRibbonHost `<Version>`. **~90% of bumps are PATCH**; MINOR for new features; MAJOR only for breaking contracts. Keep versions aligned across those files.
+8. **Commit captions** — every commit message **must** open with a short caption stating what was done (imperative, specific). Example: `Fix Create-GURI silent insert failure for long document paths`. Do not use vague messages like `update` or `wip`.
 
 ## Quick pointers
 
 - Import order / ThisOutlookSession setup: `VBA\IMPORT.txt`
 - Dependencies: `requirements.txt`
 - Runtime data: `%LOCALAPPDATA%\GeoFooter\` (logs, jobs, sender history, settings)
-- Change history: `WORKLOG.md`
+- Change history: `WORKLOG.md` · release history: `CHANGELOG.md` · current: `VERSION`
 - Agent persona / skills: `SKILLS.md`

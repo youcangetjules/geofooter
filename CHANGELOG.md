@@ -3,14 +3,24 @@
 All notable changes to the **GeoFooter / AES / GURI / Aura** suite are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html):
+**MAJOR.MINOR.PATCH** — roughly **90% of releases are patches**.
+
+| Bump | When |
+|------|------|
+| **PATCH** | Default — fixes, wording, scoring tweaks, icons, docs |
+| **MINOR** | New backward-compatible features (ribbon buttons, tabs, modes) |
+| **MAJOR** | Rare — breaking Outlook/VBA contracts, DB schema, or public CLI |
 
 The canonical version string lives in `version.py` and the plain-text `VERSION` file.
 Bump those together with this changelog and `AesRibbonHost/AesRibbonHost.csproj` `<Version>`.
 
+Every git commit must start with a short **caption** (one line) stating what was done,
+e.g. `Fix Create-GURI silent insert failure for long document paths`.
+
 ## [Unreleased]
 
-## [2.0.0] — 2026-09-24
+## [1.2.0] — 2026-09-24
 
 ### Added
 - **Aura** (Aliniant Universal Removal Application): Outlook ribbon / toolbar button, `aes_aura` icons, GURI `--aura` / IPC `AURA`, broker-removal workspace tab.
@@ -42,7 +52,7 @@ Bump those together with this changelog and `AesRibbonHost/AesRibbonHost.csproj`
 ### Added
 - GURI database viewer, Outlook scrape, deadlines, learning loop, Ollama.
 
-[Unreleased]: https://github.com/youcangetjules/geofooter/compare/v2.0.0...HEAD
-[2.0.0]: https://github.com/youcangetjules/geofooter/releases/tag/v2.0.0
+[Unreleased]: https://github.com/youcangetjules/geofooter/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/youcangetjules/geofooter/releases/tag/v1.2.0
 [1.1.0]: https://github.com/youcangetjules/geofooter/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/youcangetjules/geofooter/releases/tag/v1.0.0

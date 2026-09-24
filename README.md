@@ -9,7 +9,7 @@
 | **Aura** | Aliniant Universal Removal Application (broker opt-out workspace) |
 | **AesRibbonHost** | Optional COM/ribbon host for AES UI in Outlook |
 
-**Version:** see [`VERSION`](VERSION) / [`version.py`](version.py) — currently **2.0.0**.  
+**Version:** see [`VERSION`](VERSION) / [`version.py`](version.py) — currently **1.2.0**.  
 **Changes:** [`CHANGELOG.md`](CHANGELOG.md) · day-to-day notes in [`WORKLOG.md`](WORKLOG.md).
 
 ## Requirements
@@ -28,23 +28,26 @@
 
 ## Versioning
 
-We use **SemVer** (`MAJOR.MINOR.PATCH`):
+We use **SemVer** (`MAJOR.MINOR.PATCH`). **About 90% of bumps are patches.**
 
 | Bump | When |
 |------|------|
-| MAJOR | Breaking Outlook/VBA contracts, schema, or public CLI |
-| MINOR | New features (Aura, new scan modes, tabs) backward-compatible |
-| PATCH | Fixes and wording |
+| **PATCH** | Default — fixes, wording, scoring tweaks, icons, docs |
+| **MINOR** | New backward-compatible features (Aura, tabs, scan modes) |
+| **MAJOR** | Rare — breaking Outlook/VBA contracts, schema, or public CLI |
+
+**Git commits:** every commit message starts with a short caption of what was done
+(imperative, specific), e.g. `Widen avg_risk to TEXT so Create-GURI saves file paths`.
 
 When releasing:
 
 1. Update `VERSION`, `version.py` (`VERSION`, `VERSION_STAMP`, `RELEASE_NOTES`), `CHANGELOG.md`, and `AesRibbonHost\AesRibbonHost.csproj` `<Version>`.
-2. Commit, tag `vX.Y.Z`, push tags to GitHub.
+2. Commit with a caption, tag `vX.Y.Z`, push tags to GitHub.
 3. Note VBA re-import / ribbon reinstall in the changelog when required.
 
 ```bash
-git tag -a v2.0.0 -m "GeoFooter suite 2.0.0"
-git push origin v2.0.0
+git tag -a v1.2.0 -m "Ship suite 1.2.0: Aura, TI consensus, Create-GURI persist"
+git push origin v1.2.0
 ```
 
 ## Agent / contributor notes

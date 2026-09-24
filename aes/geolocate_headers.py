@@ -3048,7 +3048,7 @@ class HTMLReportGenerator:
         hre = self._count_high_risk_elements(
             link_findings, beacon_count, attachment_not_ok
         )
-        summary_line1_html = f"{summary_line1_html} | HRE: {{{{AES_HRE}}}}"
+        summary_line1_html = f"{summary_line1_html} | {{{{AES_HRE}}}}"
         sender_ip_part = f"Sender IP {sender_ip_plain}"
         if sender_host_plain:
             sender_ip_part = f"{sender_ip_part} {sender_host_plain}"
@@ -5219,17 +5219,21 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             hre_color = "#FFC107"
         else:
             hre_color = "#FF4444"
+        hre_label = (
+            f"HRE: <span style='color:{hre_color};'>{hre_n}</span>"
+        )
         if risk_report_url:
             hre_html = self._aes_subtle_link(
                 self._local_report_href(risk_report_url) or risk_report_url,
-                str(hre_n),
+                hre_label,
                 font_weight="bold",
                 font_size="12px",
                 underline=True,
-                color=hre_color,
+                color="#ffffff",
             )
         else:
             hre_html = (
+                f"<span style='font-weight:bold;'>HRE: </span>"
                 f"<span style='color:{hre_color};font-weight:bold;'>{hre_n}</span>"
             )
         summary_line1 = summary_line1.replace("{{AES_HRE}}", hre_html)

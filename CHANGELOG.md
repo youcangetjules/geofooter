@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.27] — 2026-09-24
+
+### Changed
+
+- The whole **HRE** label links to the risk breakdown. The count keeps its green, yellow, or red colour.
+
 ## [1.3.26] — 2026-09-24
 
 ### Changed

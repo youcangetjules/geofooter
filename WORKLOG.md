@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.27: Whole HRE label is the link
+- `HRE: N` is one link to the risk report. The number stays colour-coded.
+- Follow-up: rescan a mail.
+
 ### 2026-09-24 — 1.3.26: HRE links to the breakdown; tighter rows
 - `{{AES_HRE}}` is replaced with a coloured link to the risk report. Row padding is `5px 16px`.
 - Follow-up: rescan a mail. No VBA re-import.

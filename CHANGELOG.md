@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.10] — 2026-09-24
+
+### Changed
+
+- The email timeline draws the day of the month behind the hours at 20% opacity and 72pt.
+- The grid line between 23:00 and 00:00 is a solid dark bar.
+
 ## [1.3.9] — 2026-09-24
 
 ### Changed

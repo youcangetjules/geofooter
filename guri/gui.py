@@ -1156,6 +1156,13 @@ class TimelineCanvas(QWidget):
             base["text"] = imp["text"]
         return base
 
+    def _column_datetime(self, hour_index: int, now: datetime) -> datetime:
+        """Clock time represented by this column."""
+        if self._mode == "today":
+            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            return start + timedelta(hours=hour_index)
+        return now - timedelta(hours=23 - hour_index)
+
     def set_timeline_mode(self, mode: str, visible_hours: int = 24) -> None:
         """today: fixed 1/24 column width, hours 00..now left-aligned.
         rolling24: full 24-hour rolling window."""
@@ -1341,6 +1348,36 @@ class TimelineCanvas(QWidget):
                 int(y0 + row_h),
             )
 
+        # Day-of-month watermark behind the hours (20% opacity, 72pt).
+        plot_top = margin_top
+        plot_h = max(1, height - margin_top - margin_bottom)
+        painter.save()
+        painter.setClipRect(int(margin_left), int(plot_top), int(used_w), int(plot_h))
+        painter.setOpacity(0.20)
+        day_font = QFont("Segoe UI", 72)
+        day_font.setBold(True)
+        painter.setFont(day_font)
+        painter.setPen(QColor("#1a2e35"))
+        day_spans = []
+        for hour in range(n_cols):
+            day_num = self._column_datetime(hour, current_time).day
+            if day_spans and day_spans[-1][0] == day_num:
+                day_spans[-1][2] = hour
+            else:
+                day_spans.append([day_num, hour, hour])
+        for day_num, first, last in day_spans:
+            span_x = margin_left + first * hour_width
+            span_w = (last - first + 1) * hour_width
+            painter.drawText(
+                int(span_x),
+                int(plot_top),
+                int(span_w),
+                int(plot_h),
+                Qt.AlignmentFlag.AlignCenter,
+                str(day_num),
+            )
+        painter.restore()
+
         # Hour labels and vertical grid (Today: only elapsed hours, left-aligned)
         for hour in range(n_cols + 1):
             x = margin_left + (hour * hour_width)
@@ -1362,6 +1399,14 @@ class TimelineCanvas(QWidget):
                     Qt.AlignmentFlag.AlignCenter,
                     hour_label,
                 )
+
+        # Solid bar on the midnight boundary (between 23:00 and 00:00).
+        for hour in range(1, n_cols):
+            if self._column_datetime(hour, current_time).hour != 0:
+                continue
+            x = margin_left + (hour * hour_width)
+            painter.setPen(QPen(QColor("#1a2e35"), 3))
+            painter.drawLine(int(x), margin_top, int(x), height - margin_bottom)
 
         # Circles: half column width so the timeline stays compact
         max_diam = max(8.0, row_h - (2 * pad_v))

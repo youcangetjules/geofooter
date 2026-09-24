@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-24 — 1.3.10: Timeline day watermark and midnight bar
+- Email timeline paints the day of the month at 72pt and 20% opacity behind each day's hours.
+- The column edge between 23:00 and 00:00 is a 3px dark bar.
+- Follow-up: restart GURI.
+
 ### 2026-09-24 — 1.3.9: Quick Actions label contrast
 - The label colour is chosen from the strip background (near-black on the green-to-red gradient, white only on a dark strip). White on low-risk green was about 2.8:1.
 - Follow-up: rescan a mail to see it. No VBA re-import.

@@ -570,37 +570,37 @@ def risk_color_for_level(level: str) -> str:
 
 _FOOTER_QUIPS: Dict[str, Tuple[str, ...]] = {
     "LOW": (
-        "Relax. This one could not organise a phishing trip.",
-        "Safer than your browser history. Marginally.",
-        "We poked it. It apologised.",
-        "Green. You may unclench.",
-        "It brought ID and a sensible jumper.",
-        "Nothing suspicious, which is honestly a bit suspicious. Still fine.",
-        "Cleared. The scanner is going back to its nap.",
+        "You may unclench.",
+        "This one is allowed.",
+        "Green. Go on, read it.",
+        "Nothing to see. Bliss.",
+        "The scanner yawned.",
+        "Safe. Boring. Perfect.",
+        "ID checked. All good.",
     ),
     "RAISED": (
-        "Amber. Read it like it owes you money.",
-        "Not a villain. Do not give it your passwords anyway.",
-        "We did not hate it. We did not trust it.",
-        "Fine to open. Terrible idea to click the shiny bit.",
-        "Raised eyebrow fitted at no extra charge.",
-        "Probably legit. 'Probably' is doing a lot of work.",
-        "Hover before you click. Future you says thanks.",
+        "Read it. Click less.",
+        "Amber. Keep your wits.",
+        "Probably fine. Probably.",
+        "Eyebrow: raised.",
+        "Open it. Trust slowly.",
+        "Not evil. Not naive.",
+        "Hover, then decide.",
     ),
     "HIGH": (
-        "This one has 'trust me' energy. Do not.",
-        "High. The links are decorative. Leave them that way.",
-        "If it wants a login, it can want it from someone else.",
-        "We would not let this one borrow a pen.",
-        "Smile, nod, click nothing.",
-        "The scanner put it in the naughty corner.",
-        "Pretty. Pushy. Put the mouse down.",
+        "Trust-me energy. No.",
+        "Links are decorative.",
+        "Do not obey this one.",
+        "Naughty corner.",
+        "Smile. Click nothing.",
+        "Pretty, and pushy.",
+        "No passwords. None.",
     ),
     "CRITICAL": (
-        "So risky we took its HTML away.",
-        "Plain text, because the fancy version was up to something.",
-        "This one does not get buttons. It knows what it did.",
-        "We sent the layout to its room.",
+        "HTML privileges revoked.",
+        "Too spicy for buttons.",
+        "Plain text, on purpose.",
+        "It knows what it did.",
     ),
 }
 
@@ -631,54 +631,21 @@ AES_FOOTER_GAP_HTML = (
 )
 
 
-def _footer_mark_mosaic() -> str:
-    """Orange A drawn as cells. Outlook will not show an unattached image."""
+def _footer_mark_html() -> str:
+    """Orange A on the left. Outlook paints it from the attached cid image."""
     try:
-        from PIL import Image
         from geofooter.paths import get_install_root
 
         path = get_install_root() / "assets" / "icons" / "aes_mark_footer.png"
-        im = Image.open(path).convert("RGBA")
     except Exception:
-        return (
-            "<table border='0' cellpadding='0' cellspacing='0'>"
-            "<tr><td align='center' valign='middle' "
-            "style='color:#ff7f28; font-family:Arial,sans-serif; font-size:36px; "
-            "font-weight:bold; line-height:36px;'>A</td></tr></table>"
-        )
-    cols, rows_n, cell = 26, 25, 3
-    im = im.resize((cols, rows_n), Image.Resampling.BOX)
-    pixels = im.load()
-    body: List[str] = []
-    for y in range(rows_n):
-        tds: List[str] = []
-        for x in range(cols):
-            r, g, b, a = pixels[x, y]
-            orange = a > 40 and r > 150 and r > g + 25 and r > b + 25
-            color = "#ff7f28" if orange else AES_STRIP_BG
-            tds.append(
-                f"<td width='{cell}' height='{cell}' bgcolor='{color}' "
-                f"style='width:{cell}px;height:{cell}px;background:{color};"
-                f"font-size:1px;line-height:1px;'>&nbsp;</td>"
-            )
-        body.append("<tr>" + "".join(tds) + "</tr>")
+        return ""
+    if not path.is_file():
+        return ""
     return (
-        "<table border='0' cellpadding='0' cellspacing='0' "
-        "style='border-collapse:collapse;'>"
-        + "".join(body)
-        + "</table>"
+        f"<!-- AES-Mark-Img: {path} -->"
+        f"<img src='cid:aesfootermark' width='75' height='72' alt='' "
+        f"style='display:block; border:0; outline:none; width:75px; height:72px;' />"
     )
-
-
-_FOOTER_MARK_HTML: Optional[str] = None
-
-
-def _footer_mark_html() -> str:
-    """Orange A on the left of the strip, painted so Outlook cannot drop it."""
-    global _FOOTER_MARK_HTML
-    if _FOOTER_MARK_HTML is None:
-        _FOOTER_MARK_HTML = _footer_mark_mosaic()
-    return _FOOTER_MARK_HTML
 
 
 # Quick Action chips on that strip. Default is a white pill with slate text.
@@ -726,12 +693,29 @@ def strip_separators(
     )
     parts = (inner_html or "").split(" | ")
     if line_height:
+        extra = (
+            f"line-height:{line_height}; mso-line-height-rule:exactly; "
+            f"vertical-align:middle; font-size:{size}; "
+        )
+
+        def _lock_fragment(fragment: str) -> str:
+            def repl(match: re.Match) -> str:
+                quote = match.group(1)
+                body = match.group(2)
+                body = re.sub(r"line-height:[^;'\"]+;?\s*", "", body)
+                body = re.sub(r"mso-line-height-rule:[^;'\"]+;?\s*", "", body)
+                body = re.sub(r"vertical-align:[^;'\"]+;?\s*", "", body)
+                body = body.strip().rstrip(";")
+                joined = f"{body}; {extra}" if body else extra
+                return f"style={quote}{joined}{quote}"
+
+            return re.sub(r"style=(['\"])([^'\"]*)\1", repl, fragment)
+
         parts = [
             (
                 f"<span style='font-family:{AES_STRIP_FONT}; font-size:{size}; "
-                f"font-weight:{weight}; line-height:{line_height}; "
-                f"mso-line-height-rule:exactly; vertical-align:middle;'>"
-                f"{part}</span>"
+                f"font-weight:{weight}; {extra}'>"
+                f"{_lock_fragment(part)}</span>"
             )
             for part in parts
         ]
@@ -5492,10 +5476,11 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             )
         quip = html.escape(footer_quip(str(risk or ""), int(score or 0)))
         quip_cell = (
-            f"<td width='220' valign='middle' align='right' "
-            f"style='width:220px; padding-left:16px; text-align:right; "
+            f"<td nowrap valign='middle' align='right' "
+            f"style='white-space:nowrap; padding-left:16px; text-align:right; "
             f"vertical-align:middle; color:{risk_color}; font-family:{AES_STRIP_FONT}; "
-            f"font-size:11px; font-style:italic; font-weight:normal; line-height:14px;'>"
+            f"font-size:11px; font-style:italic; font-weight:normal; "
+            f"line-height:16px; mso-line-height-rule:exactly;'>"
             f"{quip}</td>"
         )
         summary_block = (
@@ -5525,8 +5510,8 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
                 f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
                 f"border-collapse:collapse;'>"
                 f"<tr>"
-                f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-                f"style='padding:4px 8px 4px 12px; background:{AES_STRIP_BG};'>"
+                f"<td width='91' valign='middle' bgcolor='{AES_STRIP_BG}' "
+                f"style='width:91px; padding:6px 4px 6px 12px; background:{AES_STRIP_BG};'>"
                 f"{mark}</td>"
                 f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
                 f"style='background:{AES_STRIP_BG};'>{summary_block}</td>"
@@ -8028,13 +8013,12 @@ def _schedule_footer_mark(header_file: str) -> None:
         text = open(header_file, encoding="utf-8", errors="replace").read()
         subject = ""
         for line in text.splitlines():
-            if line.lower().startswith("original subject:"):
-                subject = line.split(":", 1)[1].strip()
+            cleaned = line.lstrip("\ufeff").strip()
+            if cleaned.lower().startswith("original subject:"):
+                subject = cleaned.split(":", 1)[1].strip()
                 break
-        if not subject:
-            return
         job = Path(tempfile.gettempdir()) / "aes_footer_mark_job.txt"
-        job.write_text(subject, encoding="utf-8")
+        job.write_text(subject or "*", encoding="utf-8")
         flags = 0x00000008 | 0x00000200 | 0x08000000  # detached, new group, no window
         subprocess.Popen(
             [sys.executable, str(Path(__file__).resolve()), "--embed-footer-mark", str(job)],
@@ -8124,17 +8108,21 @@ def _embed_footer_mark_job(job_path: str) -> None:
     want = _norm_mail_subject(subject)
     item = None
     for _ in range(40):
+        fallback = None
         for cand in candidates():
             try:
-                got = _norm_mail_subject(str(getattr(cand, "Subject", "") or ""))
-                if not got or (got != want and want not in got and got not in want):
-                    continue
                 html = str(getattr(cand, "HTMLBody", "") or "")
             except Exception:
                 continue
-            if "cid:aesfootermark" in html.lower():
+            if "cid:aesfootermark" not in html.lower():
+                continue
+            fallback = cand
+            got = _norm_mail_subject(str(getattr(cand, "Subject", "") or ""))
+            if not want or want == "*" or got == want or (got and (want in got or got in want)):
                 item = cand
                 break
+        if item is None:
+            item = fallback
         if item is not None:
             break
         time.sleep(1)

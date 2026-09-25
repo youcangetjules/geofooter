@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-25 — 1.3.38: One-line quips, aligned top row, real footer A
+- Cheeky lines are short and `nowrap`, so Outlook cannot wrap them under the metrics.
+- Every span and link on the top row is forced to the same 16px line, which was dropping "NOK" a couple of pixels.
+- The blocky cell drawing of the A is gone. The footer uses the logo file again, and the follow-up attach looks for any open mail that already contains that image id.
+- Follow-up: rescan and leave the message open for a few seconds so the A can attach.
+
 ### 2026-09-25 — 1.3.37: Tighten footer buttons, draw the A, add a quip
 - The VML button shape was painting outside the chip border and made the pills too tall. Each chip is now one 16px cell: background and border on that cell only.
 - The footer A was a cid image Outlook never attached, so it showed as an empty box. It is now a small table of orange cells taken from the logo.

@@ -20,6 +20,14 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.38] — 2026-09-25
+
+### Changed
+
+- The cheeky footer line stays on one line.
+- Top-row counts, including NOK, share the same baseline.
+- The orange A is the logo image again, attached to the message after the footer is applied.
+
 ## [1.3.37] — 2026-09-25
 
 ### Changed

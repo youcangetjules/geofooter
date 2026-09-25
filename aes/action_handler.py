@@ -928,15 +928,24 @@ def _paint_short_chip(html: str, href_prefix: str, bg: str, fg: str) -> str:
     border = fg if bg == "#ffffff" else bg
     pattern = _re.compile(
         r"(<td[^>]*bgcolor=')([^']*)('[^>]*style='background:)([^;']+)(; border:1px solid )([^;']+)"
-        r"(;[^']*'[^>]*>\s*<a href='" + _re.escape(href_prefix) + r"[^']*' style='color:)"
+        r"(;[^']*'[^>]*>)"
+        r"(\s*<!--\[if mso\]>.*?<!\[endif\]-->\s*)?"
+        r"(<!--\[if !mso\]><!-->\s*)?"
+        r"(<a href='" + _re.escape(href_prefix) + r"[^']*' style='color:)"
         r"([^;']+)(;[^']*'>)([A-Za-z]{2})(</a>)",
-        _re.IGNORECASE,
+        _re.IGNORECASE | _re.DOTALL,
     )
 
     def repl(match) -> str:
+        mso = match.group(8) or ""
+        if mso:
+            mso = _re.sub(r"fillcolor='[^']*'", f"fillcolor='{bg}'", mso, count=1)
+            mso = _re.sub(r"strokecolor='[^']*'", f"strokecolor='{border}'", mso, count=1)
+            mso = _re.sub(r"(<center style='color:)[^;']+", rf"\g<1>{fg}", mso, count=1)
         return (
             f"{match.group(1)}{bg}{match.group(3)}{bg}{match.group(5)}{border}"
-            f"{match.group(7)}{fg}{match.group(9)}{match.group(10)}{match.group(11)}"
+            f"{match.group(7)}{mso}{match.group(9) or ''}"
+            f"{match.group(10)}{fg}{match.group(12)}{match.group(13)}{match.group(14)}"
         )
 
     return pattern.sub(repl, html)

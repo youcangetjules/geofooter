@@ -568,6 +568,52 @@ def risk_color_for_level(level: str) -> str:
     return RISK_LEVEL_COLORS.get(str(level or "").upper(), "#888888")
 
 
+_FOOTER_QUIPS: Dict[str, Tuple[str, ...]] = {
+    "LOW": (
+        "Relax. This one could not organise a phishing trip.",
+        "Safer than your browser history. Marginally.",
+        "We poked it. It apologised.",
+        "Green. You may unclench.",
+        "It brought ID and a sensible jumper.",
+        "Nothing suspicious, which is honestly a bit suspicious. Still fine.",
+        "Cleared. The scanner is going back to its nap.",
+    ),
+    "RAISED": (
+        "Amber. Read it like it owes you money.",
+        "Not a villain. Do not give it your passwords anyway.",
+        "We did not hate it. We did not trust it.",
+        "Fine to open. Terrible idea to click the shiny bit.",
+        "Raised eyebrow fitted at no extra charge.",
+        "Probably legit. 'Probably' is doing a lot of work.",
+        "Hover before you click. Future you says thanks.",
+    ),
+    "HIGH": (
+        "This one has 'trust me' energy. Do not.",
+        "High. The links are decorative. Leave them that way.",
+        "If it wants a login, it can want it from someone else.",
+        "We would not let this one borrow a pen.",
+        "Smile, nod, click nothing.",
+        "The scanner put it in the naughty corner.",
+        "Pretty. Pushy. Put the mouse down.",
+    ),
+    "CRITICAL": (
+        "So risky we took its HTML away.",
+        "Plain text, because the fancy version was up to something.",
+        "This one does not get buttons. It knows what it did.",
+        "We sent the layout to its room.",
+    ),
+}
+
+
+def footer_quip(level: str, score: int) -> str:
+    """Cheeky one-liner for the top-right of the footer."""
+    if risk_requires_mitigation(int(score or 0)):
+        bank = _FOOTER_QUIPS["CRITICAL"]
+    else:
+        bank = _FOOTER_QUIPS.get(str(level or "").upper()) or _FOOTER_QUIPS["HIGH"]
+    return random.choice(bank)
+
+
 # Footer scan strip. #3f4c55 was the slate at 80%; this is 10% darker.
 AES_STRIP_BG = "#39444d"
 AES_STRIP_TEXT = "#ffffff"
@@ -585,24 +631,54 @@ AES_FOOTER_GAP_HTML = (
 )
 
 
-def _footer_mark_html() -> str:
-    """Orange A on the left of the strip. White in the source art is already gone."""
+def _footer_mark_mosaic() -> str:
+    """Orange A drawn as cells. Outlook will not show an unattached image."""
     try:
+        from PIL import Image
         from geofooter.paths import get_install_root
 
         path = get_install_root() / "assets" / "icons" / "aes_mark_footer.png"
+        im = Image.open(path).convert("RGBA")
     except Exception:
-        return ""
-    if not path.is_file():
-        return ""
-    # cid: is what Outlook will paint. A file:// src is blocked and shows as a
-    # blank box. The comment lets VBA embed the file when that module is current;
-    # the scan also attaches it after the footer is applied.
+        return (
+            "<table border='0' cellpadding='0' cellspacing='0'>"
+            "<tr><td align='center' valign='middle' "
+            "style='color:#ff7f28; font-family:Arial,sans-serif; font-size:36px; "
+            "font-weight:bold; line-height:36px;'>A</td></tr></table>"
+        )
+    cols, rows_n, cell = 26, 25, 3
+    im = im.resize((cols, rows_n), Image.Resampling.BOX)
+    pixels = im.load()
+    body: List[str] = []
+    for y in range(rows_n):
+        tds: List[str] = []
+        for x in range(cols):
+            r, g, b, a = pixels[x, y]
+            orange = a > 40 and r > 150 and r > g + 25 and r > b + 25
+            color = "#ff7f28" if orange else AES_STRIP_BG
+            tds.append(
+                f"<td width='{cell}' height='{cell}' bgcolor='{color}' "
+                f"style='width:{cell}px;height:{cell}px;background:{color};"
+                f"font-size:1px;line-height:1px;'>&nbsp;</td>"
+            )
+        body.append("<tr>" + "".join(tds) + "</tr>")
     return (
-        f"<!-- AES-Mark-Img: {path} -->"
-        f"<img src='cid:aesfootermark' width='75' height='72' alt='' "
-        f"style='display:block; border:0; outline:none; width:75px; height:72px;' />"
+        "<table border='0' cellpadding='0' cellspacing='0' "
+        "style='border-collapse:collapse;'>"
+        + "".join(body)
+        + "</table>"
     )
+
+
+_FOOTER_MARK_HTML: Optional[str] = None
+
+
+def _footer_mark_html() -> str:
+    """Orange A on the left of the strip, painted so Outlook cannot drop it."""
+    global _FOOTER_MARK_HTML
+    if _FOOTER_MARK_HTML is None:
+        _FOOTER_MARK_HTML = _footer_mark_mosaic()
+    return _FOOTER_MARK_HTML
 
 
 # Quick Action chips on that strip. Default is a white pill with slate text.
@@ -4221,17 +4297,21 @@ Live Safe Browsing lookups are optional and separate.</p>
 
         def chip(url: str, code: str, bg: str, fg: str) -> str:
             border = bg if bg != "#ffffff" else fg
-            # ~3x the original two-letter chip. width= is what Outlook honours.
+            href = html.escape(url, quote=True)
+            # One cell. The fill and the line are the same box, 16px tall.
+            # A VML shape was painting past that line; Outlook also adds the
+            # border outside the stated width, so the cell is 2px narrower.
             return (
                 "<table border='0' cellpadding='0' cellspacing='0' width='78' align='center' "
-                "style='border-collapse:separate;'>"
-                f"<tr><td bgcolor='{bg}' align='center' width='78' "
+                "style='border-collapse:collapse;'>"
+                f"<tr><td bgcolor='{bg}' align='center' valign='middle' width='76' height='16' "
                 f"style='background:{bg}; border:1px solid {border}; "
-                f"width:78px; text-align:center; border-radius:3px; padding:2px 0;'>"
-                f"<a href='{html.escape(url, quote=True)}' "
-                f"style='color:{fg}; font-family:{AES_STRIP_FONT}; "
-                f"font-size:10px; font-weight:bold; letter-spacing:1px; text-decoration:none;'>"
-                f"{code}</a>"
+                f"width:76px; height:16px; line-height:16px; mso-line-height-rule:exactly; "
+                f"text-align:center; padding:0; font-size:10px;'>"
+                f"<a href='{href}' "
+                f"style='color:{fg}; font-family:{AES_STRIP_FONT}; font-size:10px; "
+                f"font-weight:bold; letter-spacing:1px; line-height:16px; "
+                f"mso-line-height-rule:exactly; text-decoration:none;'>{code}</a>"
                 "</td></tr></table>"
             )
 
@@ -5410,6 +5490,14 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
                 f"<tr><td style='padding:{row_pad}; text-align:center;'>"
                 f"{quick_actions}</td></tr>"
             )
+        quip = html.escape(footer_quip(str(risk or ""), int(score or 0)))
+        quip_cell = (
+            f"<td width='220' valign='middle' align='right' "
+            f"style='width:220px; padding-left:16px; text-align:right; "
+            f"vertical-align:middle; color:{risk_color}; font-family:{AES_STRIP_FONT}; "
+            f"font-size:11px; font-style:italic; font-weight:normal; line-height:14px;'>"
+            f"{quip}</td>"
+        )
         summary_block = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
             f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
@@ -5417,7 +5505,12 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"<tr><td valign='middle' style='padding:{row_pad}; text-align:center; "
             f"color:{AES_STRIP_TEXT}; font-family:{AES_STRIP_FONT}; font-size:12px; "
             f"font-weight:bold; letter-spacing:0.3px; line-height:16px; "
-            f"mso-line-height-rule:exactly; vertical-align:middle;'>{summary_line1}</td></tr>"
+            f"mso-line-height-rule:exactly; vertical-align:middle;'>"
+            f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
+            f"style='border-collapse:collapse;'><tr>"
+            f"<td valign='middle' style='vertical-align:middle; line-height:16px; "
+            f"mso-line-height-rule:exactly;'>{summary_line1}</td>"
+            f"{quip_cell}</tr></table></td></tr>"
             f"{rule_row}"
             f"<tr><td style='padding:{row_pad}; text-align:center; "
             f"color:{AES_STRIP_MUTED}; font-family:{AES_STRIP_FONT}; font-size:12px; "
@@ -5432,8 +5525,8 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
                 f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
                 f"border-collapse:collapse;'>"
                 f"<tr>"
-                f"<td width='91' valign='middle' bgcolor='{AES_STRIP_BG}' "
-                f"style='width:91px; padding:6px 4px 6px 12px; background:{AES_STRIP_BG};'>"
+                f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
+                f"style='padding:4px 8px 4px 12px; background:{AES_STRIP_BG};'>"
                 f"{mark}</td>"
                 f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
                 f"style='background:{AES_STRIP_BG};'>{summary_block}</td>"
@@ -7954,6 +8047,27 @@ def _schedule_footer_mark(header_file: str) -> None:
         logging.getLogger("geolocate").warning("Could not schedule footer mark", exc_info=True)
 
 
+def _norm_mail_subject(value: str) -> str:
+    text = (value or "").strip().casefold()
+    while True:
+        nxt = re.sub(r"^(re|fw|fwd)\s*:\s*", "", text)
+        if nxt == text:
+            return text.strip()
+        text = nxt
+
+
+def _mark_log(message: str) -> None:
+    try:
+        from geofooter.paths import user_data_dir
+
+        folder = user_data_dir() / "Logs"
+        folder.mkdir(parents=True, exist_ok=True)
+        with (folder / "aes_footer_mark.log").open("a", encoding="utf-8") as handle:
+            handle.write(f"{datetime.now():%Y-%m-%d %H:%M:%S} | {message}\n")
+    except Exception:
+        pass
+
+
 def _embed_footer_mark_job(job_path: str) -> None:
     import shutil
     import tempfile
@@ -7962,26 +8076,37 @@ def _embed_footer_mark_job(job_path: str) -> None:
     try:
         subject = Path(job_path).read_text(encoding="utf-8").strip()
     except Exception:
+        _mark_log("could not read job file")
         return
     if not subject:
+        _mark_log("empty subject")
         return
     try:
         from geofooter.paths import get_install_root
         src = get_install_root() / "assets" / "icons" / "aes_mark_footer.png"
     except Exception:
+        _mark_log("install root unavailable")
         return
     if not src.is_file():
+        _mark_log(f"mark png missing: {src}")
         return
 
     time.sleep(2)
     try:
         import win32com.client  # type: ignore
         outlook = win32com.client.Dispatch("Outlook.Application")
-    except Exception:
+    except Exception as exc:
+        _mark_log(f"Outlook unavailable: {exc}")
         return
 
     def candidates():
         found = []
+        try:
+            inspectors = outlook.Inspectors
+            for i in range(1, int(inspectors.Count) + 1):
+                found.append(inspectors.Item(i).CurrentItem)
+        except Exception:
+            pass
         try:
             insp = outlook.ActiveInspector
             if insp is not None:
@@ -7996,12 +8121,13 @@ def _embed_footer_mark_job(job_path: str) -> None:
             pass
         return found
 
-    want = subject.casefold()
+    want = _norm_mail_subject(subject)
     item = None
-    for _ in range(16):
+    for _ in range(40):
         for cand in candidates():
             try:
-                if str(getattr(cand, "Subject", "") or "").strip().casefold() != want:
+                got = _norm_mail_subject(str(getattr(cand, "Subject", "") or ""))
+                if not got or (got != want and want not in got and got not in want):
                     continue
                 html = str(getattr(cand, "HTMLBody", "") or "")
             except Exception:
@@ -8013,25 +8139,30 @@ def _embed_footer_mark_job(job_path: str) -> None:
             break
         time.sleep(1)
     if item is None:
+        _mark_log(f"open mail not found for subject {subject!r}")
         return
 
     cid_prop = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
     try:
         for i in range(1, int(item.Attachments.Count) + 1):
             att = item.Attachments.Item(i)
+            name = str(getattr(att, "FileName", "") or "").lower()
+            cid = ""
             try:
-                if str(att.PropertyAccessor.GetProperty(cid_prop) or "").strip("<>").lower() == "aesfootermark":
-                    return
+                cid = str(att.PropertyAccessor.GetProperty(cid_prop) or "").strip("<>").lower()
             except Exception:
-                if str(getattr(att, "FileName", "") or "").lower().startswith("aes_status_mark"):
-                    return
+                cid = ""
+            if cid == "aesfootermark" or name.startswith("aes_mark_footer"):
+                _mark_log(f"mark already attached ({name or cid})")
+                return
     except Exception:
         pass
 
-    tmp = Path(tempfile.gettempdir()) / "aes_status_mark.png"
+    # aes_mark_ not aes_status_: the banner refresh deletes aes_status_* files.
+    tmp = Path(tempfile.gettempdir()) / "aes_mark_footer.png"
     shutil.copyfile(src, tmp)
     try:
-        att = item.Attachments.Add(str(tmp), 1, 0, "aes_status_mark.png")
+        att = item.Attachments.Add(str(tmp), 1, 0, "aes_mark_footer.png")
         att.PropertyAccessor.SetProperty(cid_prop, "aesfootermark")
         try:
             att.PropertyAccessor.SetProperty(
@@ -8045,7 +8176,9 @@ def _embed_footer_mark_job(job_path: str) -> None:
         html = str(item.HTMLBody or "")
         item.HTMLBody = html
         item.Save()
-    except Exception:
+        _mark_log(f"attached mark to {subject!r}")
+    except Exception as exc:
+        _mark_log(f"attach failed: {exc}")
         logging.getLogger("geolocate").warning("Footer mark attach failed", exc_info=True)
 
 

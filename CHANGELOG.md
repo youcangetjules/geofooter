@@ -20,6 +20,14 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.37] — 2026-09-25
+
+### Changed
+
+- Quick Action buttons are 16px tall. The fill and the border are the same box, so the colour no longer spills past the line.
+- The orange A is drawn in the footer itself, so Outlook does not need a separate image.
+- The top-right of the footer shows a random cheeky line for the risk band.
+
 ## [1.3.36] — 2026-09-25
 
 ### Fixed

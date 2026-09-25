@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-25 — 1.3.37: Tighten footer buttons, draw the A, add a quip
+- The VML button shape was painting outside the chip border and made the pills too tall. Each chip is now one 16px cell: background and border on that cell only.
+- The footer A was a cid image Outlook never attached, so it showed as an empty box. It is now a small table of orange cells taken from the logo.
+- Top-right of the strip picks one cheeky line at random for Low, Raised, High, or the text-only band.
+- Follow-up: rescan a mail. No VBA re-import.
+
 ### 2026-09-25 — 1.3.36: Stop a crashed or hung scan holding AES PROC
 - `main` imported `sys` locally, so every scan died at startup and Outlook waited five minutes per mail. That import is gone.
 - A compact scan now stops itself after 75 seconds (full 150, deep 210) and writes the `.fail` marker the job script already polls. DNS lookups are capped, and WHOIS gives up after 8 seconds.

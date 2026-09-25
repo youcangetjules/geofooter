@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 SECRET_NAME_ABUSEIPDB = "abuseipdb"
+SECRET_NAME_POE = "poe"
 
 
 def _secrets_dir() -> Path:
@@ -134,6 +135,31 @@ def abuseipdb_status() -> dict:
         "source": (
             "env"
             if (os.environ.get("AES_ABUSEIPDB_API_KEY") or "").strip()
+            else ("dpapi" if configured else "none")
+        ),
+    }
+
+
+def get_poe_api_key() -> str:
+    """Resolve the Poe key: env override, then DPAPI store."""
+    env = (os.environ.get("AES_POE_API_KEY") or "").strip()
+    if env:
+        return env
+    return get_secret(SECRET_NAME_POE)
+
+
+def set_poe_api_key(value: str) -> None:
+    set_secret(SECRET_NAME_POE, value)
+
+
+def poe_status() -> dict:
+    configured = bool(get_poe_api_key())
+    return {
+        "configured": configured,
+        "hint": secret_hint(SECRET_NAME_POE) if configured else "",
+        "source": (
+            "env"
+            if (os.environ.get("AES_POE_API_KEY") or "").strip()
             else ("dpapi" if configured else "none")
         ),
     }

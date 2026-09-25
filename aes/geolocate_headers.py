@@ -568,54 +568,15 @@ def risk_color_for_level(level: str) -> str:
     return RISK_LEVEL_COLORS.get(str(level or "").upper(), "#888888")
 
 
-_FOOTER_QUIPS: Dict[str, Tuple[str, ...]] = {
-    "LOW": (
-        "Relax. This one could not organise a phishing trip.",
-        "Safer than your browser history. Marginally.",
-        "We poked it with a stick. It apologised.",
-        "Green light. You may unclench.",
-        "It brought ID and a sensible jumper.",
-        "Nothing suspicious, which is honestly a bit suspicious. Still fine.",
-        "Cleared. The scanner is going back to its nap.",
-        "You can read this one without adult supervision.",
-    ),
-    "RAISED": (
-        "Amber. Read it like it owes you money.",
-        "Not a villain. Do not give it your passwords anyway.",
-        "We did not hate it. We did not trust it either.",
-        "Fine to open. Terrible idea to click the shiny bit.",
-        "Raised eyebrow fitted at no extra charge.",
-        "Probably legit. 'Probably' is doing a lot of work.",
-        "Hover before you click. Future you says thanks.",
-        "Interesting email. Keep your wallet in your pocket.",
-    ),
-    "HIGH": (
-        "This one has 'trust me' energy. Do not.",
-        "High. The links are decorative. Leave them that way.",
-        "If it wants a login, it can want it from someone else.",
-        "We would not let this one borrow a pen.",
-        "Smile, nod, and click absolutely nothing.",
-        "The scanner put it in the naughty corner.",
-        "Pretty. Pushy. Put the mouse down.",
-        "Charming, and almost certainly up to something.",
-    ),
-    "CRITICAL": (
-        "So risky we took its HTML away.",
-        "Plain text, because the fancy version was up to something.",
-        "This one does not get buttons. It knows what it did.",
-        "We sent the layout to its room.",
-        "Too spicy for formatting. It can sit in plain text and think.",
-    ),
-}
-
-
 def footer_quip(level: str, score: int) -> str:
     """Cheeky one-liner for the top-right of the footer."""
-    if risk_requires_mitigation(int(score or 0)):
-        bank = _FOOTER_QUIPS["CRITICAL"]
-    else:
-        bank = _FOOTER_QUIPS.get(str(level or "").upper()) or _FOOTER_QUIPS["HIGH"]
-    return random.choice(bank)
+    band = "CRITICAL" if risk_requires_mitigation(int(score or 0)) else str(level or "").upper()
+    try:
+        from aes.witticisms import pick_witticism
+
+        return pick_witticism(band)
+    except Exception:
+        return "Scanned. Read it with your eyes open."
 
 
 # Footer scan strip. #3f4c55 was the slate at 80%; this is 10% darker.

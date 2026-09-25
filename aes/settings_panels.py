@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extra AES Settings panels: threat-intel API keys and the trusted-sender list."""
+"""Extra AES Settings panels: threat-intel keys, trusted senders, witticisms."""
 from __future__ import annotations
 
 import json
@@ -12,12 +12,14 @@ from typing import Any, Dict, List
 from PySide6.QtCore import QObject, Qt, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QCheckBox,
     QComboBox,
     QGridLayout,
     QHBoxLayout,
     QHeaderView,
     QLabel,
     QLineEdit,
+    QListWidget,
     QMessageBox,
     QPushButton,
     QTableWidget,
@@ -417,4 +419,198 @@ def build_trusted_senders_panel(parent: QWidget) -> QWidget:
     show_combo.currentIndexChanged.connect(lambda _i: refresh())
     search.textChanged.connect(lambda _t: refresh())
     refresh()
+    return panel
+
+
+def build_witticisms_panel(parent: QWidget) -> QWidget:
+    """Edit footer one-liners and ask Poe for a new one."""
+    import aes.witticisms as wit
+    from aes.secret_store import get_poe_api_key, poe_status, set_poe_api_key
+
+    stored = wit.load_witticisms()
+    banks: Dict[str, List[str]] = {
+        level: list(stored["lines"].get(level) or []) for level in wit.LEVELS
+    }
+    current = {"level": "LOW"}
+
+    panel = QWidget(parent)
+    outer = QVBoxLayout(panel)
+    outer.setContentsMargins(8, 10, 8, 8)
+    outer.setSpacing(8)
+
+    heading = QLabel("Witticisms")
+    heading.setObjectName("section")
+    outer.addWidget(heading)
+    sub = QLabel(
+        "These are the cheeky lines in the top-right of the scan footer. "
+        "AES picks one at random for the mail's risk band. "
+        "Click Save to keep additions and removals. An empty band uses the built-in lines."
+    )
+    sub.setObjectName("subtitle")
+    sub.setWordWrap(True)
+    outer.addWidget(sub)
+
+    band_row = QHBoxLayout()
+    band_lbl = QLabel("Risk band")
+    band_combo = QComboBox()
+    for level in wit.LEVELS:
+        band_combo.addItem(wit.LEVEL_LABELS[level], level)
+    band_row.addWidget(band_lbl)
+    band_row.addWidget(band_combo, stretch=1)
+    outer.addLayout(band_row)
+
+    lines = QListWidget()
+    lines.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+    lines.setToolTip("Lines AES may show for the selected risk band.")
+    outer.addWidget(lines, stretch=1)
+
+    edit_row = QHBoxLayout()
+    line_edit = QLineEdit()
+    line_edit.setPlaceholderText("Type a new line")
+    add_btn = QPushButton("Add")
+    add_btn.setObjectName("secondaryBtn")
+    remove_btn = QPushButton("Remove")
+    remove_btn.setObjectName("secondaryBtn")
+    edit_row.addWidget(line_edit, stretch=1)
+    edit_row.addWidget(add_btn)
+    edit_row.addWidget(remove_btn)
+    outer.addLayout(edit_row)
+
+    poe_heading = QLabel("Suggest a new one")
+    poe_heading.setObjectName("section")
+    outer.addWidget(poe_heading)
+    poe_sub = QLabel(
+        "Uses Poe (poe.com/api/keys). The key is stored with Windows DPAPI "
+        "for your user when you click Save."
+    )
+    poe_sub.setObjectName("hint")
+    poe_sub.setWordWrap(True)
+    outer.addWidget(poe_sub)
+
+    key_row = QHBoxLayout()
+    key_edit = QLineEdit()
+    key_edit.setEchoMode(QLineEdit.EchoMode.Password)
+    key_edit.setPlaceholderText("Poe API key")
+    model_edit = QLineEdit(str(stored.get("model") or wit.DEFAULT_MODEL))
+    model_edit.setToolTip("Poe bot name, for example Claude-Sonnet-4.6")
+    model_edit.setMaximumWidth(220)
+    key_row.addWidget(key_edit, stretch=1)
+    key_row.addWidget(model_edit)
+    outer.addLayout(key_row)
+
+    status = poe_status()
+    if status.get("configured"):
+        key_edit.setPlaceholderText(
+            f"Current key {status.get('hint')} — paste a new key to replace"
+        )
+    clear_key = QCheckBox("Clear stored Poe key on Save")
+    clear_key.setObjectName("plainCheck")
+    clear_key.setEnabled(bool(status.get("configured")) and status.get("source") != "env")
+    outer.addWidget(clear_key)
+
+    suggest_row = QHBoxLayout()
+    suggest_btn = QPushButton("Suggest a new one")
+    suggest_btn.setObjectName("secondaryBtn")
+    suggest_lbl = QLabel("")
+    suggest_lbl.setObjectName("hint")
+    suggest_lbl.setWordWrap(True)
+    suggest_row.addWidget(suggest_btn)
+    suggest_row.addWidget(suggest_lbl, stretch=1)
+    outer.addLayout(suggest_row)
+
+    def read_list() -> List[str]:
+        return [lines.item(i).text() for i in range(lines.count())]
+
+    def fill(level: str) -> None:
+        lines.clear()
+        for text in banks.get(level) or []:
+            lines.addItem(text)
+
+    def flush() -> None:
+        banks[current["level"]] = read_list()
+
+    fill("LOW")
+
+    def on_band(index: int) -> None:
+        new_level = str(band_combo.itemData(index) or "LOW")
+        if new_level == current["level"]:
+            return
+        flush()
+        current["level"] = new_level
+        fill(new_level)
+        suggest_lbl.setText("")
+
+    def on_add() -> None:
+        text = wit._clean_line(line_edit.text())
+        if not text:
+            return
+        if any(lines.item(i).text().lower() == text.lower() for i in range(lines.count())):
+            suggest_lbl.setText("That line is already in this band.")
+            return
+        lines.addItem(text)
+        line_edit.clear()
+        suggest_lbl.setText("")
+
+    def on_remove() -> None:
+        for item in lines.selectedItems():
+            lines.takeItem(lines.row(item))
+
+    class _SuggestBridge(QObject):
+        done = Signal(bool, str)
+
+    bridge = _SuggestBridge(panel)
+
+    def on_suggested(ok: bool, text: str) -> None:
+        suggest_btn.setEnabled(True)
+        if ok:
+            line_edit.setText(text)
+            line_edit.setFocus()
+            suggest_lbl.setText("Suggestion ready. Click Add to keep it.")
+        else:
+            suggest_lbl.setText(text)
+
+    bridge.done.connect(on_suggested)
+
+    def on_suggest() -> None:
+        key = key_edit.text().strip() or get_poe_api_key()
+        if not key:
+            suggest_lbl.setText("Paste a Poe API key first. Create one at poe.com/api/keys.")
+            return
+        suggest_btn.setEnabled(False)
+        suggest_lbl.setText("Asking Poe…")
+        level = current["level"]
+        existing = read_list()
+        model = model_edit.text().strip() or wit.DEFAULT_MODEL
+
+        def work() -> None:
+            try:
+                line = wit.suggest_witticism(level, existing, key, model)
+                bridge.done.emit(True, line)
+            except Exception as exc:  # noqa: BLE001
+                bridge.done.emit(False, str(exc) or "Poe request failed.")
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def collect() -> Dict[str, Any]:
+        flush()
+        return {
+            "model": model_edit.text().strip() or wit.DEFAULT_MODEL,
+            "lines": {level: list(banks[level]) for level in wit.LEVELS},
+        }
+
+    def save_key() -> None:
+        if clear_key.isChecked():
+            set_poe_api_key("")
+            return
+        typed = key_edit.text().strip()
+        if typed:
+            set_poe_api_key(typed)
+
+    band_combo.currentIndexChanged.connect(on_band)
+    add_btn.clicked.connect(on_add)
+    line_edit.returnPressed.connect(on_add)
+    remove_btn.clicked.connect(on_remove)
+    suggest_btn.clicked.connect(on_suggest)
+    panel.collect_witticisms = collect  # type: ignore[attr-defined]
+    panel.save_poe_key = save_key  # type: ignore[attr-defined]
     return panel

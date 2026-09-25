@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-25 — 1.4.0: Witticisms tab
+- AES Settings can add and remove the cheeky footer lines, per risk band. Suggest a new one calls Poe. The API key is saved with the other DPAPI secrets.
+- Follow-up: open AES Settings, paste a key from poe.com/api/keys, then Save.
+
 ### 2026-09-25 — 1.3.44: Span the footer A across all three rows
 - The logo was only in the top row. It is now one cell that runs the full height of the strip.
 - Follow-up: rescan a mail. No VBA import.

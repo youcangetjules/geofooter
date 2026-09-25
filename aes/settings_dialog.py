@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""AES settings dialog (tabbed: Mail, ASN Risk, External APIs, Logging).
+"""AES settings dialog (tabbed: Mail, ASN Risk, Witticisms, External APIs, Logging).
 
 CLI:
   pythonw aes\\settings_dialog.py --accounts accounts.json --out result.json
@@ -1033,6 +1033,23 @@ def run_dialog(
         sender_layout.addStretch(1)
     tabs.addTab(sender_tab, "Sender Status")
 
+    wit_holder: Dict[str, Any] = {}
+    try:
+        from aes.settings_panels import build_witticisms_panel
+
+        wit_panel = build_witticisms_panel(dialog)
+        tabs.addTab(wit_panel, "Witticisms")
+        wit_holder["panel"] = wit_panel
+    except Exception as exc:  # noqa: BLE001
+        err_tab = QWidget()
+        err_layout = QVBoxLayout(err_tab)
+        err = QLabel(f"Witticisms unavailable: {exc}")
+        err.setObjectName("hint")
+        err.setWordWrap(True)
+        err_layout.addWidget(err)
+        err_layout.addStretch(1)
+        tabs.addTab(err_tab, "Witticisms")
+
     # ---- Tab 3: External APIs ----
     try:
         from aes.secret_store import abuseipdb_status, get_abuseipdb_base_url
@@ -1386,6 +1403,19 @@ def run_dialog(
             _write_json(sender_status_path, sender_status_out)
         except Exception as exc:  # noqa: BLE001
             print(f"Failed to write sender status config: {exc}", file=sys.stderr)
+        wit_panel = wit_holder.get("panel")
+        if wit_panel is not None:
+            try:
+                from aes.witticisms import save_witticisms
+
+                collected = wit_panel.collect_witticisms()
+                save_witticisms(collected["lines"], collected.get("model") or "")
+            except Exception as exc:  # noqa: BLE001
+                print(f"Failed to write witticisms: {exc}", file=sys.stderr)
+            try:
+                wit_panel.save_poe_key()
+            except Exception as exc:  # noqa: BLE001
+                print(f"Failed to store Poe API key: {exc}", file=sys.stderr)
 
         dialog.accept()
 

@@ -17,10 +17,10 @@ SemVer (MAJOR.MINOR.PATCH) — almost everything is a PATCH:
 from __future__ import annotations
 
 # Semver: MAJOR.MINOR.PATCH
-VERSION = "1.3.44"
-VERSION_TUPLE = (1, 3, 44)
+VERSION = "1.4.0"
+VERSION_TUPLE = (1, 4, 0)
 # Local release / build timestamp for this VERSION (YYYY-MM-DD HH:MM)
-VERSION_STAMP = "2026-09-25 12:30"
+VERSION_STAMP = "2026-09-25 12:40"
 
 APP_NAME = "GURI"
 APP_FULL_NAME = "GURI - Aliniant Smart Ass Email"
@@ -34,6 +34,11 @@ COPYRIGHT_YEAR = "2026"
 # Short release notes for the About tab (newest first).
 # Each entry: (version, timestamp, notes)
 RELEASE_NOTES = (
+    (
+        "1.4.0",
+        "2026-09-25 12:40",
+        "AES Settings has a Witticisms tab to add or remove footer lines, and to ask Poe for a new one.",
+    ),
     (
         "1.3.44",
         "2026-09-25 12:30",

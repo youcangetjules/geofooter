@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-09-25
+
+### Added
+
+- AES Settings has a Witticisms tab. Add or remove the footer one-liners for each risk band, and ask Poe for a new line. The Poe API key is stored with Windows DPAPI.
+
 ## [1.3.44] — 2026-09-25
 
 ### Fixed

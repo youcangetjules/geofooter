@@ -706,6 +706,12 @@ def strip_separators(
         f"<td width='4' valign='middle'{height_attr} "
         "style='width:4px; font-size:1px; line-height:1px; padding:0;'>&nbsp;</td>"
     )
+    # Gap between a label (Links:, HRE:) and its value. A normal space
+    # inside the link is dropped by Outlook.
+    title_gap = (
+        f"<td width='6' valign='middle'{height_attr} "
+        "style='width:6px; font-size:1px; line-height:1px; padding:0;'>&nbsp;</td>"
+    )
     if line_height:
         # Baseline, not middle. Middle drops a second coloured run
         # ("1 NOK") a couple of pixels below the rest of the row.
@@ -740,8 +746,16 @@ def strip_separators(
 
         packed: List[str] = []
         for part in parts:
-            bits = part.split(" ^^ ")
-            packed.append(f"</td>{narrow}{cell}".join(_present(bit) for bit in bits))
+            pieces = re.split(r"( %% | \^\^ )", part)
+            rendered: List[str] = []
+            for token in pieces:
+                if token == " %% ":
+                    rendered.append(f"</td>{title_gap}{cell}")
+                elif token == " ^^ ":
+                    rendered.append(f"</td>{narrow}{cell}")
+                else:
+                    rendered.append(_present(token))
+            packed.append("".join(rendered))
         parts = packed
     gap = f"</td>{spacer}{dot}{spacer}{cell}"
     return (
@@ -3146,6 +3160,8 @@ class HTMLReportGenerator:
                 href = self._local_report_href(links_report_url) or links_report_url
             bits: List[str] = []
             for text, color in link_pieces:
+                # Outlook paints the red NOK run a pixel low.
+                lift = 1 if text.endswith("NOK") else 0
                 if href:
                     bits.append(
                         self._aes_subtle_link(
@@ -3155,14 +3171,18 @@ class HTMLReportGenerator:
                             font_size="12px",
                             underline=True,
                             color=color,
+                            raise_px=lift,
                         )
                     )
                 elif color == "#ffffff":
                     bits.append(html.escape(text))
                 else:
                     bits.append(_footer_count_html(text, color))
-            # Tight gap, no bullet, so each run is its own cell on one baseline.
-            links_summary_html = " ^^ ".join(bits)
+            # %% is the gap after the label. ^^ is the gap between counts.
+            if len(bits) > 1:
+                links_summary_html = bits[0] + " %% " + " ^^ ".join(bits[1:])
+            else:
+                links_summary_html = "".join(bits)
         action_buttons_html = self._build_action_buttons_html(
             sender_email,
             sender_domain,
@@ -4877,15 +4897,17 @@ Live Safe Browsing lookups are optional and separate.</p>
         font_size: str = "11px",
         underline: bool = False,
         color: str = "#ffffff",
+        raise_px: int = 0,
     ) -> str:
         """Footer link styled as plain text (real href, no box)."""
         deco = "underline" if underline else "none"
+        raised = f"mso-text-raise:{int(raise_px)}px;" if raise_px else ""
         return (
             f'<a href="{html.escape(href, quote=True)}" target="_blank" '
             f'style="color:{color};text-decoration:{deco};background:transparent;border:none;'
             f'padding:0;margin:0;font-weight:{font_weight};font-size:{font_size};'
-        f"line-height:{font_size}; mso-line-height-rule:exactly; "
-        f"vertical-align:baseline; font-family:{AES_STRIP_FONT};\">"
+            f"line-height:{font_size}; mso-line-height-rule:exactly; "
+            f"vertical-align:baseline; {raised}font-family:{AES_STRIP_FONT};\">"
             f"{inner_html}</a>"
         )
 
@@ -5419,22 +5441,33 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             hre_color = "#FFC107"
         else:
             hre_color = "#FF4444"
-        hre_label = (
-            f"HRE: <span style='color:{hre_color};'>{hre_n}</span>"
-        )
+        hre_label = "HRE:"
+        hre_value = str(hre_n)
         if risk_report_url:
-            hre_html = self._aes_subtle_link(
-                self._local_report_href(risk_report_url) or risk_report_url,
-                hre_label,
-                font_weight="bold",
-                font_size="12px",
-                underline=True,
-                color="#ffffff",
+            hre_href = self._local_report_href(risk_report_url) or risk_report_url
+            hre_html = " %% ".join(
+                (
+                    self._aes_subtle_link(
+                        hre_href,
+                        hre_label,
+                        font_weight="bold",
+                        font_size="12px",
+                        underline=True,
+                        color="#ffffff",
+                    ),
+                    self._aes_subtle_link(
+                        hre_href,
+                        hre_value,
+                        font_weight="bold",
+                        font_size="12px",
+                        underline=True,
+                        color=hre_color,
+                    ),
+                )
             )
         else:
             hre_html = (
-                f"<span style='font-weight:bold;'>HRE: </span>"
-                f"<span style='color:{hre_color};font-weight:bold;'>{hre_n}</span>"
+                f"HRE: %% <span style='color:{hre_color};font-weight:bold;'>{hre_n}</span>"
             )
         summary_line1 = summary_line1.replace("{{AES_HRE}}", hre_html)
 

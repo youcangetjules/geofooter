@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-25 — 1.4.1: Nudge NOK and space the footer labels
+- The red NOK count is raised 1px. Labels and values are separate cells with a 6px gap, because Outlook was dropping the space.
+- Follow-up: rescan a mail.
+
 ### 2026-09-25 — 1.4.0: Witticisms tab
 - AES Settings can add and remove the cheeky footer lines, per risk band. Suggest a new one calls Poe. The API key is saved with the other DPAPI secrets.
 - Follow-up: open AES Settings, paste a key from poe.com/api/keys, then Save.

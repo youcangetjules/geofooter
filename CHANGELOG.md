@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.1] — 2026-09-25
+
+### Fixed
+
+- “1 NOK” is raised one pixel so it lines up with the rest of the top row.
+- “Links:” and “HRE:” have a small gap before their values.
+
 ## [1.4.0] — 2026-09-25
 
 ### Added

@@ -13,6 +13,13 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-25 — 1.3.36: Stop a crashed or hung scan holding AES PROC
+- `main` imported `sys` locally, so every scan died at startup and Outlook waited five minutes per mail. That import is gone.
+- A compact scan now stops itself after 75 seconds (full 150, deep 210) and writes the `.fail` marker the job script already polls. DNS lookups are capped, and WHOIS gives up after 8 seconds.
+- After three failed scans the queue waits two minutes. The "still in flight" log is written at most every 30 seconds.
+- Closing GURI does not stop AES. The scan runs in `aes\geolocate_headers.py` and only pings an open GURI window when a scan finishes.
+- Follow-up: the Python limits apply on the next scan. Re-import `VBA\MSCANModule1.bas` and `VBA\MSCANModQueueManager.bas` so Outlook's own waiter and the queue pause match. Until then the Python marker is what clears AES PROC.
+
 ### 2026-09-25 — 1.3.35: Sort Actions to take, pale timeline days
 - Actions to take no longer follows the risk score. It opens sorted by When, newest first. Header clicks sort that column and the next click reverses the order. The chosen column is kept across a refresh.
 - Timeline watermarks are 12% opacity and read with an ordinal suffix (24th, 25th).

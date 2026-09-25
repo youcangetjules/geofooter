@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.36] — 2026-09-25
+
+### Fixed
+
+- Compact scans crashed before writing a footer, so Outlook held AES PROC for five minutes per mail.
+- A scan that overruns its budget, or dies before writing a footer, leaves a failure marker. DNS and WHOIS lookups are time-limited. Three failures in a row pause the queue for two minutes.
+
 ## [1.3.35] — 2026-09-25
 
 ### Changed

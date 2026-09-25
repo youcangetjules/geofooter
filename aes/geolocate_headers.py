@@ -82,6 +82,9 @@ except ImportError:
 # Test imports and provide helpful error messages
 try:
     import dns.resolver
+    dns.resolver.default_resolver = dns.resolver.Resolver()
+    dns.resolver.default_resolver.timeout = 3
+    dns.resolver.default_resolver.lifetime = 6
 except ImportError as e:
     print(f"ERROR: Missing required module 'dnspython'. Install with: pip install dnspython", file=sys.stderr)
     print(f"Import error: {e}", file=sys.stderr)
@@ -1683,7 +1686,14 @@ class WhoisService:
         lookup_domain = self._registrable_domain(domain) or domain
 
         try:
-            w = whois.whois(lookup_domain)
+            from concurrent.futures import ThreadPoolExecutor
+            from concurrent.futures import TimeoutError as FuturesTimeout
+
+            pool = ThreadPoolExecutor(max_workers=1)
+            try:
+                w = pool.submit(whois.whois, lookup_domain).result(timeout=8)
+            finally:
+                pool.shutdown(wait=False, cancel_futures=True)
             registrar = self._get_value(w.registrar, "Unknown")
             creation_date = self._normalize_date(w.creation_date)
             expiration_date = self._normalize_date(w.expiration_date)
@@ -1701,6 +1711,8 @@ class WhoisService:
             self.logger.warning(
                 "WHOIS returned empty registrar/creation for %s; trying RDAP", lookup_domain
             )
+        except FuturesTimeout:
+            self.logger.warning("WHOIS timed out for %s; trying RDAP", lookup_domain)
         except Exception as e:
             self.logger.error(f"WHOIS lookup failed for {lookup_domain}: {e}")
 
@@ -8037,15 +8049,52 @@ def _embed_footer_mark_job(job_path: str) -> None:
         logging.getLogger("geolocate").warning("Footer mark attach failed", exc_info=True)
 
 
+def _output_path_from_argv() -> Optional[str]:
+    """Report path from the scan argv, when this invocation is a scan."""
+    if len(sys.argv) >= 3 and sys.argv[1] == "--embed-footer-mark":
+        return None
+    if len(sys.argv) >= 4:
+        return sys.argv[2]
+    if len(sys.argv) == 3 and sys.argv[2].lower() not in {"compact", "full", "deep"}:
+        return sys.argv[2]
+    return None
+
+
+def _write_fail_marker(message: str) -> None:
+    """Drop <output>.fail so Outlook stops waiting when the scan dies early."""
+    path = _output_path_from_argv()
+    if not path:
+        return
+    try:
+        with open(path + ".fail", "w", encoding="utf-8") as fail_f:
+            fail_f.write(message)
+    except OSError:
+        pass
+
+
+def _arm_scan_deadline(footer_mode: str) -> None:
+    """End a scan that is still running when its budget is gone.
+
+    Outlook's waiter only notices a missing report after several minutes.
+    Writing the failure marker here lets that waiter stop on the next poll.
+    """
+    limits = {"compact": 75, "full": 150, "deep": 210}
+    seconds = limits.get(footer_mode, 75)
+
+    def _expire() -> None:
+        _write_fail_marker(f"deadline exceeded ({seconds}s)\n")
+        os._exit(2)
+
+    timer = threading.Timer(seconds, _expire)
+    timer.daemon = True
+    timer.start()
+
+
 def main():
     if len(sys.argv) >= 3 and sys.argv[1] == "--embed-footer-mark":
         _embed_footer_mark_job(sys.argv[2])
         os._exit(0)
 
-    """Main execution function."""
-    import sys
-    import os
-    
     # Setup logging
     LoggingSetup.setup()
     logger = logging.getLogger(__name__)
@@ -8077,6 +8126,8 @@ def main():
     print(f"Header file: {header_file}", file=sys.stderr)
     print(f"Output file: {output_file}", file=sys.stderr)
     print(f"Footer mode: {footer_mode}", file=sys.stderr)
+    socket.setdefaulttimeout(12)
+    _arm_scan_deadline(footer_mode)
     
     if not os.path.exists(header_file):
         print(f"Error: Header file '{header_file}' not found.", file=sys.stderr)
@@ -8224,4 +8275,8 @@ def main():
         os._exit(1)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as exc:
+        _write_fail_marker(f"{type(exc).__name__}: {exc}\n")
+        os._exit(1)

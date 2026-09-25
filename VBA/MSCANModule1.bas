@@ -49,7 +49,6 @@ End Function
 ' if the Python output file already exists, finish the job locally; if the job is
 ' older than the timeout with no output, fail it so yellow never sticks forever.
 Public Sub ReconcileAsyncJobs()
-    Const JOB_TIMEOUT_SEC As Long = 300
     On Error GoTo EH
     If m_ReconcilingJobs Then Exit Sub
     If m_AsyncJobs Is Nothing Then Exit Sub
@@ -64,6 +63,8 @@ Public Sub ReconcileAsyncJobs()
 
     Dim i As Long
     Dim job As Object
+    Dim limit As Long
+    Dim modeName As String
     For i = LBound(keys) To UBound(keys)
         If m_AsyncJobs.Exists(keys(i)) Then
             Set job = m_AsyncJobs(keys(i))
@@ -83,7 +84,12 @@ Public Sub ReconcileAsyncJobs()
                 On Error GoTo EH
                 FailAsyncFooter CStr(keys(i))
             ElseIf job.Exists("StartedAt") Then
-                If DateDiff("s", CDate(job("StartedAt")), Now) > JOB_TIMEOUT_SEC Then
+                limit = 90
+                modeName = ""
+                If job.Exists("Mode") Then modeName = LCase$(CStr(job("Mode")))
+                If modeName = "full" Then limit = 160
+                If modeName = "deep" Then limit = 240
+                If DateDiff("s", CDate(job("StartedAt")), Now) > limit Then
                     MSCANModLogging.WriteLog "ReconcileAsyncJobs: job " & keys(i) & " timed out, failing."
                     FailAsyncFooter CStr(keys(i))
                 End If
@@ -508,6 +514,7 @@ Public Sub CompleteAsyncFooter(ByVal jobId As String)
     CleanupAttachmentScanDir payloadDir
     MSCANModStatus.ShowStatus "AES footer ready: " & Left$(SafeSubject(mail), 50)
     MarkJobApplied footerPath
+    MSCANModQueueManager.NoteScanOutcome True
     NotifyScanBusyUi
     Exit Sub
 
@@ -532,6 +539,7 @@ Public Sub FailAsyncFooter(ByVal jobId As String)
     If job.Exists("Mode") Then mode = CStr(job("Mode"))
     If job.Exists("FooterPath") Then footerPath = CStr(job("FooterPath"))
     MSCANModLogging.WriteLog "FailAsyncFooter: Python failed for job " & jobId & " mode=" & mode & " subject=" & CStr(job("Subject"))
+    MSCANModQueueManager.NoteScanOutcome False
     CleanupAttachmentScanDir CStr(job("AttachDir"))
     If job.Exists("PayloadDir") Then CleanupAttachmentScanDir CStr(job("PayloadDir"))
     If LCase$(mode) = "deep" Then
@@ -1507,7 +1515,7 @@ Private Function StartAsyncGeolocationJob(ByVal mail As Object, ByVal headerFile
 
     Dim vbsPath As String
     vbsPath = Environ$("LOCALAPPDATA") & "\GeoFooter\aes_geo_job_" & jobId & ".vbs"
-    If Not WriteAsyncGeoJobScript(vbsPath, workDir, cmd, jobId, outputFile) Then
+    If Not WriteAsyncGeoJobScript(vbsPath, workDir, cmd, jobId, outputFile, JobPollLoops(footerMode)) Then
         MSCANModLogging.WriteLog "StartAsyncGeolocationJob: could not write job script."
         m_AsyncJobs.Remove jobId
         NotifyScanBusyUi
@@ -1541,7 +1549,21 @@ End Function
 ' hangs on interpreter shutdown after the HTML is already written, which used
 ' to leave AES PROC stuck for minutes. After the file is ready, keep nudging
 ' until VBA writes "<output>.applied" (or we time out).
-Private Function WriteAsyncGeoJobScript(ByVal vbsPath As String, ByVal workDir As String, ByVal commandLine As String, ByVal jobId As String, ByVal outputFile As String) As Boolean
+' Compact scans are expected to finish well inside a minute. Full and deep
+' get a longer waiter. Python also writes a .fail marker if it overruns.
+Private Function JobPollLoops(ByVal footerMode As String) As Long
+    Dim modeName As String
+    modeName = LCase$(Trim$(footerMode))
+    If modeName = "deep" Then
+        JobPollLoops = 420
+    ElseIf modeName = "full" Then
+        JobPollLoops = 320
+    Else
+        JobPollLoops = 160
+    End If
+End Function
+
+Private Function WriteAsyncGeoJobScript(ByVal vbsPath As String, ByVal workDir As String, ByVal commandLine As String, ByVal jobId As String, ByVal outputFile As String, ByVal pollLoops As Long) As Boolean
     On Error GoTo EH
 
     Dim fso As Object
@@ -1571,9 +1593,9 @@ Private Function WriteAsyncGeoJobScript(ByVal vbsPath As String, ByVal workDir A
     ts.WriteLine "code = sh.Run(" & VbsQuoteString(commandLine) & ", 0, False)"
     ts.WriteLine "If Err.Number <> 0 Then code = 99"
     ts.WriteLine "sh.CurrentDirectory = prev"
-    ts.WriteLine "' Poll until report file has content (up to ~5 minutes)."
+    ts.WriteLine "' Poll until report file has content, or the scan budget is gone."
     ts.WriteLine "code = 1"
-    ts.WriteLine "For i = 1 To 600"
+    ts.WriteLine "For i = 1 To " & CStr(pollLoops)
     ts.WriteLine "  If fso.FileExists(" & VbsQuoteString(outputFile) & ") Then"
     ts.WriteLine "    If fso.GetFile(" & VbsQuoteString(outputFile) & ").Size > 0 Then"
     ts.WriteLine "      code = 0"

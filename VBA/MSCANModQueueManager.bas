@@ -31,6 +31,9 @@ Private m_LastNewMailExAt As Date
 Private m_LastNewMailExSubject As String
 Private m_LastCatchUpResult As String
 Private m_CatchUpHeartbeatPending As Boolean
+Private m_ScanFailStreak As Long
+Private m_ScanPauseLogged As Boolean
+Private m_LastDeferLogAt As Date
 Private Const QUEUE_TICK_STALE_SEC As Long = 20
 ' Refuse to honour a queue-tick latch until at least this many seconds after schedule.
 Private Const QUEUE_TICK_MIN_SEC As Long = 2
@@ -50,6 +53,25 @@ Public Function GetQueueSize() As Long
         GetQueueSize = m_MailQueue.Count
     End If
 End Function
+
+' Three failed scans in a row mean the engine is wedged. Hold the queue for
+' two minutes instead of starting another mail that will sit on AES PROC.
+Public Sub NoteScanOutcome(ByVal ok As Boolean)
+    On Error Resume Next
+    If ok Then
+        m_ScanFailStreak = 0
+        m_ScanPauseLogged = False
+        Exit Sub
+    End If
+    m_ScanFailStreak = m_ScanFailStreak + 1
+    If m_ScanFailStreak < 3 Then Exit Sub
+    Dim resumeAt As Date
+    resumeAt = DateAdd("s", 120, Now)
+    If resumeAt > m_EarliestProcessAt Then m_EarliestProcessAt = resumeAt
+    If m_ScanPauseLogged Then Exit Sub
+    m_ScanPauseLogged = True
+    MSCANModLogging.WriteLog "Queue paused 120s after " & m_ScanFailStreak & " failed scans."
+End Sub
 
 Public Sub InitializeQueueManager()
     On Error GoTo EH
@@ -242,8 +264,11 @@ Public Sub ProcessQueue()
     Dim inFlight As Long
     inFlight = MSCANModule1.PendingAsyncJobCount()
     If inFlight >= MAX_INFLIGHT_SCANS Then
-        MSCANModLogging.WriteLog "ProcessQueue: deferring tick, " & inFlight & _
-            " scan(s) still in flight (queue=" & m_MailQueue.Count & ")."
+        If m_LastDeferLogAt = 0 Or DateDiff("s", m_LastDeferLogAt, Now) >= 30 Then
+            MSCANModLogging.WriteLog "ProcessQueue: deferring tick, " & inFlight & _
+                " scan(s) still in flight (queue=" & m_MailQueue.Count & ")."
+            m_LastDeferLogAt = Now
+        End If
         ' Count this as activity so MaybeDrainQueueIfStale does not read the
         ' deliberate deferral as a stuck queue and force a drain immediately.
         m_LastQueueActivityAt = Now
@@ -501,7 +526,10 @@ Private Sub LaunchDelayedQueueTick()
     Dim shell As Object
     Set shell = CreateObject("WScript.Shell")
     shell.Run "wscript.exe //Nologo //B " & Chr$(34) & vbsPath & Chr$(34), 0, False
-    MSCANModLogging.WriteLog "LaunchDelayedQueueTick: next tick in " & QUEUE_TICK_DELAY_MS & " ms (queue=" & m_MailQueue.Count & ")."
+    If m_LastDeferLogAt = 0 Or DateDiff("s", m_LastDeferLogAt, Now) >= 30 Then
+        MSCANModLogging.WriteLog "LaunchDelayedQueueTick: next tick in " & QUEUE_TICK_DELAY_MS & " ms (queue=" & m_MailQueue.Count & ")."
+        m_LastDeferLogAt = Now
+    End If
     Exit Sub
 
 EH:

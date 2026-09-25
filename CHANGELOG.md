@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.44] — 2026-09-25
+
+### Fixed
+
+- The footer A spans all three rows of the scan strip, centred against the whole block.
+
 ## [1.3.43] — 2026-09-25
 
 ### Fixed

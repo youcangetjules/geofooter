@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-25 — 1.3.44: Span the footer A across all three rows
+- The logo was only in the top row. It is now one cell that runs the full height of the strip.
+- Follow-up: rescan a mail. No VBA import.
+
 ### 2026-09-25 — 1.3.43: Align the Links counts
 - Outlook was dropping the second coloured run inside the Links link. Each of “Links”, “OK”, and “NOK” is now its own cell, with one line of text and the same baseline as the rest of the row.
 - Follow-up: rescan a mail. No VBA import.

@@ -5551,33 +5551,25 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         row_pad = "5px 16px"
         mark = _footer_mark_html()
         quip = html.escape(footer_quip(str(risk or ""), int(score or 0)))
-        # Side columns are the same width, so the text in the middle is the
-        # centre of the whole footer, not the gap between the logo and the quip.
+        # The logo is its own column, spanning every row. The column beside it
+        # is only as wide as the quip minus that logo, so the middle text stays
+        # centred on the full strip.
         quip_px = _footer_text_px(quip, 11, italic=True)
-        logo_w = 75 if mark else 0
-        left_chrome = 12 + (logo_w + 8 if mark else 0)
-        side_w = max(quip_px + 16, left_chrome + 8)
-        fill = html.escape(
-            _footer_prefix_for_px(quip, max(0, side_w - left_chrome), italic=True)
-        )
-        logo_bit = (
-            f"<td width='12' style='width:12px; font-size:1px; line-height:1px;'>&nbsp;</td>"
-            f"<td width='75' valign='middle' style='width:75px;'>{mark}</td>"
-            if mark
-            else f"<td width='12' style='width:12px; font-size:1px; line-height:1px;'>&nbsp;</td>"
-        )
+        right_w = quip_px + 16
+        logo_col = 91 if mark else 0
+        fill_px = max(0, right_w - logo_col)
+        fill = html.escape(_footer_prefix_for_px(quip, fill_px, italic=True))
         left_top = (
-            f"<table border='0' cellpadding='0' cellspacing='0' width='{side_w}' "
-            f"align='left' style='width:{side_w}px; border-collapse:collapse;'><tr>"
-            f"{logo_bit}"
+            f"<table border='0' cellpadding='0' cellspacing='0' width='{fill_px}' "
+            f"align='left' style='width:{fill_px}px; border-collapse:collapse;'><tr>"
             f"<td valign='middle' style='font-family:{AES_STRIP_FONT}; font-size:11px; "
             f"font-style:italic; line-height:16px; white-space:nowrap; color:{AES_STRIP_BG};'>"
             f"<span style='color:{AES_STRIP_BG};'>{fill}</span></td>"
             f"</tr></table>"
         )
         right_top = (
-            f"<table border='0' cellpadding='0' cellspacing='0' width='{side_w}' "
-            f"align='right' style='width:{side_w}px; border-collapse:collapse;'><tr>"
+            f"<table border='0' cellpadding='0' cellspacing='0' width='{right_w}' "
+            f"align='right' style='width:{right_w}px; border-collapse:collapse;'><tr>"
             f"<td align='right' valign='middle' nowrap "
             f"style='white-space:nowrap; text-align:right; color:{risk_color}; "
             f"font-family:{AES_STRIP_FONT}; font-size:11px; font-style:italic; "
@@ -5586,6 +5578,13 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"<td width='16' style='width:16px; font-size:1px; line-height:1px;'>&nbsp;</td>"
             f"</tr></table>"
         )
+        logo_cell = ""
+        if mark:
+            logo_cell = (
+                f"<td rowspan='5' width='91' valign='middle' bgcolor='{AES_STRIP_BG}' "
+                f"style='width:91px; padding:6px 4px 6px 12px; background:{AES_STRIP_BG};'>"
+                f"{mark}</td>"
+            )
         copy_plain = "© 2026 Aliniant Labs"
         copy_html = "&#169; 2026 Aliniant Labs"
         copy_px = _footer_text_px(copy_plain, 11, italic=False)
@@ -5615,6 +5614,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
             f"border-collapse:collapse;'>"
             f"<tr>"
+            f"{logo_cell}"
             f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
             f"style='background:{AES_STRIP_BG}; padding:4px 0;'>{left_top}</td>"
             f"<td align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "

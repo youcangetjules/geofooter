@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.3] — 2026-09-25
+
+### Changed
+
+- Clicking a witticism loads it into the line box, and Add becomes Edit so that line can be updated.
+
 ## [1.4.2] — 2026-09-25
 
 ### Changed

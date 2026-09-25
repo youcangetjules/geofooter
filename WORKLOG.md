@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-25 — 1.4.3: Edit a witticism from the list
+- Clicking a line copies it into the text box and turns Add into Edit. Edit replaces that line. Clearing the box returns the button to Add.
+- Follow-up: close the open AES Settings window and use the new one.
+
 ### 2026-09-25 — 1.4.2: Test Poe, and open Settings without the VBA toolbar
 - Witticisms: the model is a dropdown, and Test Connection checks the key against Poe's model list (including whether the chosen model is there).
 - The ribbon Settings button starts `aes/settings_dialog.py` when the AES toolbar button is missing. An empty account list still opens the dialog.

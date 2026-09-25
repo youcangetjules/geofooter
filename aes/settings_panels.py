@@ -461,7 +461,7 @@ def build_witticisms_panel(parent: QWidget) -> QWidget:
 
     lines = QListWidget()
     lines.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
-    lines.setToolTip("Lines AES may show for the selected risk band.")
+    lines.setToolTip("Click a line to edit it. AES may show any of these for the selected risk band.")
     outer.addWidget(lines, stretch=1)
 
     edit_row = QHBoxLayout()
@@ -544,28 +544,73 @@ def build_witticisms_panel(parent: QWidget) -> QWidget:
 
     fill("LOW")
 
+    editing = {"row": -1}
+    filling_edit = {"on": False}
+
+    def set_edit_mode(row: int) -> None:
+        editing["row"] = row if row >= 0 else -1
+        editing_now = editing["row"] >= 0
+        add_btn.setText("Edit" if editing_now else "Add")
+        add_btn.setToolTip(
+            "Replace the selected line" if editing_now else "Add this line to the band"
+        )
+
     def on_band(index: int) -> None:
         new_level = str(band_combo.itemData(index) or "LOW")
         if new_level == current["level"]:
             return
         flush()
         current["level"] = new_level
+        set_edit_mode(-1)
+        line_edit.clear()
         fill(new_level)
         suggest_lbl.setText("")
+        suggest_lbl.setStyleSheet("")
+
+    def on_line_clicked(item) -> None:
+        filling_edit["on"] = True
+        set_edit_mode(lines.row(item))
+        line_edit.setText(item.text())
+        line_edit.setFocus()
+        filling_edit["on"] = False
+        suggest_lbl.setText("")
+        suggest_lbl.setStyleSheet("")
+
+    def on_line_text(text: str) -> None:
+        if filling_edit["on"]:
+            return
+        if not str(text or "").strip():
+            set_edit_mode(-1)
 
     def on_add() -> None:
         text = wit._clean_line(line_edit.text())
         if not text:
             return
+        row = editing["row"]
+        if 0 <= row < lines.count():
+            for i in range(lines.count()):
+                if i != row and lines.item(i).text().lower() == text.lower():
+                    suggest_lbl.setText("That line is already in this band.")
+                    suggest_lbl.setStyleSheet("color: #b3261e;")
+                    return
+            lines.item(row).setText(text)
+            suggest_lbl.setText("")
+            suggest_lbl.setStyleSheet("")
+            return
         if any(lines.item(i).text().lower() == text.lower() for i in range(lines.count())):
             suggest_lbl.setText("That line is already in this band.")
+            suggest_lbl.setStyleSheet("color: #b3261e;")
             return
         lines.addItem(text)
         line_edit.clear()
+        set_edit_mode(-1)
         suggest_lbl.setText("")
+        suggest_lbl.setStyleSheet("")
 
     def on_remove() -> None:
-        for item in lines.selectedItems():
+        set_edit_mode(-1)
+        line_edit.clear()
+        for item in list(lines.selectedItems()):
             lines.takeItem(lines.row(item))
 
     class _PoeBridge(QObject):
@@ -580,6 +625,7 @@ def build_witticisms_panel(parent: QWidget) -> QWidget:
     def on_suggested(ok: bool, text: str) -> None:
         suggest_btn.setEnabled(True)
         if ok:
+            set_edit_mode(-1)
             line_edit.setText(text)
             line_edit.setFocus()
             suggest_lbl.setText("Suggestion ready. Click Add to keep it.")
@@ -657,6 +703,8 @@ def build_witticisms_panel(parent: QWidget) -> QWidget:
             set_poe_api_key(typed)
 
     band_combo.currentIndexChanged.connect(on_band)
+    lines.itemClicked.connect(on_line_clicked)
+    line_edit.textChanged.connect(on_line_text)
     add_btn.clicked.connect(on_add)
     line_edit.returnPressed.connect(on_add)
     remove_btn.clicked.connect(on_remove)

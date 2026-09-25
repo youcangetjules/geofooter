@@ -8087,23 +8087,27 @@ def _embed_footer_mark_job(job_path: str) -> None:
         _mark_log(f"Outlook unavailable: {exc}")
         return
 
+    def _com_get(obj, name):
+        value = getattr(obj, name)
+        return value() if callable(value) else value
+
     def candidates():
         found = []
         try:
-            inspectors = outlook.Inspectors
+            inspectors = _com_get(outlook, "Inspectors")
             for i in range(1, int(inspectors.Count) + 1):
                 found.append(inspectors.Item(i).CurrentItem)
         except Exception:
             pass
         try:
-            insp = outlook.ActiveInspector
+            insp = _com_get(outlook, "ActiveInspector")
             if insp is not None:
                 found.append(insp.CurrentItem)
         except Exception:
             pass
         try:
-            exp = outlook.ActiveExplorer
-            if exp is not None and exp.Selection.Count > 0:
+            exp = _com_get(outlook, "ActiveExplorer")
+            if exp is not None and int(exp.Selection.Count) > 0:
                 found.append(exp.Selection.Item(1))
         except Exception:
             pass

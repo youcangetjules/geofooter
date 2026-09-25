@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.40] — 2026-09-25
+
+### Fixed
+
+- The footer A was only sought in a separate message window. It now attaches to the mail selected in the reading pane.
+
 ## [1.3.39] — 2026-09-25
 
 ### Changed

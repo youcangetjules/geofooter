@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-25 — 1.3.40: Attach the footer A in the reading pane
+- The follow-up that adds the logo treated Outlook's explorer as a property. From Python it is a method, so the reading-pane message was never seen and the image was never attached.
+- Follow-up: rescan, or leave the message selected for a few seconds.
+
 ### 2026-09-25 — 1.3.39: Longer funny footer asides
 - The one-liners were cut too short. They are cheeky again, and `nowrap` still keeps each one on a single line.
 - Follow-up: rescan a mail.

@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-25 — 1.3.41: Footer line 2, and copyright on the chips row
+- The location note was HTML, then the whole second line was escaped, so Outlook showed the tags. The note is left as markup and the line is centred.
+- The Quick Actions row keeps the chips in the middle and puts “Copyright 2026 Aliniant Labs” on the far right.
+- Follow-up: rescan a mail. No VBA import.
+
 ### 2026-09-25 — 1.3.40: Attach the footer A in the reading pane
 - The follow-up that adds the logo treated Outlook's explorer as a property. From Python it is a method, so the reading-pane message was never seen and the image was never attached.
 - Follow-up: rescan, or leave the message selected for a few seconds.

@@ -20,6 +20,16 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.41] — 2026-09-25
+
+### Fixed
+
+- The second footer line was printing the outbound-relay note as raw HTML. That note now renders, and the line is centred.
+
+### Added
+
+- The Quick Actions row shows “Copyright 2026 Aliniant Labs” on the far right.
+
 ## [1.3.40] — 2026-09-25
 
 ### Fixed

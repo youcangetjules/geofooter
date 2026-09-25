@@ -3178,14 +3178,14 @@ class HTMLReportGenerator:
         if sender_host_plain:
             sender_ip_part = f"{sender_ip_part} {sender_host_plain}"
         summary_line2_prefix = (
-            f"{sender_ip_part} | {location_display} | Hops:{hops} | "
-            f"Sent: {sender_local_plain} | "
-            f"Created: {created_zulu} | "
+            f"{sender_ip_part} | {location_display} | Hops:{html.escape(str(hops))} | "
+            f"Sent: {html.escape(str(sender_local_plain))} | "
+            f"Created: {html.escape(str(created_zulu))} | "
         )
         # Plain-text fallback for logs / non-HTML consumers.
-        summary_line2 = summary_line2_prefix + "Show Full Scan"
-        # Placeholder replaced in _build_html with a link to the already-built full report.
-        summary_line2_html = html.escape(summary_line2_prefix) + "{{AES_FULLSCAN}}"
+        summary_line2 = re.sub(r"<[^>]+>", "", summary_line2_prefix) + "Show Full Scan"
+        # location_display may already contain a span. Do not escape it again.
+        summary_line2_html = summary_line2_prefix + "{{AES_FULLSCAN}}"
         
         return {
             "analysis_time": analysis_time,
@@ -3303,7 +3303,7 @@ class HTMLReportGenerator:
         ):
             return (
                 f"{base} "
-                f"<span style='color:#888888;'>(outbound relay geo — not sender office)</span>"
+                f"<span style='color:#8fd9a8;'>(outbound relay geo — not sender office)</span>"
             )
         return base
 
@@ -4353,11 +4353,32 @@ Live Safe Browsing lookups are optional and separate.</p>
                 "<td style='vertical-align:middle;'>"
                 f"{chip(url, code, bg, fg)}</td>"
             )
-        return (
-            "<div style='font-weight:normal; text-align:center;'>"
+        # Same wording in a hidden left cell so the chips stay centred while
+        # the visible line sits on the far right.
+        copy_text = "Copyright 2026 Aliniant Labs"
+        copy_font = (
+            f"font-family:{AES_STRIP_FONT}; font-size:11px; font-weight:normal; "
+            f"white-space:nowrap; line-height:16px; mso-line-height-rule:exactly; "
+            f"padding:0;"
+        )
+        chips = (
             "<table border='0' cellpadding='0' cellspacing='0' align='center' "
             "style='border-collapse:separate; margin:0 auto;'>"
-            f"<tr>{''.join(parts)}</tr></table></div>"
+            f"<tr>{''.join(parts)}</tr></table>"
+        )
+        return (
+            f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
+            f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
+            f"border-collapse:collapse;'><tr>"
+            f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
+            f"style='background:{AES_STRIP_BG}; {copy_font}'>"
+            f"<span style='color:{AES_STRIP_BG};'>{copy_text}</span></td>"
+            f"<td align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
+            f"style='background:{AES_STRIP_BG}; text-align:center;'>{chips}</td>"
+            f"<td align='right' valign='middle' nowrap bgcolor='{AES_STRIP_BG}' "
+            f"style='background:{AES_STRIP_BG}; text-align:right; {copy_font}'>"
+            f"<span style='color:{AES_STRIP_MUTED};'>{copy_text}</span></td>"
+            f"</tr></table>"
         )
     
     def _calculate_domain_age(self, creation_date: str) -> Optional[int]:
@@ -5491,7 +5512,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
             f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
             f"border-collapse:collapse;'>"
-            f"<tr><td valign='middle' style='padding:{row_pad}; text-align:center; "
+            f"<tr><td align='center' valign='middle' style='padding:{row_pad}; text-align:center; "
             f"color:{AES_STRIP_TEXT}; font-family:{AES_STRIP_FONT}; font-size:12px; "
             f"font-weight:bold; letter-spacing:0.3px; line-height:16px; "
             f"mso-line-height-rule:exactly; vertical-align:middle;'>"
@@ -5501,7 +5522,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"mso-line-height-rule:exactly;'>{summary_line1}</td>"
             f"{quip_cell}</tr></table></td></tr>"
             f"{rule_row}"
-            f"<tr><td style='padding:{row_pad}; text-align:center; "
+            f"<tr><td align='center' style='padding:{row_pad}; text-align:center; "
             f"color:{AES_STRIP_MUTED}; font-family:{AES_STRIP_FONT}; font-size:12px; "
             f"font-weight:normal; line-height:1.5;'>{summary_line2}</td></tr>"
             f"{actions_row}"

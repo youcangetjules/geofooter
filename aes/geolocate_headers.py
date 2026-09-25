@@ -741,8 +741,12 @@ def strip_separators(
         f"font-size:8px; {lock}padding:0;'>&#9679;</td>"
     )
     parts = (inner_html or "").split(" | ")
+    narrow = (
+        f"<td width='4' valign='middle'{height_attr} "
+        "style='width:4px; font-size:1px; line-height:1px; padding:0;'>&nbsp;</td>"
+    )
     if line_height:
-        # Baseline, not middle. Middle drops the second coloured run
+        # Baseline, not middle. Middle drops a second coloured run
         # ("1 NOK") a couple of pixels below the rest of the row.
         extra = (
             f"line-height:{line_height}; mso-line-height-rule:exactly; "
@@ -762,14 +766,22 @@ def strip_separators(
 
             return re.sub(r"style=(['\"])([^'\"]*)\1", repl, fragment)
 
-        parts = [
-            (
+        def _present(bit: str) -> str:
+            locked = _lock_fragment(bit)
+            # An anchor is already one line box. A span around it makes
+            # Outlook paint the Links counts a pixel or two low.
+            if re.search(r"<a\b", bit, re.IGNORECASE):
+                return locked
+            return (
                 f"<span style='font-family:{AES_STRIP_FONT}; font-size:{size}; "
-                f"font-weight:{weight}; {extra}'>"
-                f"{_lock_fragment(part)}</span>"
+                f"font-weight:{weight}; {extra}'>{locked}</span>"
             )
-            for part in parts
-        ]
+
+        packed: List[str] = []
+        for part in parts:
+            bits = part.split(" ^^ ")
+            packed.append(f"</td>{narrow}{cell}".join(_present(bit) for bit in bits))
+        parts = packed
     gap = f"</td>{spacer}{dot}{spacer}{cell}"
     return (
         "<table border='0' cellpadding='0' cellspacing='0' align='center' "
@@ -3155,7 +3167,7 @@ class HTMLReportGenerator:
             beacon_blocked,
             beacons_blocked_for_sender=bool(block_state.get("beacons")),
         )
-        links_summary_line, links_detail_html = self._format_link_summary(
+        link_pieces, links_detail_html = self._format_link_summary(
             link_findings, body_available
         )
         links_report_url = self._write_links_report_file(
@@ -3166,11 +3178,30 @@ class HTMLReportGenerator:
             sender_email,
             sender_domain,
         )
-        links_summary_html = links_summary_line
-        if links_summary_line and links_report_url:
-            links_summary_html = self._metric_report_link(
-                links_report_url, links_summary_line
-            )
+        links_summary_html = ""
+        if link_pieces:
+            href = ""
+            if links_report_url:
+                href = self._local_report_href(links_report_url) or links_report_url
+            bits: List[str] = []
+            for text, color in link_pieces:
+                if href:
+                    bits.append(
+                        self._aes_subtle_link(
+                            href,
+                            html.escape(text),
+                            font_weight="bold",
+                            font_size="12px",
+                            underline=True,
+                            color=color,
+                        )
+                    )
+                elif color == "#ffffff":
+                    bits.append(html.escape(text))
+                else:
+                    bits.append(_footer_count_html(text, color))
+            # Tight gap, no bullet, so each run is its own cell on one baseline.
+            links_summary_html = " ^^ ".join(bits)
         action_buttons_html = self._build_action_buttons_html(
             sender_email,
             sender_domain,
@@ -3941,10 +3972,14 @@ class HTMLReportGenerator:
 
     def _format_link_summary(
         self, link_findings: List[Any], body_available: bool
-    ) -> Tuple[str, str]:
-        """(summary-line fragment, full-details row html) for link safety checks."""
+    ) -> Tuple[List[Tuple[str, str]], str]:
+        """(label, colour) pieces for the footer, plus the detail-row HTML.
+
+        Each piece is its own cell. One anchor with several coloured runs
+        is what dropped "NOK" below the rest of the Links label in Outlook.
+        """
         if not body_available:
-            return ("", "<span style='color: #888888;'>Body not exported — links not checked</span>")
+            return ([], "<span style='color: #888888;'>Body not exported — links not checked</span>")
 
         def field(item: Any, key: str) -> Any:
             return getattr(item, key, None) if not isinstance(item, dict) else item.get(key)
@@ -3952,7 +3987,7 @@ class HTMLReportGenerator:
         total = len(link_findings or [])
         if total == 0:
             return (
-                "Links: " + _footer_count_html("0 OK", "#90EE90"),
+                [("Links:", "#ffffff"), ("0 OK", "#90EE90")],
                 "<span style='color: #888888;'>No links in message body</span>",
             )
 
@@ -3960,16 +3995,19 @@ class HTMLReportGenerator:
         meds = [f for f in link_findings if str(field(f, "risk_level")) == "medium"]
 
         ok_n = total - (len(highs) + len(meds))
-        line = f"Links: {_footer_count_html(f'{ok_n} OK', '#90EE90')}"
+        pieces: List[Tuple[str, str]] = [
+            ("Links:", "#ffffff"),
+            (f"{ok_n} OK", "#90EE90"),
+        ]
         bad = len(highs) + len(meds)
         if bad:
-            line += " " + _footer_count_html(f"{bad} NOK", "#FF4444")
+            pieces.append((f"{bad} NOK", "#FF4444"))
         if not highs and not meds:
             detail = (
                 f"<span style='color: #008000;'>{total} link{'s' if total != 1 else ''} checked "
                 f"&#10003; no heuristic flags</span>"
             )
-            return (line, detail)
+            return (pieces, detail)
 
         parts = [
             f"<span style='color: {'#FF0000' if highs else '#CC7A00'};'>"
@@ -3981,7 +4019,7 @@ class HTMLReportGenerator:
             reason_txt = html.escape("; ".join(str(r) for r in reasons)[:120])
             colour = "#FF0000" if str(field(item, "risk_level")) == "high" else "#CC7A00"
             parts.append(f"<span style='color: {colour};'>{host}</span> <span style='color: #888888;'>({reason_txt})</span>")
-        return (line, "<br>".join(parts))
+        return (pieces, "<br>".join(parts))
 
     def _write_links_report_file(
         self,

@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-25 — 1.3.43: Align the Links counts
+- Outlook was dropping the second coloured run inside the Links link. Each of “Links”, “OK”, and “NOK” is now its own cell, with one line of text and the same baseline as the rest of the row.
+- Follow-up: rescan a mail. No VBA import.
+
 ### 2026-09-25 — 1.3.42: Centre the footer lines and align Links
 - Coloured counts use the row baseline, so "NOK" no longer sits below the Links label.
 - Each footer line is centred on the full strip. Equal side columns keep the logo, the quip, and the © notice from pulling that centre sideways.

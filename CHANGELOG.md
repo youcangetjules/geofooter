@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.43] — 2026-09-25
+
+### Fixed
+
+- “Links”, “OK”, and “NOK” are separate cells on the top row, so NOK no longer sits below the rest of that line.
+
 ## [1.3.42] — 2026-09-25
 
 ### Fixed

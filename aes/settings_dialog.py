@@ -1444,11 +1444,9 @@ def main() -> int:
 
     try:
         data = json.loads(accounts_path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            data = {}
         accounts = list(data.get("accounts") or [])
-        if not accounts:
-            print("No accounts in input JSON", file=sys.stderr)
-            _write_json(out_path, {"cancelled": True, "accounts": [], "error": "no accounts"})
-            return 1
 
         route_risk = _normalize_route_risk(data.get("route_risk"))
         if route_path.is_file():

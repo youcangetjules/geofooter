@@ -42,7 +42,8 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 - **Repro:** Delete or skip the `AES` CommandBar, then click Short Scan on the ribbon. `AesRibbonHost.log` shows `TryRunVbaMacro miss ...` for every candidate.
 - **Expected / actual:** The scan runs / nothing happens, and a "no matching button/macro" message appears.
 - **Workaround:** Alt+F8 → `CreateToolbar` (or `RecoverAesUi`), or restart Outlook so `MSCANAppBootstrap.DeferredToolbar` rebuilds the bar.
-- **Follow-up:** Remove the dead `Run` path. Replace it with a reliable bridge, e.g. public methods on `ThisOutlookSession` (exposed via late-bound `Application`) or a file/queue trigger that VBA polls.
+- **Follow-up:** Remove the dead `Run` path for the scan buttons. Settings (1.4.2) no longer depends on it: if the toolbar button is missing, the ribbon starts `aes/settings_dialog.py` directly.
+- **Update 2026-09-25:** Settings click logged `no matching button for tag=AES_SETTINGS` and four `Application.Run` misses. Direct launch is the Settings fallback. Short Scan and the other VBA buttons still need the toolbar.
 
 ### BUG-003 — Buttons do nothing / old dialogs appear: VBA import never saved to `VbaProject.OTM`
 

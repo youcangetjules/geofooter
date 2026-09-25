@@ -491,11 +491,20 @@ def build_witticisms_panel(parent: QWidget) -> QWidget:
     key_edit = QLineEdit()
     key_edit.setEchoMode(QLineEdit.EchoMode.Password)
     key_edit.setPlaceholderText("Poe API key")
-    model_edit = QLineEdit(str(stored.get("model") or wit.DEFAULT_MODEL))
-    model_edit.setToolTip("Poe bot name, for example Claude-Sonnet-4.6")
-    model_edit.setMaximumWidth(220)
+    model_lbl = QLabel("Model")
+    model_combo = QComboBox()
+    model_combo.setToolTip("Poe model used when suggesting a new line")
+    model_combo.setMinimumWidth(220)
+    saved_model = str(stored.get("model") or wit.DEFAULT_MODEL).strip() or wit.DEFAULT_MODEL
+    model_names = list(wit.POE_MODELS)
+    if saved_model not in model_names:
+        model_names.insert(0, saved_model)
+    for name in model_names:
+        model_combo.addItem(name, name)
+    model_combo.setCurrentIndex(max(0, model_combo.findData(saved_model)))
     key_row.addWidget(key_edit, stretch=1)
-    key_row.addWidget(model_edit)
+    key_row.addWidget(model_lbl)
+    key_row.addWidget(model_combo)
     outer.addLayout(key_row)
 
     status = poe_status()
@@ -511,10 +520,14 @@ def build_witticisms_panel(parent: QWidget) -> QWidget:
     suggest_row = QHBoxLayout()
     suggest_btn = QPushButton("Suggest a new one")
     suggest_btn.setObjectName("secondaryBtn")
+    test_btn = QPushButton("Test Connection")
+    test_btn.setObjectName("secondaryBtn")
+    test_btn.setToolTip("Check the Poe key and that the selected model is available")
     suggest_lbl = QLabel("")
     suggest_lbl.setObjectName("hint")
     suggest_lbl.setWordWrap(True)
     suggest_row.addWidget(suggest_btn)
+    suggest_row.addWidget(test_btn)
     suggest_row.addWidget(suggest_lbl, stretch=1)
     outer.addLayout(suggest_row)
 
@@ -555,10 +568,14 @@ def build_witticisms_panel(parent: QWidget) -> QWidget:
         for item in lines.selectedItems():
             lines.takeItem(lines.row(item))
 
-    class _SuggestBridge(QObject):
-        done = Signal(bool, str)
+    class _PoeBridge(QObject):
+        suggested = Signal(bool, str)
+        tested = Signal(bool, str)
 
-    bridge = _SuggestBridge(panel)
+    bridge = _PoeBridge(panel)
+
+    def selected_model() -> str:
+        return str(model_combo.currentData() or wit.DEFAULT_MODEL)
 
     def on_suggested(ok: bool, text: str) -> None:
         suggest_btn.setEnabled(True)
@@ -566,35 +583,68 @@ def build_witticisms_panel(parent: QWidget) -> QWidget:
             line_edit.setText(text)
             line_edit.setFocus()
             suggest_lbl.setText("Suggestion ready. Click Add to keep it.")
+            suggest_lbl.setStyleSheet("")
         else:
             suggest_lbl.setText(text)
+            suggest_lbl.setStyleSheet("color: #b3261e;")
 
-    bridge.done.connect(on_suggested)
+    def on_tested(ok: bool, text: str) -> None:
+        test_btn.setEnabled(True)
+        suggest_lbl.setText(("\u2714 " if ok else "\u2716 ") + text)
+        suggest_lbl.setStyleSheet(f"color: {'#1b7f3b' if ok else '#b3261e'};")
+
+    bridge.suggested.connect(on_suggested)
+    bridge.tested.connect(on_tested)
+
+    def current_key() -> str:
+        return key_edit.text().strip() or get_poe_api_key()
 
     def on_suggest() -> None:
-        key = key_edit.text().strip() or get_poe_api_key()
+        key = current_key()
         if not key:
             suggest_lbl.setText("Paste a Poe API key first. Create one at poe.com/api/keys.")
+            suggest_lbl.setStyleSheet("color: #b3261e;")
             return
         suggest_btn.setEnabled(False)
         suggest_lbl.setText("Asking Poe…")
+        suggest_lbl.setStyleSheet("color: #666;")
         level = current["level"]
         existing = read_list()
-        model = model_edit.text().strip() or wit.DEFAULT_MODEL
+        model = selected_model()
 
         def work() -> None:
             try:
                 line = wit.suggest_witticism(level, existing, key, model)
-                bridge.done.emit(True, line)
+                bridge.suggested.emit(True, line)
             except Exception as exc:  # noqa: BLE001
-                bridge.done.emit(False, str(exc) or "Poe request failed.")
+                bridge.suggested.emit(False, str(exc) or "Poe request failed.")
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def on_test() -> None:
+        key = current_key()
+        if not key:
+            suggest_lbl.setText("\u2716 Paste a Poe API key first. Create one at poe.com/api/keys.")
+            suggest_lbl.setStyleSheet("color: #b3261e;")
+            return
+        test_btn.setEnabled(False)
+        suggest_lbl.setText("Checking Poe…")
+        suggest_lbl.setStyleSheet("color: #666;")
+        model = selected_model()
+
+        def work() -> None:
+            try:
+                message = wit.test_poe_connection(key, model)
+                bridge.tested.emit(True, message)
+            except Exception as exc:  # noqa: BLE001
+                bridge.tested.emit(False, str(exc) or "Poe request failed.")
 
         threading.Thread(target=work, daemon=True).start()
 
     def collect() -> Dict[str, Any]:
         flush()
         return {
-            "model": model_edit.text().strip() or wit.DEFAULT_MODEL,
+            "model": selected_model(),
             "lines": {level: list(banks[level]) for level in wit.LEVELS},
         }
 
@@ -611,6 +661,7 @@ def build_witticisms_panel(parent: QWidget) -> QWidget:
     line_edit.returnPressed.connect(on_add)
     remove_btn.clicked.connect(on_remove)
     suggest_btn.clicked.connect(on_suggest)
+    test_btn.clicked.connect(on_test)
     panel.collect_witticisms = collect  # type: ignore[attr-defined]
     panel.save_poe_key = save_key  # type: ignore[attr-defined]
     return panel

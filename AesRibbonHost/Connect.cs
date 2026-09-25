@@ -307,7 +307,17 @@ namespace Aliniant.AesRibbonHost
 
         public void OnSettings(IRibbonControl control)
         {
-            ExecuteVbaButton("AES_SETTINGS", "ShowSettings");
+            if (TryExecuteVbaButton("AES_SETTINGS", "ShowSettings"))
+                return;
+            // Outlook has no Application.Run, and the AES CommandBar button is
+            // often missing until VBA is re-imported. Open the Python dialog directly.
+            if (LaunchSettingsDialogDirect())
+                return;
+            System.Windows.Forms.MessageBox.Show(
+                "Could not open AES Settings.\n\nSet Install root in GURI (Database tab) and ensure Python is installed.",
+                "Aliniant AES",
+                System.Windows.Forms.MessageBoxButtons.OK,
+                System.Windows.Forms.MessageBoxIcon.Warning);
         }
 
         public void OnViewLogs(IRibbonControl control)
@@ -866,6 +876,194 @@ namespace Aliniant.AesRibbonHost
                 HostLog.Write("LaunchGuriGuiDirect FAIL: " + ex.Message);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Open aes/settings_dialog.py without VBA. The ribbon cannot call
+        /// Outlook.Application.Run, and the Settings toolbar button is often absent.
+        /// </summary>
+        private bool LaunchSettingsDialogDirect()
+        {
+            try
+            {
+                string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                string root = InstallRoot() ?? "";
+                string geo = Path.Combine(local, "GeoFooter");
+                Directory.CreateDirectory(geo);
+
+                string py = FindPythonw(root, userProfile, local);
+                string script = null;
+                if (!string.IsNullOrEmpty(root))
+                {
+                    string candidate = Path.Combine(root, "aes", "settings_dialog.py");
+                    if (File.Exists(candidate)) script = candidate;
+                }
+                if (script == null && File.Exists(@"C:\GeoFooter\aes\settings_dialog.py"))
+                    script = @"C:\GeoFooter\aes\settings_dialog.py";
+                if (py == null || script == null)
+                {
+                    HostLog.Write("LaunchSettingsDialogDirect: missing py=" + (py ?? "") +
+                        " script=" + (script ?? ""));
+                    return false;
+                }
+
+                string accountsPath = Path.Combine(geo, "aes_settings_accounts.json");
+                string outPath = Path.Combine(geo, "aes_settings_result.json");
+                string routePath = Path.Combine(geo, "aes_risk_route.json");
+                string loggingPath = Path.Combine(geo, "aes_logging.json");
+                File.WriteAllText(accountsPath, BuildAccountsJson(), new UTF8Encoding(false));
+                try { if (File.Exists(outPath)) File.Delete(outPath); } catch { }
+
+                string args = "\"" + script + "\"" +
+                    " --accounts \"" + accountsPath + "\"" +
+                    " --out \"" + outPath + "\"" +
+                    " --route \"" + routePath + "\"" +
+                    " --logging \"" + loggingPath + "\"";
+                var psi = new ProcessStartInfo
+                {
+                    FileName = py,
+                    Arguments = args,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WorkingDirectory = string.IsNullOrEmpty(root) ? Environment.CurrentDirectory : root,
+                };
+                Process.Start(psi);
+                HostLog.Write("LaunchSettingsDialogDirect: " + py + " " + args);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                HostLog.Write("LaunchSettingsDialogDirect FAIL: " + ex.Message);
+                return false;
+            }
+        }
+
+        private static string FindPythonw(string root, string userProfile, string local)
+        {
+            var candidates = new System.Collections.Generic.List<string>();
+            if (!string.IsNullOrEmpty(root))
+            {
+                candidates.Add(Path.Combine(root, @".venv\Scripts\pythonw.exe"));
+                candidates.Add(Path.Combine(root, @".venv\Scripts\python.exe"));
+            }
+            candidates.Add(Path.Combine(userProfile, @"AppData\Local\Programs\Python\Python313\pythonw.exe"));
+            candidates.Add(Path.Combine(local, @"Programs\Python\Python313\pythonw.exe"));
+            candidates.Add(Path.Combine(userProfile, @"AppData\Local\Programs\Python\Python312\pythonw.exe"));
+            foreach (string path in candidates)
+            {
+                if (File.Exists(path)) return path;
+            }
+            return null;
+        }
+
+        private string BuildAccountsJson()
+        {
+            var flags = ReadScanAccountFlags();
+            var sb = new StringBuilder();
+            sb.AppendLine("{");
+            sb.AppendLine("  \"accounts\": [");
+            bool first = true;
+            try
+            {
+                dynamic app = _application;
+                dynamic accounts = app.Session.Accounts;
+                int count = (int)accounts.Count;
+                for (int i = 1; i <= count; i++)
+                {
+                    dynamic acc = null;
+                    try { acc = accounts.Item(i); } catch { continue; }
+                    if (acc == null) continue;
+                    string storeId = "";
+                    try
+                    {
+                        dynamic store = acc.DeliveryStore;
+                        if (store != null) storeId = (store.StoreID as string) ?? "";
+                    }
+                    catch { }
+                    if (string.IsNullOrEmpty(storeId))
+                    {
+                        try { storeId = (acc.StoreID as string) ?? ""; } catch { }
+                    }
+                    if (string.IsNullOrEmpty(storeId)) continue;
+                    string display = "";
+                    string smtp = "";
+                    try { display = (acc.DisplayName as string) ?? ""; } catch { }
+                    try { smtp = (acc.SmtpAddress as string) ?? ""; } catch { }
+                    if (string.IsNullOrEmpty(smtp)) smtp = display;
+                    bool enabled = true, responses = true, inCc = true;
+                    if (flags.TryGetValue(storeId, out var flag))
+                    {
+                        enabled = flag.Item1;
+                        responses = flag.Item2;
+                        inCc = flag.Item3;
+                    }
+                    if (!first) sb.AppendLine(",");
+                    first = false;
+                    sb.Append("    {\"store_id\":\"").Append(JsonEscape(storeId))
+                        .Append("\",\"display\":\"").Append(JsonEscape(display))
+                        .Append("\",\"smtp\":\"").Append(JsonEscape(smtp))
+                        .Append("\",\"enabled\":").Append(enabled ? "true" : "false")
+                        .Append(",\"responses\":").Append(responses ? "true" : "false")
+                        .Append(",\"in_cc\":").Append(inCc ? "true" : "false")
+                        .Append("}");
+                }
+            }
+            catch (Exception ex)
+            {
+                HostLog.Write("BuildAccountsJson: " + ex.Message);
+            }
+            sb.AppendLine();
+            sb.AppendLine("  ]");
+            sb.AppendLine("}");
+            return sb.ToString();
+        }
+
+        private static System.Collections.Generic.Dictionary<string, Tuple<bool, bool, bool>> ReadScanAccountFlags()
+        {
+            var map = new System.Collections.Generic.Dictionary<string, Tuple<bool, bool, bool>>(
+                StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                string path = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "GeoFooter", "aes_scan_accounts.ini");
+                if (!File.Exists(path)) return map;
+                foreach (string raw in File.ReadAllLines(path))
+                {
+                    string line = (raw ?? "").Trim();
+                    if (line.Length == 0 || line[0] == ';' || line[0] == '#') continue;
+                    int eq = line.IndexOf('=');
+                    if (eq <= 0) continue;
+                    string key = line.Substring(0, eq).Trim();
+                    int pipe = key.IndexOf('|');
+                    if (pipe > 0) key = key.Substring(0, pipe).Trim();
+                    if (key.Length == 0) continue;
+                    string[] parts = line.Substring(eq + 1).Trim().Split(',');
+                    bool on0 = FlagOn(parts, 0, true);
+                    bool on1 = FlagOn(parts, 1, true);
+                    bool on2 = FlagOn(parts, 2, true);
+                    map[key] = Tuple.Create(on0, on1, on2);
+                }
+            }
+            catch { }
+            return map;
+        }
+
+        private static bool FlagOn(string[] parts, int index, bool fallback)
+        {
+            if (parts == null || index >= parts.Length) return fallback;
+            string text = (parts[index] ?? "").Trim();
+            if (text.Length == 0) return fallback;
+            return text == "1" || text.Equals("true", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("on", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string JsonEscape(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            return value.Replace("\\", "\\\\").Replace("\"", "\\\"")
+                .Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t");
         }
 
         /// <summary>

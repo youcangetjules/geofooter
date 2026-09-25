@@ -25,6 +25,21 @@ LEVEL_LABELS = {
 }
 DEFAULT_MODEL = "Claude-Sonnet-4.6"
 POE_URL = "https://api.poe.com/v1/chat/completions"
+POE_MODELS_URL = "https://api.poe.com/v1/models"
+# Poe bot names for the settings dropdown. A saved name that is not in this
+# list is still offered, so an older choice is not dropped.
+POE_MODELS = (
+    "Claude-Sonnet-4.6",
+    "Claude-Opus-4.7",
+    "Claude-Sonnet-4.5",
+    "Claude-Haiku-4.5",
+    "GPT-5.4",
+    "GPT-5-Pro",
+    "Gemini-3.1-Pro",
+    "Gemini-2.5-Pro",
+    "Grok-4",
+    "DeepSeek-R1",
+)
 
 DEFAULT_LINES: Dict[str, List[str]] = {
     "LOW": [
@@ -143,6 +158,54 @@ def pick_witticism(level: str) -> str:
     return random.choice(list(choices))
 
 
+def _poe_request(url: str, api_key: str, body: bytes | None = None) -> object:
+    request = urllib.request.Request(
+        url,
+        data=body,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Accept": "application/json",
+            **({"Content-Type": "application/json"} if body is not None else {}),
+        },
+        method="POST" if body is not None else "GET",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=25) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        if exc.code == 401:
+            raise RuntimeError("Poe rejected that API key.") from None
+        if exc.code == 402:
+            raise RuntimeError("The Poe account has no credits left.") from None
+        if exc.code == 429:
+            raise RuntimeError("Poe is rate-limiting requests. Try again in a minute.") from None
+        raise RuntimeError(f"Poe returned HTTP {exc.code}.") from None
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Could not reach Poe ({type(exc).__name__}).") from None
+
+
+def test_poe_connection(api_key: str, model: str = "") -> str:
+    """Check the key against Poe's model list. Raises RuntimeError on failure."""
+    key = (api_key or "").strip()
+    if not key:
+        raise RuntimeError("Add a Poe API key first.")
+    payload = _poe_request(POE_MODELS_URL, key)
+    ids: List[str] = []
+    data = payload.get("data") if isinstance(payload, dict) else None
+    if isinstance(data, list):
+        for item in data:
+            if isinstance(item, dict) and item.get("id"):
+                ids.append(str(item["id"]))
+    chosen = (model or "").strip()
+    if chosen and ids:
+        if not any(name.lower() == chosen.lower() for name in ids):
+            raise RuntimeError(f"Connected, but Poe does not list {chosen}.")
+        return f"Connected. {chosen} is available."
+    if ids:
+        return f"Connected. Poe listed {len(ids)} models."
+    return "Connected."
+
+
 def suggest_witticism(
     level: str,
     existing: List[str],
@@ -175,29 +238,7 @@ def suggest_witticism(
             "temperature": 0.9,
         }
     ).encode("utf-8")
-    request = urllib.request.Request(
-        POE_URL,
-        data=body,
-        headers={
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        },
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=25) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        if exc.code == 401:
-            raise RuntimeError("Poe rejected that API key.") from None
-        if exc.code == 402:
-            raise RuntimeError("The Poe account has no credits left.") from None
-        if exc.code == 429:
-            raise RuntimeError("Poe is rate-limiting requests. Try again in a minute.") from None
-        raise RuntimeError(f"Poe returned HTTP {exc.code}.") from None
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
-        raise RuntimeError(f"Could not reach Poe ({type(exc).__name__}).") from None
+    payload = _poe_request(POE_URL, key, body)
     try:
         text = payload["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError) as exc:

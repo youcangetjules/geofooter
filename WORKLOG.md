@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-25 — 1.4.2: Test Poe, and open Settings without the VBA toolbar
+- Witticisms: the model is a dropdown, and Test Connection checks the key against Poe's model list (including whether the chosen model is there).
+- The ribbon Settings button starts `aes/settings_dialog.py` when the AES toolbar button is missing. An empty account list still opens the dialog.
+- Follow-up: fully quit Outlook, then run `AesRibbonHost\install.ps1`, and reopen. Until that rebuild, reopen AES Settings from a fresh launch to see Test Connection. The dialog you already have open is the previous build.
+
 ### 2026-09-25 — 1.4.1: Nudge NOK and space the footer labels
 - The red NOK count is raised 1px. Labels and values are separate cells with a 6px gap, because Outlook was dropping the space.
 - Follow-up: rescan a mail.

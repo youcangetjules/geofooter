@@ -20,6 +20,16 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.2] — 2026-09-25
+
+### Changed
+
+- The Witticisms model is a dropdown, and Test Connection checks the Poe key and that the selected model is listed.
+
+### Fixed
+
+- The ribbon Settings button opens the AES dialog when the VBA toolbar button is missing. Outlook has no `Application.Run`, so the host starts the Python dialog itself.
+
 ## [1.4.1] — 2026-09-25
 
 ### Fixed

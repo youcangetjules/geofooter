@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.35] — 2026-09-25
+
+### Changed
+
+- Actions to take opens in time order, newest first. A column header sorts by that column; a second click reverses it.
+- Timeline day numbers are paler and carry the day suffix (24th, 25th).
+
 ## [1.3.34] — 2026-09-25
 
 ### Changed

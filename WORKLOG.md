@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-25 — 1.3.35: Sort Actions to take, pale timeline days
+- Actions to take no longer follows the risk score. It opens sorted by When, newest first. Header clicks sort that column and the next click reverses the order. The chosen column is kept across a refresh.
+- Timeline watermarks are 12% opacity and read with an ordinal suffix (24th, 25th).
+- Follow-up: restart GURI.
+
 ### 2026-09-25 — 1.3.34: Vertically centre the footer top row
 - Each top-row label and green dot is a 16px-tall cell with the same exact line-height, so Outlook cannot drop the dots or the links off the text line.
 - Follow-up: rescan a mail.

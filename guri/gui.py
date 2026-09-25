@@ -1032,6 +1032,15 @@ class TimelineHoverPopup(QFrame):
         super().leaveEvent(event)
 
 
+def _day_ordinal(day: int) -> str:
+    """Day of month with an English suffix (1st, 2nd, 3rd, 24th)."""
+    if 10 <= day % 100 <= 20:
+        suffix = "th"
+    else:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+    return f"{day}{suffix}"
+
+
 class TimelineCanvas(QWidget):
     """Custom widget for drawing email timeline in category rows.
 
@@ -1350,12 +1359,12 @@ class TimelineCanvas(QWidget):
                 int(y0 + row_h),
             )
 
-        # Day-of-month watermark behind the hours (20% opacity, 72pt).
+        # Day-of-month watermark behind the hours (paler than 20%, 72pt).
         plot_top = margin_top
         plot_h = max(1, height - margin_top - margin_bottom)
         painter.save()
         painter.setClipRect(int(margin_left), int(plot_top), int(used_w), int(plot_h))
-        painter.setOpacity(0.20)
+        painter.setOpacity(0.12)
         day_font = QFont("Segoe UI", 72)
         day_font.setBold(True)
         painter.setFont(day_font)
@@ -1376,7 +1385,7 @@ class TimelineCanvas(QWidget):
                 int(span_w),
                 int(plot_h),
                 Qt.AlignmentFlag.AlignCenter,
-                str(day_num),
+                _day_ordinal(day_num),
             )
         painter.restore()
 
@@ -2687,6 +2696,10 @@ class GURIViewerGUI(QMainWindow):
         actions_hdr = self.actions_tree.header()
         actions_hdr.setStretchLastSection(False)
         actions_hdr.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        actions_hdr.setSectionsClickable(True)
+        actions_hdr.setSortIndicatorShown(True)
+        self.actions_tree.setSortingEnabled(True)
+        self.actions_tree.sortByColumn(4, Qt.SortOrder.DescendingOrder)
         self.actions_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.actions_tree.customContextMenuRequested.connect(self._show_action_context_menu)
         self.actions_tree.itemClicked.connect(self._on_mail_item_selected)
@@ -10758,6 +10771,9 @@ Current Page: {self.current_page + 1}
         if not hasattr(self, "actions_tree"):
             return
         try:
+            sort_col = self.actions_tree.sortColumn()
+            sort_order = self.actions_tree.header().sortIndicatorOrder()
+            self.actions_tree.setSortingEnabled(False)
             self.actions_tree.clear()
             items = self._feedback_items()
             actions = [
@@ -10765,18 +10781,24 @@ Current Page: {self.current_page + 1}
                 for it in items
                 if it.get("actions") and not it.get("rule_hide_from_actions")
             ]
-            actions.sort(key=lambda x: int(x.get("score") or 0), reverse=True)
             for det in actions[:250]:
                 mail = det.get("mail") or {}
-                item = QTreeWidgetItem(self.actions_tree)
+                received = str(mail.get("received") or "")
+                item = _SortableTreeItem(self.actions_tree)
                 item.setText(0, str(mail.get("sender") or "")[:80])
                 subject = str(mail.get("subject") or "")
                 item.setText(1, subject[:120] + ("..." if len(subject) > 120 else ""))
                 item.setText(2, ", ".join(det.get("actions") or []))
                 item.setText(3, str(det.get("importance") or ""))
-                item.setText(4, str(mail.get("received") or ""))
+                item.setText(4, received)
                 item.setText(5, str(det.get("status") or "—"))
+                item.setData(4, _SortableTreeItem.SORT_ROLE, received)
                 item.setData(0, Qt.ItemDataRole.UserRole, det)
+            self.actions_tree.setSortingEnabled(True)
+            if sort_col < 0:
+                sort_col = 4
+                sort_order = Qt.SortOrder.DescendingOrder
+            self.actions_tree.sortItems(sort_col, sort_order)
             if hasattr(self, "actions_hint") and actions:
                 self.actions_hint.setText(
                     f"{len(actions)} action item(s) — double-click or use Open in Outlook."

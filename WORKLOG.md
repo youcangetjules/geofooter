@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-25 — 1.3.39: Longer funny footer asides
+- The one-liners were cut too short. They are cheeky again, and `nowrap` still keeps each one on a single line.
+- Follow-up: rescan a mail.
+
 ### 2026-09-25 — 1.3.38: One-line quips, aligned top row, real footer A
 - Cheeky lines are short and `nowrap`, so Outlook cannot wrap them under the metrics.
 - Every span and link on the top row is forced to the same 16px line, which was dropping "NOK" a couple of pixels.

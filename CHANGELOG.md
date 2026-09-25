@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.39] — 2026-09-25
+
+### Changed
+
+- The cheeky footer lines are longer and funnier, and they still stay on one line.
+
 ## [1.3.38] — 2026-09-25
 
 ### Changed

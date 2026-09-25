@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-25 — 1.3.42: Centre the footer lines and align Links
+- Coloured counts use the row baseline, so "NOK" no longer sits below the Links label.
+- Each footer line is centred on the full strip. Equal side columns keep the logo, the quip, and the © notice from pulling that centre sideways.
+- Follow-up: rescan a mail. No VBA import.
+
 ### 2026-09-25 — 1.3.41: Footer line 2, and copyright on the chips row
 - The location note was HTML, then the whole second line was escaped, so Outlook showed the tags. The note is left as markup and the line is centred.
 - The Quick Actions row keeps the chips in the middle and puts “Copyright 2026 Aliniant Labs” on the far right.

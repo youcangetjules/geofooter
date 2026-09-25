@@ -652,6 +652,51 @@ def _footer_mark_html() -> str:
     )
 
 
+def _footer_count_html(text: str, color: str) -> str:
+    """Coloured OK/NOK count that shares the row baseline in Outlook.
+
+    A nested span with vertical-align:middle sits a couple of pixels low,
+    which is what dropped "1 NOK" under the rest of the Links label.
+    """
+    return (
+        f"<font color='{color}' face='Segoe UI, Arial, sans-serif' "
+        f"style='color:{color}; font-family:{AES_STRIP_FONT}; font-size:12px; "
+        f"font-weight:bold; line-height:16px; mso-line-height-rule:exactly; "
+        f"vertical-align:baseline;'>{html.escape(text)}</font>"
+    )
+
+
+def _footer_text_px(text: str, size: int, *, italic: bool) -> int:
+    """Width of a footer label, used so the side columns match."""
+    try:
+        from PIL import ImageFont
+
+        filename = "segoeuii.ttf" if italic else "segoeui.ttf"
+        font = ImageFont.truetype(rf"C:\Windows\Fonts\{filename}", size)
+        return int(font.getlength(text)) + 2
+    except Exception:
+        return int(len(text) * (6.3 if italic else 6.0)) + 4
+
+
+def _footer_prefix_for_px(text: str, target: int, *, italic: bool) -> str:
+    """Shortest prefix of text that is at least target pixels wide."""
+    if target <= 0 or not text:
+        return ""
+    if _footer_text_px(text, 11, italic=italic) <= target:
+        return text
+    lo, hi = 1, len(text)
+    best = text
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        chunk = text[:mid]
+        if _footer_text_px(chunk, 11, italic=italic) >= target:
+            best = chunk
+            hi = mid - 1
+        else:
+            lo = mid + 1
+    return best
+
+
 # Quick Action chips on that strip. Default is a white pill with slate text.
 AES_CHIP_BG = "#ffffff"
 AES_CHIP_FG = "#0f1f2a"
@@ -697,9 +742,11 @@ def strip_separators(
     )
     parts = (inner_html or "").split(" | ")
     if line_height:
+        # Baseline, not middle. Middle drops the second coloured run
+        # ("1 NOK") a couple of pixels below the rest of the row.
         extra = (
             f"line-height:{line_height}; mso-line-height-rule:exactly; "
-            f"vertical-align:middle; font-size:{size}; "
+            f"vertical-align:baseline; font-size:{size}; "
         )
 
         def _lock_fragment(fragment: str) -> str:
@@ -3905,20 +3952,18 @@ class HTMLReportGenerator:
         total = len(link_findings or [])
         if total == 0:
             return (
-                'Links: <span style="color:#90EE90;font-weight:bold;">0 OK</span>',
+                "Links: " + _footer_count_html("0 OK", "#90EE90"),
                 "<span style='color: #888888;'>No links in message body</span>",
             )
 
         highs = [f for f in link_findings if str(field(f, "risk_level")) == "high"]
         meds = [f for f in link_findings if str(field(f, "risk_level")) == "medium"]
 
-        ok_style = "color:#90EE90;font-weight:bold;"
-        bad_style = "color:#FF4444;font-weight:bold;"
         ok_n = total - (len(highs) + len(meds))
-        line = f'Links: <span style="{ok_style}">{ok_n} OK</span>'
+        line = f"Links: {_footer_count_html(f'{ok_n} OK', '#90EE90')}"
         bad = len(highs) + len(meds)
         if bad:
-            line += f' <span style="{bad_style}">{bad} NOK</span>'
+            line += " " + _footer_count_html(f"{bad} NOK", "#FF4444")
         if not highs and not meds:
             detail = (
                 f"<span style='color: #008000;'>{total} link{'s' if total != 1 else ''} checked "
@@ -4353,32 +4398,10 @@ Live Safe Browsing lookups are optional and separate.</p>
                 "<td style='vertical-align:middle;'>"
                 f"{chip(url, code, bg, fg)}</td>"
             )
-        # Same wording in a hidden left cell so the chips stay centred while
-        # the visible line sits on the far right.
-        copy_text = "Copyright 2026 Aliniant Labs"
-        copy_font = (
-            f"font-family:{AES_STRIP_FONT}; font-size:11px; font-weight:normal; "
-            f"white-space:nowrap; line-height:16px; mso-line-height-rule:exactly; "
-            f"padding:0;"
-        )
-        chips = (
+        return (
             "<table border='0' cellpadding='0' cellspacing='0' align='center' "
             "style='border-collapse:separate; margin:0 auto;'>"
             f"<tr>{''.join(parts)}</tr></table>"
-        )
-        return (
-            f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
-            f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
-            f"border-collapse:collapse;'><tr>"
-            f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; {copy_font}'>"
-            f"<span style='color:{AES_STRIP_BG};'>{copy_text}</span></td>"
-            f"<td align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; text-align:center;'>{chips}</td>"
-            f"<td align='right' valign='middle' nowrap bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; text-align:right; {copy_font}'>"
-            f"<span style='color:{AES_STRIP_MUTED};'>{copy_text}</span></td>"
-            f"</tr></table>"
         )
     
     def _calculate_domain_age(self, creation_date: str) -> Optional[int]:
@@ -4862,8 +4885,8 @@ Live Safe Browsing lookups are optional and separate.</p>
             f'<a href="{html.escape(href, quote=True)}" target="_blank" '
             f'style="color:{color};text-decoration:{deco};background:transparent;border:none;'
             f'padding:0;margin:0;font-weight:{font_weight};font-size:{font_size};'
-            f"line-height:{font_size}; mso-line-height-rule:exactly; "
-            f"vertical-align:middle; font-family:{AES_STRIP_FONT};\">"
+        f"line-height:{font_size}; mso-line-height-rule:exactly; "
+        f"vertical-align:baseline; font-family:{AES_STRIP_FONT};\">"
             f"{inner_html}</a>"
         )
 
@@ -4899,15 +4922,13 @@ Live Safe Browsing lookups are optional and separate.</p>
 
     def _attachment_summary_inner_html(self, total: int, ok_count: int, not_ok_count: int) -> str:
         """Build attachment count + OK/Not OK labels for the footer."""
-        ok_style = "color:#90EE90;font-weight:bold;"
-        bad_style = "color:#FF4444;font-weight:bold;"
         parts = ["Attachments:"]
         if not_ok_count <= 0:
-            parts.append(f'<span style="{ok_style}">{total} OK</span>')
+            parts.append(_footer_count_html(f"{total} OK", "#90EE90"))
         else:
             if ok_count > 0:
-                parts.append(f'<span style="{ok_style}">{ok_count} OK</span>')
-            parts.append(f'<span style="{bad_style}">{not_ok_count} NOK</span>')
+                parts.append(_footer_count_html(f"{ok_count} OK", "#90EE90"))
+            parts.append(_footer_count_html(f"{not_ok_count} NOK", "#FF4444"))
         return " ".join(parts)
 
     def _create_attachment_assets(
@@ -5066,8 +5087,6 @@ Scanned: {scanned_at} | GURI: {html.escape(guri)}</div>
         report_url = self._write_beacon_report_files(
             report_id, beacon_count, beacon_urls, subject, sender_email, sender_domain, guri
         )
-        ok_style = "color:#90EE90;font-weight:bold;"
-        bad_style = "color:#FF4444;font-weight:bold;"
         blocked = int(beacon_blocked or 0)
         # The scan often runs before Outlook strips the image, so the export
         # still says blocked=0. If this sender is covered by beacon blocking,
@@ -5075,9 +5094,9 @@ Scanned: {scanned_at} | GURI: {html.escape(guri)}</div>
         if beacons_blocked_for_sender and beacon_count > blocked:
             blocked = int(beacon_count)
         if blocked > 0:
-            status = f'<span style="{bad_style}">{blocked} Blocked</span>'
+            status = _footer_count_html(f"{blocked} Blocked", "#FF4444")
         else:
-            status = f'<span style="{ok_style}">0 Blocked</span>'
+            status = _footer_count_html("0 Blocked", "#90EE90")
         detected = f"{beacon_count} detected " if beacon_count > 0 else ""
         label = f"Beacons: {detected}{status}"
         return self._metric_report_link(report_url, label), report_url
@@ -5482,7 +5501,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         # A 1px cell. Outlook drops a div border, so the line has to be the
         # cell background. Inset 16px, same width between every row.
         rule_row = (
-            f"<tr><td bgcolor='{AES_STRIP_BG}' style='padding:0 16px; "
+            f"<tr><td colspan='3' bgcolor='{AES_STRIP_BG}' style='padding:0 16px; "
             f"background:{AES_STRIP_BG}; font-size:1px; line-height:1px;'>"
             f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
             f"style='border-collapse:collapse;'>"
@@ -5492,56 +5511,99 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"&nbsp;</td></tr></table></td></tr>"
         )
         row_pad = "5px 16px"
-        actions_row = ""
-        if quick_actions:
-            actions_row = (
-                f"{rule_row}"
-                f"<tr><td style='padding:{row_pad}; text-align:center;'>"
-                f"{quick_actions}</td></tr>"
-            )
+        mark = _footer_mark_html()
         quip = html.escape(footer_quip(str(risk or ""), int(score or 0)))
-        quip_cell = (
-            f"<td nowrap valign='middle' align='right' "
-            f"style='white-space:nowrap; padding-left:16px; text-align:right; "
-            f"vertical-align:middle; color:{risk_color}; font-family:{AES_STRIP_FONT}; "
-            f"font-size:11px; font-style:italic; font-weight:normal; "
-            f"line-height:16px; mso-line-height-rule:exactly;'>"
+        # Side columns are the same width, so the text in the middle is the
+        # centre of the whole footer, not the gap between the logo and the quip.
+        quip_px = _footer_text_px(quip, 11, italic=True)
+        logo_w = 75 if mark else 0
+        left_chrome = 12 + (logo_w + 8 if mark else 0)
+        side_w = max(quip_px + 16, left_chrome + 8)
+        fill = html.escape(
+            _footer_prefix_for_px(quip, max(0, side_w - left_chrome), italic=True)
+        )
+        logo_bit = (
+            f"<td width='12' style='width:12px; font-size:1px; line-height:1px;'>&nbsp;</td>"
+            f"<td width='75' valign='middle' style='width:75px;'>{mark}</td>"
+            if mark
+            else f"<td width='12' style='width:12px; font-size:1px; line-height:1px;'>&nbsp;</td>"
+        )
+        left_top = (
+            f"<table border='0' cellpadding='0' cellspacing='0' width='{side_w}' "
+            f"align='left' style='width:{side_w}px; border-collapse:collapse;'><tr>"
+            f"{logo_bit}"
+            f"<td valign='middle' style='font-family:{AES_STRIP_FONT}; font-size:11px; "
+            f"font-style:italic; line-height:16px; white-space:nowrap; color:{AES_STRIP_BG};'>"
+            f"<span style='color:{AES_STRIP_BG};'>{fill}</span></td>"
+            f"</tr></table>"
+        )
+        right_top = (
+            f"<table border='0' cellpadding='0' cellspacing='0' width='{side_w}' "
+            f"align='right' style='width:{side_w}px; border-collapse:collapse;'><tr>"
+            f"<td align='right' valign='middle' nowrap "
+            f"style='white-space:nowrap; text-align:right; color:{risk_color}; "
+            f"font-family:{AES_STRIP_FONT}; font-size:11px; font-style:italic; "
+            f"font-weight:normal; line-height:16px; mso-line-height-rule:exactly;'>"
             f"{quip}</td>"
+            f"<td width='16' style='width:16px; font-size:1px; line-height:1px;'>&nbsp;</td>"
+            f"</tr></table>"
+        )
+        copy_plain = "© 2026 Aliniant Labs"
+        copy_html = "&#169; 2026 Aliniant Labs"
+        copy_px = _footer_text_px(copy_plain, 11, italic=False)
+        copy_w = copy_px + 16
+        copy_font = (
+            f"font-family:{AES_STRIP_FONT}; font-size:11px; font-weight:normal; "
+            f"white-space:nowrap; line-height:16px; mso-line-height-rule:exactly;"
+        )
+        left_copy = (
+            f"<table border='0' cellpadding='0' cellspacing='0' width='{copy_w}' "
+            f"align='left' style='width:{copy_w}px; border-collapse:collapse;'><tr>"
+            f"<td width='16' style='width:16px; font-size:1px;'>&nbsp;</td>"
+            f"<td nowrap style='{copy_font} color:{AES_STRIP_BG};'>"
+            f"<span style='color:{AES_STRIP_BG};'>{copy_html}</span></td>"
+            f"</tr></table>"
+        )
+        right_copy = (
+            f"<table border='0' cellpadding='0' cellspacing='0' width='{copy_w}' "
+            f"align='right' style='width:{copy_w}px; border-collapse:collapse;'><tr>"
+            f"<td align='right' nowrap style='{copy_font} color:{AES_STRIP_MUTED}; "
+            f"text-align:right;'><span style='color:{AES_STRIP_MUTED};'>{copy_html}</span></td>"
+            f"<td width='16' style='width:16px; font-size:1px;'>&nbsp;</td>"
+            f"</tr></table>"
         )
         summary_block = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
             f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
             f"border-collapse:collapse;'>"
-            f"<tr><td align='center' valign='middle' style='padding:{row_pad}; text-align:center; "
+            f"<tr>"
+            f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
+            f"style='background:{AES_STRIP_BG}; padding:4px 0;'>{left_top}</td>"
+            f"<td align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
+            f"style='background:{AES_STRIP_BG}; padding:{row_pad}; text-align:center; "
             f"color:{AES_STRIP_TEXT}; font-family:{AES_STRIP_FONT}; font-size:12px; "
             f"font-weight:bold; letter-spacing:0.3px; line-height:16px; "
-            f"mso-line-height-rule:exactly; vertical-align:middle;'>"
-            f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
-            f"style='border-collapse:collapse;'><tr>"
-            f"<td valign='middle' style='vertical-align:middle; line-height:16px; "
-            f"mso-line-height-rule:exactly;'>{summary_line1}</td>"
-            f"{quip_cell}</tr></table></td></tr>"
+            f"mso-line-height-rule:exactly; vertical-align:middle;'>{summary_line1}</td>"
+            f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
+            f"style='background:{AES_STRIP_BG}; padding:4px 0;'>{right_top}</td>"
+            f"</tr>"
             f"{rule_row}"
-            f"<tr><td align='center' style='padding:{row_pad}; text-align:center; "
+            f"<tr><td colspan='3' align='center' bgcolor='{AES_STRIP_BG}' "
+            f"style='padding:{row_pad}; text-align:center; background:{AES_STRIP_BG}; "
             f"color:{AES_STRIP_MUTED}; font-family:{AES_STRIP_FONT}; font-size:12px; "
             f"font-weight:normal; line-height:1.5;'>{summary_line2}</td></tr>"
-            f"{actions_row}"
+            f"{rule_row}"
+            f"<tr>"
+            f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
+            f"style='background:{AES_STRIP_BG}; padding:4px 0;'>{left_copy}</td>"
+            f"<td align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
+            f"style='background:{AES_STRIP_BG}; padding:{row_pad}; text-align:center;'>"
+            f"{quick_actions}</td>"
+            f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
+            f"style='background:{AES_STRIP_BG}; padding:4px 0;'>{right_copy}</td>"
+            f"</tr>"
             f"</table>"
         )
-        mark = _footer_mark_html()
-        if mark:
-            summary_block = (
-                f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
-                f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
-                f"border-collapse:collapse;'>"
-                f"<tr>"
-                f"<td width='91' valign='middle' bgcolor='{AES_STRIP_BG}' "
-                f"style='width:91px; padding:6px 4px 6px 12px; background:{AES_STRIP_BG};'>"
-                f"{mark}</td>"
-                f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-                f"style='background:{AES_STRIP_BG};'>{summary_block}</td>"
-                f"</tr></table>"
-            )
 
         # Top-of-mail banners sit outside the AES footer block so VBA can
         # inject them after <body>; the footer itself stays the scan strip.

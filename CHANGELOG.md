@@ -20,6 +20,14 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.3.42] — 2026-09-25
+
+### Fixed
+
+- The Links count, including NOK, sits on the same baseline as the rest of the top row.
+- The scan line, the sender line, and the Quick Actions are centred on the full footer. The logo and the side text no longer shift that centre.
+- The bottom-right notice uses the © symbol.
+
 ## [1.3.41] — 2026-09-25
 
 ### Fixed

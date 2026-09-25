@@ -13,6 +13,16 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-25 — 1.4.5: Stop Outlook freezing while typing
+- New `VBA\MSCANIdle.bas`: `WaitMs` (kernel32 Sleep, sliced) and `IsUserComposing` (compose Inspector or inline reply).
+- Replaced every `DoEvents` spin loop on the UI thread: `PauseSeconds`, `CompleteAsyncFooter` retry, `CommitMailHtml` retry (up to 5s), `RunCommandAndCaptureOutput` (spun for the whole Python run), `YieldBriefly`, `SleepMs`, and the two send-conflict retries. A DoEvents spin re-enters Outlook's message pump, so keystrokes went to VBA instead of the editor.
+- `NudgeAsyncWork`, `NudgeQueueWork`, and `ProcessQueue` now defer while a message is being written. Mail stays queued; the catch-up heartbeat resumes the drain when the window closes.
+- Follow-up: **re-import the VBA** (new module `MSCANIdle.bas` plus `MSCANModule1`, `MSCANModQueueManager`, `MSCANModWatchers`, `MSCANEventHandlers`, `MSCANSelfUpdate`), Debug > Compile, File > Save, then quit and reopen Outlook. The running Outlook keeps the old code until then.
+
+### 2026-09-25 — 1.4.4: Manual link threat ratings
+- The Link Safety page can set each URL to Low, Medium, or High. The choice is stored in the user profile and applied on later scans, including the footer counts. Use scanner restores the scanner's level.
+- Follow-up: rescan the message and open Show links. The page already open was written before this and has no rating column. Refresh after choosing a rating.
+
 ### 2026-09-25 — 1.4.3: Edit a witticism from the list
 - Clicking a line copies it into the text box and turns Add into Edit. Edit replaces that line. Clearing the box returns the button to Add.
 - Follow-up: close the open AES Settings window and use the new one.

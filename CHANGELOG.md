@@ -20,6 +20,19 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.5] — 2026-09-25
+
+### Fixed
+
+- Typing in Outlook froze and dropped letters. AES waited on the UI thread with `DoEvents` spin loops (footer apply retries, HTML commit retries, waiting for the Python process), which re-entered Outlook's message pump and swallowed keystrokes. All of them now sleep instead.
+- AES no longer scans mail or applies footers while a message is being written. Compose windows and inline replies are both detected; queued mail drains once the window closes.
+
+## [1.4.4] — 2026-09-25
+
+### Added
+
+- The AES Link Safety page has a Your rating column. Low, Medium, or High is stored for that URL and used on later scans. Use scanner clears it.
+
 ## [1.4.3] — 2026-09-25
 
 ### Changed

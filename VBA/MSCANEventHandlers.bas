@@ -259,7 +259,7 @@ Private Function ApplySubjectWithConflictRetry( _
         If IsMessageChangedError(Err.Number, Err.Description) Then
             LogConflict "ApplySubject(attempt " & attempt & ")", Err.Number, Err.Description, mail
             If attempt = 1 Then
-                DoEvents
+                MSCANIdle.WaitMs 120
                 Err.Clear
             Else
                 MsgBox "Outlook reports this message was changed while AES was updating the subject." & vbCrLf & vbCrLf & _
@@ -328,7 +328,7 @@ Private Sub ApplyReadNotifyWithConflictRetry( _
 
         If attempt = 1 Then
             LogSendDiagnostics mail, "ReadNotify-retry"
-            DoEvents
+            MSCANIdle.WaitMs 120
         Else
             MSCANCore.Log "ReadNotify: giving up after conflict/failure - send continues without re-stamp."
             MSCANModLogging.WriteLog "ReadNotify: giving up after conflict/failure - send continues without re-stamp."

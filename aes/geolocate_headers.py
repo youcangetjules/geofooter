@@ -3075,6 +3075,14 @@ class HTMLReportGenerator:
             except Exception as exc:
                 self.logger.warning("Threat intel lookups failed: %s", exc)
 
+        if link_findings:
+            try:
+                from aes.link_ratings import apply_saved_ratings
+
+                apply_saved_ratings(link_findings)
+            except Exception as exc:
+                self.logger.warning("Link rating overlay failed: %s", exc)
+
         if deep_mode:
             if BodyScanner is not None:
                 body_scan = BodyScanner().scan(
@@ -4019,86 +4027,22 @@ class HTMLReportGenerator:
 
             subject = metadata.get("original subject", "Unknown")
             report_id = self._make_report_id(guri, subject, "links")
-            report_name = f"links_report_{report_id}.html"
-            report_path = links_dir / report_name
-
-            def field(item: Any, key: str) -> Any:
-                return getattr(item, key, None) if not isinstance(item, dict) else item.get(key)
-
-            findings = list(link_findings or [])
-            highs = [f for f in findings if str(field(f, "risk_level")) == "high"]
-            meds = [f for f in findings if str(field(f, "risk_level")) == "medium"]
-            lows = [f for f in findings if str(field(f, "risk_level")) not in {"high", "medium"}]
-            ordered = highs + meds + lows
-
-            rows = ""
-            for idx, item in enumerate(ordered[:200], 1):
-                risk = str(field(item, "risk_level") or "low")
-                risk_color = {"high": "#FF4444", "medium": "#CC8800", "low": "#008000"}.get(
-                    risk.lower(), "#333"
-                )
-                reasons = "; ".join(str(r) for r in (field(item, "reasons") or [])) or "—"
-                url = str(field(item, "url") or "")
-                rows += (
-                    f"<tr>"
-                    f"<td style='padding:6px;border-bottom:1px solid #eee;'>{idx}</td>"
-                    f"<td style='padding:6px;border-bottom:1px solid #eee;color:{risk_color};"
-                    f"font-weight:bold;'>{html.escape(risk.upper())}</td>"
-                    f"<td style='padding:6px;border-bottom:1px solid #eee;'>"
-                    f"{html.escape(str(field(item, 'source') or ''))}</td>"
-                    f"<td style='padding:6px;border-bottom:1px solid #eee;'>"
-                    f"{html.escape(str(field(item, 'host') or ''))}</td>"
-                    f"<td style='padding:6px;border-bottom:1px solid #eee;word-break:break-all;'>"
-                    f"{html.escape(url)}</td>"
-                    f"<td style='padding:6px;border-bottom:1px solid #eee;font-size:11px;'>"
-                    f"{html.escape(reasons)}</td>"
-                    f"</tr>"
-                )
-            if not rows:
-                if body_available:
-                    rows = (
-                        "<tr><td colspan='6' style='padding:8px;'>"
-                        "No links found in the message body.</td></tr>"
-                    )
-                else:
-                    rows = (
-                        "<tr><td colspan='6' style='padding:8px;'>"
-                        "Body was not exported — links were not checked for this scan.</td></tr>"
-                    )
-
             scanned_at = datetime.now(pytz.utc).strftime("%Y%m%d%H%M") + "z"
-            summary_colour = (
-                "#FF4444" if highs else ("#CC8800" if meds else ("#008000" if findings else "#666"))
+            stem = f"links_report_{report_id}"
+            from aes.link_ratings import write_links_bundle
+
+            write_links_bundle(
+                links_dir,
+                stem,
+                list(link_findings or []),
+                subject=subject,
+                sender_email=sender_email or "",
+                sender_domain=sender_domain or "",
+                guri=guri or "",
+                scanned_at=scanned_at,
+                body_available=body_available,
             )
-            report_html = f"""<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><title>AES Link Safety</title>
-<style>body{{font-family:Arial,sans-serif;margin:1.5em;color:#333;background:#fff}}
-h1{{font-size:18px;margin-bottom:0.2em}}.meta{{color:#666;font-size:12px;margin-bottom:1em}}
-.summary{{background:#f5f5f5;border:1px solid #ddd;border-radius:4px;padding:10px;margin-bottom:1em;font-size:13px}}
-table{{width:100%;border-collapse:collapse;font-size:12px}}th{{text-align:left;background:#4c7a2c;color:#fff;padding:6px}}
-.footer{{margin-top:1.5em;font-size:11px;color:#666;border-top:1px solid #eee;padding-top:0.8em}}
-.note{{font-size:11px;color:#666;margin-top:0.8em;line-height:1.45}}
-</style></head><body>
-<h1>AES Link Safety</h1>
-<div class="meta">Subject: {html.escape(subject)}<br>
-Sender: {html.escape(sender_email or 'Unknown')} ({html.escape(sender_domain or 'Unknown')})<br>
-Scanned: {scanned_at} | GURI: {html.escape(guri or 'N/A')}</div>
-<div class="summary" style="color:{summary_colour};">
-<strong>{len(findings)}</strong> link(s) checked —
-<span style="color:#FF4444;font-weight:bold;">{len(highs)} high</span>,
-<span style="color:#CC8800;font-weight:bold;">{len(meds)} suspicious</span>,
-<span style="color:#008000;font-weight:bold;">{len(lows)} low</span>
-</div>
-<table>
-<tr><th>#</th><th>Risk</th><th>Source</th><th>Host</th><th>URL</th><th>Notes</th></tr>
-{rows}
-</table>
-<p class="note">Heuristic checks only (IP hosts, shorteners, lookalikes, suspicious TLDs).
-Live Safe Browsing lookups are optional and separate.</p>
-<div class="footer">(C) Aliniant Labs | Aliniant Email Scanner (AES)</div>
-</body></html>"""
-            report_path.write_text(report_html, encoding="utf-8")
-            return _suite_file_url("links", report_name)
+            return _suite_file_url("links", f"{stem}.html")
         except Exception as exc:
             self.logger.error("Failed to write links report: %s", exc)
             return ""

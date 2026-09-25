@@ -9,6 +9,7 @@ Handles aes:// links clicked in AES footers / reports, e.g.
     aes://broker-removal?sender=...&domain=...&broker=spokeo&subject=...
     aes://restore-html?id=r20260923120000...
     aes://open-report?path=C:/GeoFooter/output/links/links_report_….html
+    aes://set-link-risk?report=links_report_…&id=…&level=low|medium|high|clear
 
 Rules are stored in %LOCALAPPDATA%\\GeoFooter\\aes_sender_rules.json and are
 consumed by the Outlook VBA engine on the next scan of mail from that sender.
@@ -399,6 +400,82 @@ def _safe_report_path(raw: str) -> Optional[Path]:
     return None
 
 
+def _links_pair(stem: str) -> Optional[tuple]:
+    """Return (html path, sidecar path) for a links report under a known output root."""
+    from aes.link_ratings import valid_report_stem
+
+    if not valid_report_stem(stem):
+        return None
+    for root in _REPORT_ROOTS:
+        try:
+            root_res = root.resolve()
+        except Exception:
+            continue
+        html_path = (root_res / "links" / f"{stem}.html").resolve()
+        side_path = (root_res / "links" / f"{stem}.json").resolve()
+        try:
+            html_path.relative_to(root_res)
+            side_path.relative_to(root_res)
+        except ValueError:
+            continue
+        if html_path.is_file() and side_path.is_file():
+            return html_path, side_path
+    return None
+
+
+def handle_set_link_risk(params: dict, logger: logging.Logger) -> int:
+    """Save a manual link rating and refresh that links report."""
+    from aes.link_ratings import (
+        finding_url,
+        rewrite_report,
+        save_rating,
+        valid_link_id,
+    )
+
+    stem = (params.get("report") or [""])[0].strip()
+    item_id = (params.get("id") or [""])[0].strip().lower()
+    level = (params.get("level") or [""])[0].strip().lower()
+    if level not in {"low", "medium", "high", "clear"} or not valid_link_id(item_id):
+        logger.error("set-link-risk: bad args report=%s id=%s level=%s", stem, item_id, level)
+        show_message("AES", "That link-rating action is not valid.", error=True)
+        return 1
+    pair = _links_pair(stem)
+    if pair is None:
+        logger.error("set-link-risk: report not found stem=%s", stem)
+        show_message(
+            "AES",
+            "That links page has no saved link list. Rescan the message and open Show links again.",
+            error=True,
+        )
+        return 1
+    html_path, side_path = pair
+    try:
+        sidecar = json.loads(side_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.error("set-link-risk: sidecar unreadable %s (%s)", side_path, exc)
+        show_message("AES", "Could not read the saved link list for that page.", error=True)
+        return 1
+    url = finding_url(sidecar if isinstance(sidecar, dict) else {}, item_id)
+    if not url:
+        logger.error("set-link-risk: id not in report id=%s", item_id)
+        show_message("AES", "That row is not on this links page.", error=True)
+        return 1
+    try:
+        save_rating(url, level)
+        rewrite_report(html_path, side_path)
+    except Exception as exc:
+        logger.exception("set-link-risk: save failed")
+        show_message("AES", f"Could not save that rating.\n\n{exc}", error=True)
+        return 1
+    logger.info("set-link-risk: %s -> %s report=%s", item_id, level, stem)
+    if level == "clear":
+        blurb = "Cleared. Later scans use the scanner's rating again."
+    else:
+        blurb = f"Saved as {level.upper()}. Later scans of this URL keep that rating."
+    show_message("AES", blurb + "\n\nRefresh the links page.")
+    return 0
+
+
 def handle_open_report(params: dict, logger: logging.Logger) -> int:
     """Open a local AES HTML report (attachments / beacons / links / full scan)."""
     raw = (params.get("path") or [""])[0]
@@ -440,6 +517,9 @@ def handle_url(url: str, logger: logging.Logger) -> int:
 
     if action == "open-report":
         return handle_open_report(params, logger)
+
+    if action == "set-link-risk":
+        return handle_set_link_risk(params, logger)
 
     sender = (params.get("sender") or [""])[0].strip().lower()
     domain = (params.get("domain") or [""])[0].strip().lower()

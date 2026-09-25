@@ -17,10 +17,10 @@ SemVer (MAJOR.MINOR.PATCH) — almost everything is a PATCH:
 from __future__ import annotations
 
 # Semver: MAJOR.MINOR.PATCH
-VERSION = "1.4.3"
-VERSION_TUPLE = (1, 4, 3)
+VERSION = "1.4.5"
+VERSION_TUPLE = (1, 4, 5)
 # Local release / build timestamp for this VERSION (YYYY-MM-DD HH:MM)
-VERSION_STAMP = "2026-09-25 12:32"
+VERSION_STAMP = "2026-09-25 13:15"
 
 APP_NAME = "GURI"
 APP_FULL_NAME = "GURI - Aliniant Smart Ass Email"
@@ -34,6 +34,16 @@ COPYRIGHT_YEAR = "2026"
 # Short release notes for the About tab (newest first).
 # Each entry: (version, timestamp, notes)
 RELEASE_NOTES = (
+    (
+        "1.4.5",
+        "2026-09-25 13:15",
+        "Typing in Outlook no longer freezes or drops letters: AES stops busy-waiting on the UI thread and pauses scan work while you write.",
+    ),
+    (
+        "1.4.4",
+        "2026-09-25 12:45",
+        "Each link on the Link Safety page can be set to Low, Medium, or High. That rating is kept and used on later scans.",
+    ),
     (
         "1.4.3",
         "2026-09-25 12:32",

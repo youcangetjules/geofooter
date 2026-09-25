@@ -32,6 +32,17 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-006 — Typing in Outlook freezes and drops letters
+
+- **Severity:** S1
+- **Area:** VBA
+- **Status:** fixed (pending operator verification after VBA re-import)
+- **Reported:** 2026-09-25
+- **Summary:** While writing a mail, the editor froze intermittently and roughly half the typed characters never appeared. AES waited on Outlook's UI thread with `DoEvents` spin loops: `PauseSeconds`, the `CompleteAsyncFooter` apply retry, `CommitMailHtml` (up to 5 x 1s), `RunCommandAndCaptureOutput` (spun for the entire Python run), `MSCANModWatchers.YieldBriefly`, and two send-conflict retries. A `Do While ... DoEvents ... Loop` re-enters Outlook's message pump at full CPU, so keystrokes were dispatched through VBA instead of the compose editor. Footer apply and queue drain also ran while a compose window was open, holding the UI thread during `HTMLBody` reads and writes.
+- **Repro:** Open a new mail and type continuously while a scan is in flight (or within ~90s of the catch-up heartbeat). Characters are dropped and the window stalls for about a second at a time.
+- **Fix:** New `VBA\MSCANIdle.bas` — `WaitMs` sleeps via kernel32 in 50ms slices without pumping messages, and `IsUserComposing` detects a compose Inspector or an inline reply. Every spin loop now sleeps, and `NudgeAsyncWork` / `NudgeQueueWork` / `ProcessQueue` defer while a message is being written. Queued mail drains when the window closes.
+- **Fixed in:** 1.4.5. Requires a VBA re-import (new module `MSCANIdle.bas`).
+
 ### BUG-005 — Ribbon macro fallback can never work (Outlook has no `Application.Run`)
 
 - **Severity:** S3

@@ -34,6 +34,7 @@ Private m_CatchUpHeartbeatPending As Boolean
 Private m_ScanFailStreak As Long
 Private m_ScanPauseLogged As Boolean
 Private m_LastDeferLogAt As Date
+Private m_ComposeDeferred As Boolean
 Private Const QUEUE_TICK_STALE_SEC As Long = 20
 ' Refuse to honour a queue-tick latch until at least this many seconds after schedule.
 Private Const QUEUE_TICK_MIN_SEC As Long = 2
@@ -258,6 +259,12 @@ Public Sub ProcessQueue()
     If m_IsProcessing Then GoTo EXIT_SUB
     If m_MailQueue.Count = 0 Then GoTo EXIT_SUB
     If Now < m_EarliestProcessAt Then GoTo EXIT_SUB
+    ' Scanning one mail reads HTMLBody and writes a footer. Never do that while
+    ' the user is typing - it is the slowest thing AES does on the UI thread.
+    If MSCANIdle.IsUserComposing() Then
+        NoteComposeDeferral
+        GoTo EXIT_SUB
+    End If
 
     ' PendingAsyncJobCount reconciles finished and timed-out jobs first, so a
     ' wedged job cannot hold the queue shut past the job timeout.
@@ -637,8 +644,28 @@ Private Function QueueTickIsDue() As Boolean
     End If
 End Function
 
+' NudgeAsyncWork calls this when it skips a nudge because a message is being
+' written. Mail already queued stays queued; the heartbeat resumes the drain.
+Public Sub NoteComposeDeferral()
+    On Error Resume Next
+    m_ComposeDeferred = True
+    If m_CatchUpHeartbeatPending Then Exit Sub
+    If IsStartupQuiet() Then Exit Sub
+    LaunchCatchUpHeartbeat
+End Sub
+
 Public Sub NudgeQueueWork()
     On Error GoTo EH
+
+    ' Second guard: OnQueueTick and the diagnostics buttons reach here directly.
+    If MSCANIdle.IsUserComposing() Then
+        NoteComposeDeferral
+        Exit Sub
+    End If
+    If m_ComposeDeferred Then
+        m_ComposeDeferred = False
+        MSCANModLogging.WriteLog "NudgeQueueWork: resuming after compose window closed."
+    End If
 
     MaybeDrainQueueIfStale
     ' Always cheap-check for diagnostics commands (file missing = instant return).

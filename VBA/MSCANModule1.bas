@@ -166,6 +166,14 @@ Public Sub NudgeAsyncWork()
         m_NudgeWiredLogged = True
         MSCANModLogging.WriteLog "NudgeAsyncWork: ItemLoad wiring active."
     End If
+    ' Writing a message owns the UI thread. Footer apply and queue work read and
+    ' rewrite HTMLBody, which stalls the editor and drops keystrokes. Leave the
+    ' work pending - the catch-up heartbeat picks it up once the window closes.
+    If MSCANIdle.IsUserComposing() Then
+        MSCANModQueueManager.NoteComposeDeferral
+        m_InNudge = False
+        Exit Sub
+    End If
     ReconcileAsyncJobs
     MSCANModQueueManager.NudgeQueueWork
     MSCANModStatus.RestorePersistentStatusIfDue
@@ -496,11 +504,7 @@ Public Sub CompleteAsyncFooter(ByVal jobId As String)
         applied = ApplyFooterToMail(mail, footerPath, mode, forceReplace)
         If applied Then Exit For
         MSCANModLogging.WriteLog "CompleteAsyncFooter: apply failed attempt " & CStr(attempt) & "; refreshing item for job " & jobId
-        Dim waitUntil As Date
-        waitUntil = Now + TimeSerial(0, 0, 1)
-        Do While Now < waitUntil
-            DoEvents
-        Loop
+        MSCANIdle.WaitMs 1000
         Set mail = ResolveMailByEntryID(entryId)
         If mail Is Nothing Then Exit For
     Next attempt
@@ -1365,11 +1369,7 @@ EH:
 End Function
 
 Private Sub PauseSeconds(ByVal sec As Single)
-    Dim t As Single
-    t = Timer
-    Do While Timer < t + sec
-        DoEvents
-    Loop
+    MSCANIdle.WaitMs CLng(sec * 1000!)
 End Sub
 
 '===============================================================================
@@ -1736,9 +1736,10 @@ Private Function RunCommandAndCaptureOutput(ByVal command As String, ByRef outpu
     Dim startTime As Double
     startTime = Timer
 
-    ' Wait for the process to finish or timeout
+    ' Wait for the process to finish or timeout. Sleep - never DoEvents: this
+    ' can run for seconds and would swallow keystrokes from an open compose window.
     Do While process.status = 0
-        DoEvents
+        MSCANIdle.WaitMs 50
         If timeoutMs > 0 Then
             If ((Timer - startTime) * 1000) > timeoutMs Then
                 ' Timeout: attempt to terminate by using taskkill (best-effort)
@@ -2305,11 +2306,7 @@ Private Function CommitMailHtml(ByRef mail As Object, ByVal entryId As String, B
         End If
         MSCANModLogging.WriteLog "CommitMailHtml attempt " & CStr(attempt) & " failed: #" & Err.Number & " - " & Err.Description
         Err.Clear
-        Dim waitUntil As Date
-        waitUntil = Now + TimeSerial(0, 0, 1)
-        Do While Now < waitUntil
-            DoEvents
-        Loop
+        MSCANIdle.WaitMs 1000
         Set mail = ResolveMailByEntryID(entryId)
         If mail Is Nothing Then
             MSCANModLogging.WriteLog "CommitMailHtml: could not re-resolve EntryID"

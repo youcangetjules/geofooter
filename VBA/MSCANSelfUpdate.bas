@@ -294,9 +294,5 @@ Private Sub CopyTextToClipboard(ByVal text As String)
 End Sub
 
 Private Sub SleepMs(ByVal ms As Long)
-    Dim t As Single
-    t = Timer
-    Do While Timer < t + (ms / 1000!)
-        DoEvents
-    Loop
+    MSCANIdle.WaitMs ms
 End Sub

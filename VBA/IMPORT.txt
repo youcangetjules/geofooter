@@ -22,6 +22,7 @@ Import order (File > Import File for each)
 ------------------------------------------
   VBA\MSCANPaths.bas
   VBA\MSCANModLogging.bas
+  VBA\MSCANIdle.bas
   VBA\MSCANModQueueManager.bas
   VBA\MSCANModWatchers.bas
   VBA\MSCANModStatus.bas
@@ -143,7 +144,7 @@ After import
 Startup performance
 -------------------
 AES attaches inbox watchers for every enabled account at startup
-(with a DoEvents yield between accounts — Outlook has no Application.OnTime).
+(with a short sleep between accounts — Outlook has no Application.OnTime).
 ItemAdd events are ignored for ~90s after attach so mailbox sync does not
 freeze the UI. New mail is still queued during quiet; the queue drains
 after quiet ends (and keeps draining until empty — one message per tick).

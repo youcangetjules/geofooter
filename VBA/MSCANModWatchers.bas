@@ -3,7 +3,7 @@ Option Explicit
 
 ' Outlook.Application does not support Application.OnTime (Excel-only).
 ' Staggered attach previously used OnTime and aborted after the first inbox (#438).
-' Between accounts we yield ~200ms with DoEvents so the UI can breathe.
+' Between accounts we pause ~200ms (MSCANIdle.WaitMs, never a DoEvents spin).
 
 Private Const ATTACH_YIELD_SEC As Double = 0.2
 Private Const STATE_FILE_NAME As String = "aes_service_state.json"
@@ -294,16 +294,6 @@ End Sub
 
 Private Sub YieldBriefly(ByVal seconds As Double)
     On Error Resume Next
-    Dim t0 As Double
-    Dim t1 As Double
-    If seconds <= 0 Then
-        DoEvents
-        Exit Sub
-    End If
-    t0 = Timer
-    Do
-        DoEvents
-        t1 = Timer
-        If t1 < t0 Then t0 = t1 ' midnight wrap
-    Loop While (t1 - t0) < seconds
+    If seconds <= 0 Then Exit Sub
+    MSCANIdle.WaitMs CLng(seconds * 1000#)
 End Sub

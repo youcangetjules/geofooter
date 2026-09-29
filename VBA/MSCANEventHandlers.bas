@@ -397,6 +397,7 @@ Public Sub HandleStartup()
     MSCANCore.Log "Computer: " & Environ$("COMPUTERNAME")
     MSCANCore.Log "Outlook Version: " & Application.Version
     MSCANHealth.StartSession
+    MSCANModule1.PurgeOldJobScripts
     
     ' Verify configuration
     Dim tagCount As Long

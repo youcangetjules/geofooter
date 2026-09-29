@@ -177,6 +177,25 @@ def summarise(rows: list[tuple[datetime, str, str]]) -> None:
             print(line)
 
 
+def job_script_report() -> tuple[int, int]:
+    """Count the one-shot aes_geo_job_*.vbs scripts. They are written per scan
+    into the same folder as the queue tick script and were never cleaned up."""
+    folder = Path(os.environ.get("LOCALAPPDATA", "")) / "GeoFooter"
+    if not folder.is_dir():
+        return 0, 0
+    cutoff = datetime.now() - timedelta(days=2)
+    total = 0
+    stale = 0
+    for path in folder.glob("aes_geo_job_*.vbs"):
+        total += 1
+        try:
+            if datetime.fromtimestamp(path.stat().st_mtime) < cutoff:
+                stale += 1
+        except OSError:
+            continue
+    return total, stale
+
+
 def verdict(counts: Counter[str], stall_ms: list[int], queue_sizes: list[int]) -> None:
     findings: list[str] = []
     if counts["conflict"] >= 5:
@@ -198,6 +217,13 @@ def verdict(counts: Counter[str], stall_ms: list[int], queue_sizes: list[int]) -
         findings.append(f"{counts['tick_fail']} tick scripts could not be written; delayed work may never run.")
     if counts["footer_fail"]:
         findings.append(f"{counts['footer_fail']} messages ended up with no footer.")
+
+    total_jobs, stale_jobs = job_script_report()
+    if stale_jobs >= 200:
+        findings.append(
+            f"{total_jobs} job scripts in %LOCALAPPDATA%\\GeoFooter ({stale_jobs} older than 2 days). "
+            "The queue tick script is written to the same folder, so this can make that write fail."
+        )
 
     print("Verdict")
     if findings:

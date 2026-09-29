@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-29 — 1.4.7: Purge stale scan job scripts
+- A process check turned up 5 concurrent `wscript` nudges and 3290 `aes_geo_job_*.vbs` files in `%LOCALAPPDATA%\GeoFooter` (2521 older than a week, oldest 8 July). Each scan writes one and nothing deleted them.
+- That folder is also where the delayed queue tick script is written, and today's log has one `could not write tick script` failure — a plausible contributor.
+- `MSCANModule1.PurgeOldJobScripts` (called from `HandleStartup`) deletes job scripts older than 2 days. `scripts/aes_log_health.py` now counts them and flags the build-up.
+- Follow-up: same VBA re-import as 1.4.6.
+
 ### 2026-09-29 — 1.4.6: Stop the footer-commit retry storm, add health logging
 - Reported as "Outlook is flicking emails and not working at all". `scripts/aes_log_health.py --session` on the live log: 60 `CommitMailHtml` conflicts in 11 minutes, one message ("Anthropic IPO filing...") failing 6 full rounds on its own.
 - Cause: `-2147221239` "the message has been changed" was treated as retryable at three nested levels — `CompleteAsyncFooter` (3 attempts) x `InsertFooterIntoMail`/`ReplaceAesFooterInMail` (banner then no-banner) x `CommitMailHtml` (5 attempts, 1s apart). Up to 30 `HTMLBody` writes and ~30s of repainting per message.

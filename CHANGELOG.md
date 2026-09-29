@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.7] — 2026-09-29
+
+### Fixed
+
+- Every scan wrote a one-shot `aes_geo_job_*.vbs` into `%LOCALAPPDATA%\GeoFooter` and nothing ever removed it. 3,290 had accumulated, dating back to 8 July. AES writes the delayed queue tick script into that same folder, and the live log shows one `LaunchDelayedQueueTick: could not write tick script` failure. `MSCANModule1.PurgeOldJobScripts` now runs once at startup and deletes job scripts older than two days.
+- `scripts/aes_log_health.py` reports the job script count so the build-up is visible before it causes a failure.
+
 ## [1.4.6] — 2026-09-29
 
 ### Fixed

@@ -582,6 +582,48 @@ Private Sub MarkJobApplied(ByVal footerPath As String)
     ts.Close
 End Sub
 
+' Each scan writes a one-shot aes_geo_job_*.vbs and never removes it. They had
+' accumulated to 3290 files (back to July) in %LOCALAPPDATA%\GeoFooter, which is
+' also where the queue tick script is written - a folder that size makes that
+' write slower and occasionally fail. Called once per session at startup.
+Public Sub PurgeOldJobScripts(Optional ByVal maxAgeDays As Long = 2)
+    On Error Resume Next
+
+    Dim folderPath As String
+    folderPath = Environ$("LOCALAPPDATA") & "\GeoFooter"
+    If Len(folderPath) = 0 Then Exit Sub
+
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If fso Is Nothing Then Exit Sub
+    If Not fso.FolderExists(folderPath) Then Exit Sub
+
+    Dim cutoff As Date
+    Dim removed As Long
+    Dim file As Object
+    Dim fileName As String
+    cutoff = DateAdd("d", -maxAgeDays, Now)
+
+    For Each file In fso.GetFolder(folderPath).Files
+        fileName = LCase$(file.Name)
+        If Left$(fileName, 12) = "aes_geo_job_" Then
+            If Right$(fileName, 4) = ".vbs" And file.DateLastModified < cutoff Then
+                file.Delete True
+                If Err.Number = 0 Then
+                    removed = removed + 1
+                Else
+                    Err.Clear
+                End If
+            End If
+        End If
+    Next file
+
+    If removed > 0 Then
+        MSCANModLogging.WriteLog "PurgeOldJobScripts: removed " & CStr(removed) & _
+            " job scripts older than " & CStr(maxAgeDays) & " days."
+    End If
+End Sub
+
 Private Sub ClearJobSidecars(ByVal footerPath As String)
     On Error Resume Next
     If Len(footerPath) = 0 Then Exit Sub

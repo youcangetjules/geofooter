@@ -20,6 +20,18 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.6] — 2026-09-29
+
+### Fixed
+
+- The message list flickered and Outlook became unusable when a message would not accept a footer. Outlook returned `-2147221239` ("the message has been changed") and AES retried the whole write up to 30 times for a single mail — 3 outer passes x 2 body variants x 5 commits — each one rewriting `HTMLBody` and repainting the item. A conflicting item is now retried once after being re-resolved and then left for a later queue pass, capping it at a few attempts.
+- `VBA_Log.txt` had no default size cap and had grown to 37 MiB. It now defaults to 16 MiB; `aes_logging.json` still overrides it, and 0 is still unlimited.
+
+### Added
+
+- `VBA\MSCANHealth.bas` — session counters for commit conflicts, footers applied and abandoned, queue depth, compose deferrals, and time spent holding the Outlook UI thread. Anything past a threshold logs a `HEALTH` warning as it happens: a conflict storm, a queue backlog over 25 items, or an operation holding the UI thread longer than 1.2s (the point where typing starts dropping letters). A `HEALTH` summary line is written periodically and at shutdown.
+- `scripts/aes_log_health.py` — parses the log tail and reports counts, queue peaks, stall durations, the messages that would not accept a footer, and a plain-language verdict. `--session` limits it to the current Outlook session.
+
 ## [1.4.5] — 2026-09-25
 
 ### Fixed

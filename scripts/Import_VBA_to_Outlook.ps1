@@ -27,6 +27,7 @@ $ErrorActionPreference = "Stop"
 $ModuleFiles = @(
     "MSCANPaths.bas",
     "MSCANModLogging.bas",
+    "MSCANHealth.bas",
     "MSCANIdle.bas",
     "MSCANModQueueManager.bas",
     "MSCANModWatchers.bas",

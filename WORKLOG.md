@@ -13,6 +13,15 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-29 — 1.4.6: Stop the footer-commit retry storm, add health logging
+- Reported as "Outlook is flicking emails and not working at all". `scripts/aes_log_health.py --session` on the live log: 60 `CommitMailHtml` conflicts in 11 minutes, one message ("Anthropic IPO filing...") failing 6 full rounds on its own.
+- Cause: `-2147221239` "the message has been changed" was treated as retryable at three nested levels — `CompleteAsyncFooter` (3 attempts) x `InsertFooterIntoMail`/`ReplaceAesFooterInMail` (banner then no-banner) x `CommitMailHtml` (5 attempts, 1s apart). Up to 30 `HTMLBody` writes and ~30s of repainting per message.
+- Fix in `MSCANModule1`: `IsMessageChangedError` detection, `m_LastCommitConflict` flag, `CommitMailHtml` capped at 3 attempts (400ms apart) and bailing after one re-resolve on a conflict, and both outer layers skipping their retry when the item is busy. Worst case is now ~4 writes; the mail is left unfooted for a later pass.
+- New `VBA\MSCANHealth.bas`: counters plus threshold warnings for conflict storms, queue backlogs over 25, and any operation holding the UI thread over 1.2s. Wired into `CommitMailHtml`, `CompleteAsyncFooter`, `ProcessQueue`, `NoteComposeDeferral`, and session start/end.
+- `MSCANModLogging`: default log cap 16 MiB (was unlimited; the live file had reached 37 MiB).
+- New `scripts/aes_log_health.py` summarises the log tail instead of reading tens of MiB by hand.
+- Follow-up: **re-import the VBA** — new module `MSCANHealth.bas` plus `MSCANModule1`, `MSCANModQueueManager`, `MSCANEventHandlers`, `MSCANModLogging`. Note `VbaProject.OTM` was last written 2026-09-23, so 1.4.2-1.4.5 are not in the running Outlook either.
+
 ### 2026-09-25 — 1.4.5: Stop Outlook freezing while typing
 - New `VBA\MSCANIdle.bas`: `WaitMs` (kernel32 Sleep, sliced) and `IsUserComposing` (compose Inspector or inline reply).
 - Replaced every `DoEvents` spin loop on the UI thread: `PauseSeconds`, `CompleteAsyncFooter` retry, `CommitMailHtml` retry (up to 5s), `RunCommandAndCaptureOutput` (spun for the whole Python run), `YieldBriefly`, `SleepMs`, and the two send-conflict retries. A DoEvents spin re-enters Outlook's message pump, so keystrokes went to VBA instead of the editor.

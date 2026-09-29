@@ -32,6 +32,18 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-007 — Reading pane flickers and Outlook stops responding (footer commit retry storm)
+
+- **Severity:** S1
+- **Area:** VBA
+- **Status:** fixed (pending operator verification after VBA re-import)
+- **Reported:** 2026-09-29
+- **Summary:** Outlook repeatedly redrew the same message and became unusable. When a mail would not accept a footer, `mail.Save` failed with `-2147221239` ("the operation cannot be performed because the message has been changed"). That error was treated as retryable at three nested levels: `CompleteAsyncFooter` retried the apply 3 times, each apply tried the banner then the no-banner body, and `CommitMailHtml` tried 5 times at 1s apart. One message could take up to 30 `HTMLBody` writes over ~30s, and every write repaints the item. `scripts/aes_log_health.py --session` on the live log showed 60 conflicts in 11 minutes, with a single message accounting for 6 full rounds.
+- **Repro:** Let a mail arrive that the store keeps re-syncing (IMAP/Gmail), or restart Outlook with a queue backlog. The message list flickers continuously while the queue drains.
+- **Fix:** `MSCANModule1` detects the conflict error explicitly (`IsMessageChangedError`) and records it in `m_LastCommitConflict`. `CommitMailHtml` is capped at 3 attempts 400ms apart and gives up after one re-resolve on a conflict; `InsertFooterIntoMail`, `ReplaceAesFooterInMail`, and `CompleteAsyncFooter` skip their own retries when the item is busy. The message is left unfooted for a later queue pass instead of being rewritten.
+- **Fixed in:** 1.4.6. Requires a VBA re-import (new module `MSCANHealth.bas`).
+- **Detection:** `MSCANHealth` now raises a `HEALTH` warning after 3 consecutive conflicts, on a queue backlog over 25, and on any operation holding the UI thread over 1.2s.
+
 ### BUG-006 — Typing in Outlook freezes and drops letters
 
 - **Severity:** S1

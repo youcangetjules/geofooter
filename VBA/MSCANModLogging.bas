@@ -103,9 +103,11 @@ End Sub
 Private Sub EnsureLoggingSettingsLoaded()
     If mLoggingLoaded Then Exit Sub
 
-    ' Defaults: on, info/audit/warn, debug off
+    ' Defaults: on, info/audit/warn, debug off.
+    ' Cap the log by default - an uncapped VBA_Log.txt reached 39 MiB in normal
+    ' use, which is slow to trim and too big to read when diagnosing a fault.
     mLoggingEnabled = True
-    mMaxLogMiB = 0
+    mMaxLogMiB = 16
     mLevelInfo = True
     mLevelAudit = True
     mLevelWarn = True
@@ -156,7 +158,7 @@ Private Sub ApplyLoggingJson(ByVal raw As String)
     mLevelAudit = JsonLevelEnabled(raw, "audit", mLevelAudit)
     mLevelWarn = JsonLevelEnabled(raw, "warn", mLevelWarn)
     mLevelDebug = JsonLevelEnabled(raw, "debug", mLevelDebug)
-    mMaxLogMiB = JsonNonNegativeLong(raw, "max_mib", 0)
+    mMaxLogMiB = JsonNonNegativeLong(raw, "max_mib", mMaxLogMiB)
 End Sub
 
 Private Function JsonNonNegativeLong(ByVal raw As String, ByVal key As String, ByVal defaultValue As Long) As Long

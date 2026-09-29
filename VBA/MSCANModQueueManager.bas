@@ -284,6 +284,7 @@ Public Sub ProcessQueue()
 
     m_IsProcessing = True
     MSCANModLogging.WriteLog "ProcessQueue: Started with " & m_MailQueue.Count & " items."
+    MSCANHealth.NoteQueueDepth m_MailQueue.Count
 
     Dim mail As Object
     Dim startTime As Single
@@ -649,6 +650,7 @@ End Function
 Public Sub NoteComposeDeferral()
     On Error Resume Next
     m_ComposeDeferred = True
+    MSCANHealth.NoteComposeDeferral
     If m_CatchUpHeartbeatPending Then Exit Sub
     If IsStartupQuiet() Then Exit Sub
     LaunchCatchUpHeartbeat

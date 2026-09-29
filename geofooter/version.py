@@ -17,10 +17,10 @@ SemVer (MAJOR.MINOR.PATCH) — almost everything is a PATCH:
 from __future__ import annotations
 
 # Semver: MAJOR.MINOR.PATCH
-VERSION = "1.4.5"
-VERSION_TUPLE = (1, 4, 5)
+VERSION = "1.4.6"
+VERSION_TUPLE = (1, 4, 6)
 # Local release / build timestamp for this VERSION (YYYY-MM-DD HH:MM)
-VERSION_STAMP = "2026-09-25 13:15"
+VERSION_STAMP = "2026-09-29 10:05"
 
 APP_NAME = "GURI"
 APP_FULL_NAME = "GURI - Aliniant Smart Ass Email"
@@ -34,6 +34,13 @@ COPYRIGHT_YEAR = "2026"
 # Short release notes for the About tab (newest first).
 # Each entry: (version, timestamp, notes)
 RELEASE_NOTES = (
+    (
+        "1.4.6",
+        "2026-09-29 10:05",
+        "A message that will not accept a footer is left for later instead of being rewritten up to 30 times, "
+        "which is what made the mail list flicker. Health counters and scripts/aes_log_health.py report stalls, "
+        "conflicts and backlogs.",
+    ),
     (
         "1.4.5",
         "2026-09-25 13:15",

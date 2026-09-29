@@ -10,6 +10,8 @@ Private m_AsyncJobSeq As Long
 Private m_ReconcilingJobs As Boolean
 Private m_InNudge As Boolean
 Private m_NudgeWiredLogged As Boolean
+' Set when CommitMailHtml gave up because the store kept changing the item.
+Private m_LastCommitConflict As Boolean
 
 '===============================================================================
 ' CONFIGURATION
@@ -499,19 +501,30 @@ Public Sub CompleteAsyncFooter(ByVal jobId As String)
 
     Dim applied As Boolean
     Dim attempt As Long
+    Dim applyTick As Long
     applied = False
-    For attempt = 1 To 3
+    applyTick = MSCANHealth.BeginOp()
+    For attempt = 1 To 2
         applied = ApplyFooterToMail(mail, footerPath, mode, forceReplace)
         If applied Then Exit For
+        ' A busy item has already been re-resolved and retried inside
+        ' CommitMailHtml. Repeating the whole apply only repaints the mail again.
+        If m_LastCommitConflict Then
+            MSCANModLogging.WriteLog "CompleteAsyncFooter: item busy for job " & jobId & "; leaving it unfooted."
+            Exit For
+        End If
         MSCANModLogging.WriteLog "CompleteAsyncFooter: apply failed attempt " & CStr(attempt) & "; refreshing item for job " & jobId
-        MSCANIdle.WaitMs 1000
+        MSCANIdle.WaitMs 400
         Set mail = ResolveMailByEntryID(entryId)
         If mail Is Nothing Then Exit For
     Next attempt
 
+    MSCANHealth.EndOp "CompleteAsyncFooter", applyTick
     If applied Then
+        MSCANHealth.NoteFooterApplied
         StripSensitiveHeadersFromMail mail
     Else
+        MSCANHealth.NoteFooterAbandoned
         MSCANModLogging.WriteLog "CompleteAsyncFooter: footer NOT applied after retry for job " & jobId & " subject=" & subjectHint
     End If
     CleanupAttachmentScanDir attachDir
@@ -2285,28 +2298,60 @@ Private Function FindMitigatedHtmlBackup(ByVal mail As Object, ByVal dir As Stri
 EH:
 End Function
 
+Private Function IsMessageChangedError(ByVal errNum As Long, ByVal errDesc As String) As Boolean
+    If errNum = -2147221239 Then
+        IsMessageChangedError = True
+        Exit Function
+    End If
+    IsMessageChangedError = (InStr(1, LCase$(errDesc), "has been changed", vbTextCompare) > 0)
+End Function
+
 ' Write HTMLBody + Save with fresh-item retries - IMAP/Gmail reading pane races
 ' cause #-2147221239 "message has been changed" otherwise.
+'
+' Every attempt repaints the reading pane, so a long retry run looks like the
+' message list flickering. When the store keeps changing the item under us,
+' re-resolving once is worth a try and after that we stop: the mail stays
+' unfooted and a later queue pass picks it up when the item is settled.
 Private Function CommitMailHtml(ByRef mail As Object, ByVal entryId As String, ByVal newHtml As String) As Boolean
     On Error Resume Next
+    Const MAX_ATTEMPTS As Long = 3
     CommitMailHtml = False
+    m_LastCommitConflict = False
     If mail Is Nothing Or Len(newHtml) = 0 Then Exit Function
     If Len(entryId) = 0 Then entryId = CStr(mail.EntryID)
 
     Dim attempt As Long
-    For attempt = 1 To 5
+    Dim conflict As Boolean
+    Dim opTick As Long
+    For attempt = 1 To MAX_ATTEMPTS
         Err.Clear
+        MSCANHealth.NoteCommitAttempt
+        opTick = MSCANHealth.BeginOp()
         mail.HTMLBody = newHtml
         If Err.Number = 0 Then
             mail.Save
             If Err.Number = 0 Then
+                MSCANHealth.EndOp "CommitMailHtml", opTick
+                MSCANHealth.NoteCommitSucceeded
                 CommitMailHtml = True
                 Exit Function
             End If
         End If
+        conflict = IsMessageChangedError(Err.Number, Err.Description)
         MSCANModLogging.WriteLog "CommitMailHtml attempt " & CStr(attempt) & " failed: #" & Err.Number & " - " & Err.Description
         Err.Clear
-        MSCANIdle.WaitMs 1000
+        MSCANHealth.EndOp "CommitMailHtml", opTick
+        If conflict Then MSCANHealth.NoteCommitConflict SafeSubject(mail)
+
+        If conflict And attempt >= 2 Then
+            m_LastCommitConflict = True
+            MSCANModLogging.WriteLog "CommitMailHtml: item keeps changing - leaving it for a later pass."
+            Exit Function
+        End If
+        If attempt = MAX_ATTEMPTS Then Exit Function
+
+        MSCANIdle.WaitMs 400
         Set mail = ResolveMailByEntryID(entryId)
         If mail Is Nothing Then
             MSCANModLogging.WriteLog "CommitMailHtml: could not re-resolve EntryID"
@@ -2800,6 +2845,11 @@ Private Function InsertFooterIntoMail(mail As Object, footerPath As String) As B
         Dim finalIns As String
         finalIns = InjectAesTopBanner(newBody, bannerForIns)
         If Not CommitMailHtml(mail, entryIdIns, finalIns) Then
+            If m_LastCommitConflict Then
+                MSCANModLogging.WriteLog "InsertFooterIntoMail: item busy - skipping the no-banner retry."
+                InsertFooterIntoMail = False
+                Exit Function
+            End If
             MSCANModLogging.WriteLog "InsertFooterIntoMail: retrying CommitMailHtml without banner attach"
             Set mail = ResolveMailByEntryID(entryIdIns)
             If mail Is Nothing Then
@@ -2937,6 +2987,11 @@ Private Function ReplaceAesFooterInMail(ByVal mail As Object, ByVal footerPath A
     Dim finalHtml As String
     finalHtml = InjectAesTopBanner(replacedBody, bannerForBody)
     If Not CommitMailHtml(mail, entryId, finalHtml) Then
+        If m_LastCommitConflict Then
+            MSCANModLogging.WriteLog "ReplaceAesFooterInMail: item busy - skipping the no-banner retry."
+            ReplaceAesFooterInMail = False
+            Exit Function
+        End If
         ' Second try without cid attach - avoids dirty-item races on IMAP/Gmail.
         MSCANModLogging.WriteLog "ReplaceAesFooterInMail: retrying CommitMailHtml without banner attach"
         Set mail = ResolveMailByEntryID(entryId)

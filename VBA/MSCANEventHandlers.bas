@@ -396,6 +396,7 @@ Public Sub HandleStartup()
     MSCANCore.Log "User: " & Environ$("USERNAME")
     MSCANCore.Log "Computer: " & Environ$("COMPUTERNAME")
     MSCANCore.Log "Outlook Version: " & Application.Version
+    MSCANHealth.StartSession
     
     ' Verify configuration
     Dim tagCount As Long
@@ -420,6 +421,7 @@ Public Sub HandleQuit()
     
     On Error Resume Next
     
+    MSCANHealth.LogSnapshot "session end"
     MSCANCore.Log "========================================="
     MSCANCore.Log "MSCAN Stopped - Outlook Session End"
     MSCANCore.Log "========================================="

@@ -310,8 +310,10 @@ Public Function NeutralizeBeaconsInMail(ByVal mail As Object) As Long
     If mail.BodyFormat <> olFormatHTML Then Exit Function
 
     Dim body As String
+    Dim original As String
     body = mail.HTMLBody
     If Len(body) = 0 Then Exit Function
+    original = body
 
     Dim mode As String
     mode = BeaconBlockingMode()
@@ -320,6 +322,12 @@ Public Function NeutralizeBeaconsInMail(ByVal mail As Object) As Long
     blocked = 0
     body = NeutralizeTagsIn(body, "<img", mode, blocked)
     body = NeutralizeTagsIn(body, "<v:imagedata", mode, blocked)
+
+    ' An identical body still costs a write, a save and a reading-pane repaint.
+    If blocked > 0 And StrComp(body, original, vbBinaryCompare) = 0 Then
+        NeutralizeBeaconsInMail = 0
+        Exit Function
+    End If
 
     If blocked > 0 Then
         mail.HTMLBody = body
@@ -372,35 +380,51 @@ Private Function NeutralizeTagsIn(ByVal body As String, ByVal tagPrefix As Strin
 End Function
 
 ' Swap the remote src for a local inert pixel so layout survives but nothing
-' pings home.
+' pings home. The tag is stamped so a later pass recognises its own work and
+' does not rewrite an already-defanged body.
 Private Function DefangBeaconTag(ByVal tagText As String) As String
     Dim p As Long
     Dim q As Long
     Dim ch As String
     Dim inert As String
+    Dim marked As String
     inert = "file:///" & Replace(BlockedPixelPath(), "\", "/")
 
-    p = InStr(1, tagText, "src=", vbTextCompare)
+    marked = StampDefanged(tagText)
+
+    p = InStr(1, marked, "src=", vbTextCompare)
     If p = 0 Then
         DefangBeaconTag = "<!--AES beacon blocked-->"
         Exit Function
     End If
 
     p = p + 4
-    ch = Mid$(tagText, p, 1)
+    ch = Mid$(marked, p, 1)
     If ch = """" Or ch = "'" Then
-        q = InStr(p + 1, tagText, ch)
+        q = InStr(p + 1, marked, ch)
         If q > p Then
-            DefangBeaconTag = Left$(tagText, p) & inert & Mid$(tagText, q)
+            DefangBeaconTag = Left$(marked, p) & inert & Mid$(marked, q)
             Exit Function
         End If
     Else
-        q = InStr(p, tagText, " ")
-        If q = 0 Then q = InStr(p, tagText, ">")
+        q = InStr(p, marked, " ")
+        If q = 0 Then q = InStr(p, marked, ">")
         If q > p Then
-            DefangBeaconTag = Left$(tagText, p - 1) & """" & inert & """" & Mid$(tagText, q)
+            DefangBeaconTag = Left$(marked, p - 1) & """" & inert & """" & Mid$(marked, q)
             Exit Function
         End If
     End If
     DefangBeaconTag = "<!--AES beacon blocked-->"
+End Function
+
+' Adds data-aes-defanged="1" straight after the tag name.
+Private Function StampDefanged(ByVal tagText As String) As String
+    Dim sp As Long
+    StampDefanged = tagText
+    If InStr(1, tagText, "data-aes-defanged", vbTextCompare) > 0 Then Exit Function
+    If Left$(tagText, 1) <> "<" Then Exit Function
+
+    sp = InStr(2, tagText, " ")
+    If sp = 0 Then Exit Function
+    StampDefanged = Left$(tagText, sp) & "data-aes-defanged=""1"" " & Mid$(tagText, sp + 1)
 End Function

@@ -776,7 +776,7 @@ Public Function GetAutoScanDiagnostics() As String
     End If
     info = info & "Quiet resume pending: " & m_QuietResumePending & vbCrLf
     info = info & "Catch-up heartbeat pending: " & m_CatchUpHeartbeatPending & vbCrLf
-    info = info & "In-flight scans: " & MSCANModule1.PendingAsyncJobCount() & vbCrLf
+    info = info & "In-flight scans: " & MSCANModule1.PendingAsyncJobCountFast() & vbCrLf
     If m_LastItemAddAt > 0 Then
         info = info & "Last ItemAdd: " & Format$(m_LastItemAddAt, "yyyy-mm-dd hh:nn:ss") & _
                " - " & m_LastItemAddSubject & vbCrLf

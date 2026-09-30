@@ -41,8 +41,10 @@ Private m_FootersAbandoned As Long
 Private m_DuplicateFooters As Long
 Private m_MissingFooters As Long
 Private m_WorstFooterCount As Long
+Private m_MarkFailures As Long
 
 Private m_ComposeDeferrals As Long
+Private m_OnScreenDeferrals As Long
 Private m_QueuePeak As Long
 Private m_BacklogWarned As Boolean
 
@@ -65,7 +67,9 @@ Public Sub StartSession()
     m_DuplicateFooters = 0
     m_MissingFooters = 0
     m_WorstFooterCount = 0
+    m_MarkFailures = 0
     m_ComposeDeferrals = 0
+    m_OnScreenDeferrals = 0
     m_QueuePeak = 0
     m_BacklogWarned = False
     m_Stalls = 0
@@ -152,6 +156,17 @@ Public Sub NoteFooterAbandoned()
     m_FootersAbandoned = m_FootersAbandoned + 1
 End Sub
 
+' The scanned mark failed to save. The footer is in the body but the message
+' looks unscanned, so it will be picked up and rewritten again.
+Public Sub NoteMarkFailed()
+    On Error Resume Next
+    m_MarkFailures = m_MarkFailures + 1
+    If m_MarkFailures = 5 Then
+        MSCANModLogging.WriteLogWarn "HEALTH | the scanned mark has failed to save 5 times; " & _
+            "those messages will be scanned again on every pass."
+    End If
+End Sub
+
 ' Every message must carry exactly one scan block. Anything else means old
 ' footers are surviving removal (markers stripped in transit) or a message is
 ' being footered twice.
@@ -190,6 +205,18 @@ Public Sub NoteComposeDeferral()
     m_ComposeDeferrals = m_ComposeDeferrals + 1
 End Sub
 
+' A footer held back because its message was selected or open. Expected in
+' small numbers; a large count means mail is sitting unfootered because the
+' user keeps it on screen.
+Public Sub NoteOnScreenDeferral()
+    On Error Resume Next
+    m_OnScreenDeferrals = m_OnScreenDeferrals + 1
+    If m_OnScreenDeferrals = 50 Then
+        MSCANModLogging.WriteLogWarn "HEALTH | 50 footers deferred because the message was on screen; " & _
+            "mail may be staying unfootered."
+    End If
+End Sub
+
 '------------------------------------------------------------------------
 ' Snapshot
 '------------------------------------------------------------------------
@@ -219,8 +246,10 @@ Public Sub LogSnapshot(ByVal reason As String)
         " dupFooters=" & CStr(m_DuplicateFooters) & _
         IIf(m_WorstFooterCount > 1, "(worst " & CStr(m_WorstFooterCount) & ")", "") & _
         " missingFooters=" & CStr(m_MissingFooters) & _
+        " markFailures=" & CStr(m_MarkFailures) & _
         " queuePeak=" & CStr(m_QueuePeak) & _
         " composeDeferrals=" & CStr(m_ComposeDeferrals) & _
+        " onScreenDeferrals=" & CStr(m_OnScreenDeferrals) & _
         " uiStalls=" & CStr(m_Stalls) & _
         " worstStall=" & CStr(m_WorstStallMs) & "ms" & _
         IIf(Len(m_WorstStallOp) > 0, "(" & m_WorstStallOp & ")", "") & _

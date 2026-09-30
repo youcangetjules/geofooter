@@ -20,6 +20,22 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.9] — 2026-09-30
+
+### Fixed
+
+- A ribbon button repaint could rewrite a message body. `PendingAsyncJobCount` reconciles pending jobs first, so the chain `GetServiceToggleLabel` -> `IsScanBusy` -> `PendingAsyncJobCount` -> `ReconcileAsyncJobs` -> `CompleteAsyncFooter` ended in an `HTMLBody` write. Outlook calls ribbon getters often, unpredictably, and re-entrantly during `Invalidate`, so mail was being rewritten at moments unrelated to anything the user did. Added a read-only `PendingAsyncJobCountFast` and pointed every ribbon getter, toolbar state write, and diagnostic read at it; reconciliation now happens only on deliberate nudge and queue-tick paths.
+- Automatic scans no longer rewrite the message the user is reading. `MSCANIdle.IsItemOnScreen` checks the reading-pane selection and open inspectors, and `CompleteAsyncFooter` defers the footer to the next nudge when the target is on screen. Explicit ribbon scans are exempt.
+- Beacon blocking rewrote the body on every scan of the same message. In the default `defang` mode the tag keeps its dimensions and only its `src` changes, so `IsLikelyTrackingBeacon` matched it again forever. Defanged tags are now stamped with `data-aes-defanged` and skipped, and an unchanged body is never written.
+- `IsAesScanned` treated any failed property read as "not scanned", sending an already-footered message through a full rescan and another rewrite. It now falls back to the body markers, and an unreadable body answers "scanned" — a missing footer is cheaper than a rewrite on every pass.
+- `MarkAesScanned` was a `Sub` wrapped in `On Error Resume Next`, so a failed save left the message footered but looking unscanned, guaranteeing a rescan. It is now a `Function` that reports failure and logs it.
+- `CompleteAsyncFooter` reported success to `NoteScanOutcome` even when it had abandoned the footer, so the failure streak reset every time and the circuit breaker never tripped on a store refusing writes.
+- A synthesised `<!-- AES Start -->` marker was added without its matching end marker. `StripBlockBetween` only removes bounded blocks, so such a footer could never be stripped and every later scan would append another one.
+
+### Added
+
+- Health counters for on-screen deferrals and scanned-mark failures, both reported in the session snapshot and by `scripts/aes_log_health.py`.
+
 ## [1.4.8] — 2026-09-30
 
 ### Fixed

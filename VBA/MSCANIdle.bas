@@ -98,6 +98,53 @@ Private Function AnyComposeWindowOpen() As Boolean
     End If
 End Function
 
+' True when this message is selected in the reading pane or open in a window.
+'
+' Writing HTMLBody forces Outlook to re-render the item, so rewriting whatever
+' is on screen is exactly what the user sees as flickering. Automatic scans
+' defer; explicit ribbon actions do not call this because the user asked for
+' those and expects the mail to change.
+Public Function IsItemOnScreen(ByVal entryId As String) As Boolean
+    On Error Resume Next
+    IsItemOnScreen = False
+    If Len(entryId) = 0 Then Exit Function
+
+    Dim insp As Object
+    Dim item As Object
+    Dim sel As Object
+    Dim i As Long
+
+    For Each insp In Application.Inspectors
+        Set item = Nothing
+        Set item = insp.CurrentItem
+        If Not item Is Nothing Then
+            If StrComp(CStr(item.EntryID), entryId, vbTextCompare) = 0 Then
+                IsItemOnScreen = True
+                Exit Function
+            End If
+        End If
+    Next insp
+
+    Set sel = Nothing
+    Set sel = Application.ActiveExplorer.Selection
+    If sel Is Nothing Then Exit Function
+
+    ' A large multi-select is not worth walking on the UI thread; the user is
+    ' not reading any single one of those messages.
+    If sel.Count > 20 Then Exit Function
+
+    For i = 1 To sel.Count
+        Set item = Nothing
+        Set item = sel.item(i)
+        If Not item Is Nothing Then
+            If StrComp(CStr(item.EntryID), entryId, vbTextCompare) = 0 Then
+                IsItemOnScreen = True
+                Exit Function
+            End If
+        End If
+    Next i
+End Function
+
 Private Function IsUnsentItem(ByVal item As Object) As Boolean
     On Error Resume Next
     Dim wasSent As Boolean

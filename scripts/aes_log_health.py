@@ -36,6 +36,8 @@ PATTERNS: list[tuple[str, str, str]] = [
     ("stall", "HEALTH | UI stall", "UI thread stalls"),
     ("dup_footer", "HEALTH | footer count is", "Messages not carrying exactly one footer"),
     ("collapse", "footers found; collapsing", "Duplicate footers collapsed"),
+    ("mark_fail", "HEALTH | scanned mark not saved", "Scanned mark failed to save"),
+    ("onscreen", "item is on screen; deferring", "Footers deferred (message on screen)"),
     ("storm", "HEALTH | commit conflict storm", "Conflict storms detected"),
     ("backlog", "HEALTH | queue backlog", "Queue backlog warnings"),
     ("process", "ProcessQueue: Started", "Queue drain passes"),
@@ -217,6 +219,16 @@ def verdict(counts: Counter[str], stall_ms: list[int], queue_sizes: list[int]) -
         )
     if counts["tick_fail"]:
         findings.append(f"{counts['tick_fail']} tick scripts could not be written; delayed work may never run.")
+    if counts["mark_fail"]:
+        findings.append(
+            f"{counts['mark_fail']} messages were footered but could not be marked as scanned. "
+            "Those get picked up and rewritten again on later passes."
+        )
+    if counts["onscreen"] >= 50:
+        findings.append(
+            f"{counts['onscreen']} footers were deferred because the message was on screen. "
+            "Mail may be sitting unfootered while it stays selected."
+        )
     if counts["dup_footer"] or counts["collapse"]:
         findings.append(
             f"{counts['dup_footer'] + counts['collapse']} messages did not carry exactly one footer. "

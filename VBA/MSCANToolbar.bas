@@ -962,7 +962,7 @@ Public Sub WriteServiceStateFile()
     Dim pending As Long
     pending = 0
     On Error Resume Next
-    pending = MSCANModule1.PendingAsyncJobCount()
+    pending = MSCANModule1.PendingAsyncJobCountFast()
     On Error GoTo 0
     If pending > 0 Then busy = "true" Else busy = "false"
 
@@ -989,7 +989,7 @@ Public Sub ApplyServiceBusyAppearance()
     If btn Is Nothing Then Exit Sub
 
     isOn = MSCANModWatchers.IsServiceEnabled()
-    pending = MSCANModule1.PendingAsyncJobCount()
+    pending = MSCANModule1.PendingAsyncJobCountFast()
     busy = (pending > 0)
 
     If busy Then
@@ -1031,7 +1031,7 @@ Private Sub EnsureServiceButton(ByVal bar As CommandBar, ByVal isOn As Boolean)
     End If
 
     watcherCount = MSCANModWatchers.GetWatcherCount()
-    pending = MSCANModule1.PendingAsyncJobCount()
+    pending = MSCANModule1.PendingAsyncJobCountFast()
     busy = (pending > 0)
 
     btn.Tag = TAG_SERVICE

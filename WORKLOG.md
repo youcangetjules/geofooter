@@ -13,6 +13,15 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-30 — 1.4.9: Codebase audit fixes (ribbon repaint, on-screen mail, beacon rewrites)
+- From a full audit of the mail-mutation paths. Worst finding: ribbon *paint* callbacks could rewrite a message body via `IsScanBusy` -> `PendingAsyncJobCount` -> `ReconcileAsyncJobs` -> `CompleteAsyncFooter`. Split into a read-only `PendingAsyncJobCountFast` for all UI/diagnostic reads.
+- `MSCANIdle.IsItemOnScreen` (reading-pane selection + open inspectors); `CompleteAsyncFooter` defers rather than rewriting what the user is looking at. Ribbon scans stay exempt.
+- Beacon defanging was non-idempotent: the defanged tag still matched `IsLikelyTrackingBeacon`, so every scan rewrote the body. Tags are stamped `data-aes-defanged`, and an unchanged body is never written.
+- `IsAesScanned` now falls back to body markers instead of answering False on a failed property read; `MarkAesScanned` returns success and logs failure; `NoteScanOutcome` gets the real outcome so the circuit breaker can trip; the synthesised start marker now gets its end marker.
+- New counters: `onScreenDeferrals`, `markFailures`. Analyzer patterns added for both.
+- Deferred (bigger refactor, noted for later): the mail queue stores live `MailItem` COM references rather than EntryIDs, which is the structural origin of the -2147221239 conflicts; the retry nesting can still reach 14 body writes for non-conflict failures; ribbon Full/Deep scan over a multi-selection bypasses the in-flight cap.
+- Follow-up: re-import `MSCANModule1.bas`, `MSCANIdle.bas`, `MSCANHealth.bas`, `MSCANModSenderRules.bas`, `MSCANToolbar.bas`, `MSCANDiagnostics.bas`, `MSCANModQueueManager.bas`.
+
 ### 2026-09-30 — 1.4.8: Exactly one footer per email
 - Requirement: a message must never carry more than one AES footer, and a footer inherited from a previous email in the chain must be removed.
 - Both write paths already stripped before inserting, so the bug was in the stripping. `StripAllAesScanResults` exits as soon as `FindAesFooterBounds` cannot find an END marker, and IMAP strips HTML comments while Outlook/Word can rewrite the anchor ids. A marker-less footer survived and the new one was appended next to it.

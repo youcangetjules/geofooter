@@ -152,7 +152,7 @@ Private Function WriteDiagnosticsContextJson(ByVal filePath As String) As Boolea
     ts.WriteLine "  ""service_enabled"": " & IIf(MSCANModWatchers.IsServiceEnabled(), "true", "false") & ","
     ts.WriteLine "  ""watcher_count"": " & CLng(MSCANModWatchers.GetWatcherCount()) & ","
     ts.WriteLine "  ""queue_size"": " & CLng(MSCANModQueueManager.GetQueueSize()) & ","
-    ts.WriteLine "  ""inflight_scans"": " & CLng(MSCANModule1.PendingAsyncJobCount()) & ","
+    ts.WriteLine "  ""inflight_scans"": " & CLng(MSCANModule1.PendingAsyncJobCountFast()) & ","
     ts.WriteLine "  ""startup_quiet"": " & IIf(MSCANModQueueManager.IsStartupQuiet(), "true", "false") & ","
     ts.WriteLine "  ""log_path"": """ & JsonEscDiag(MSCANModLogging.logPath()) & ""","
     ts.Write "  ""logging"": "
@@ -935,7 +935,7 @@ Private Function GetAesServiceInfo() As String
     info = info & "Watchers active: " & MSCANModWatchers.AreWatchersActive() & vbCrLf
     info = info & "Watcher count: " & MSCANModWatchers.GetWatcherCount() & vbCrLf
     info = info & "Queue size: " & MSCANModQueueManager.GetQueueSize() & vbCrLf
-    info = info & "In-flight scans: " & MSCANModule1.PendingAsyncJobCount() & vbCrLf
+    info = info & "In-flight scans: " & MSCANModule1.PendingAsyncJobCountFast() & vbCrLf
     info = info & "Startup quiet: " & MSCANModQueueManager.IsStartupQuiet() & vbCrLf
     info = info & vbCrLf
     GetAesServiceInfo = info

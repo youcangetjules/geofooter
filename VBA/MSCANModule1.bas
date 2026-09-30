@@ -17,6 +17,10 @@ Private m_LastCommitConflict As Boolean
 ' it is the last-resort way to find a footer that must be removed.
 Private Const AES_VISIBLE_HEADING As String = "Aliniant AES Scan Result"
 
+' Stamped onto a beacon tag once it has been defanged, so the next pass does
+' not treat its own handiwork as a fresh beacon.
+Public Const AES_DEFANGED_ATTR As String = "data-aes-defanged"
+
 '===============================================================================
 ' CONFIGURATION
 ' - These constants serve as default fallbacks.
@@ -39,14 +43,25 @@ Private Const AES_COMPACT_BODY_CAP As Long = 400000
 '===============================================================================
 ' Busy UI: pending async geo/deep jobs (yellow AES control while processing).
 '===============================================================================
+' Reconciles pending jobs first, so it can APPLY A FOOTER as a side effect.
+' Only call this from a deliberate nudge or queue tick - never from a ribbon
+' callback. Use PendingAsyncJobCountFast for anything that only paints UI.
 Public Function PendingAsyncJobCount() As Long
     On Error Resume Next
     EnsureAsyncJobs
     ReconcileAsyncJobs
+    PendingAsyncJobCount = PendingAsyncJobCountFast()
+End Function
+
+' Read-only job count. Outlook calls ribbon getters often, unpredictably, and
+' re-entrantly during Invalidate; reconciling from there rewrote message bodies
+' at moments unrelated to anything the user did.
+Public Function PendingAsyncJobCountFast() As Long
+    On Error Resume Next
     If m_AsyncJobs Is Nothing Then
-        PendingAsyncJobCount = 0
+        PendingAsyncJobCountFast = 0
     Else
-        PendingAsyncJobCount = CLng(m_AsyncJobs.Count)
+        PendingAsyncJobCountFast = CLng(m_AsyncJobs.Count)
     End If
 End Function
 
@@ -110,8 +125,9 @@ EH:
     MSCANModLogging.WriteLog "ReconcileAsyncJobs error: #" & Err.Number & " - " & Err.Description
 End Sub
 
+' Ribbon getters call this to colour the AES control, so it must stay read-only.
 Public Function IsScanBusy() As Boolean
-    IsScanBusy = (PendingAsyncJobCount() > 0)
+    IsScanBusy = (PendingAsyncJobCountFast() > 0)
 End Function
 
 ' Deep jobs must contain report_url= (or a path); compact/full need HTML-ish content.
@@ -501,6 +517,15 @@ Public Sub CompleteAsyncFooter(ByVal jobId As String)
         Exit Sub
     End If
 
+    ' Rewriting the message on screen re-renders it under the user. The job
+    ' stays pending and the next nudge applies it once they move on.
+    If MSCANIdle.IsItemOnScreen(entryId) Then
+        MSCANModLogging.WriteLog "CompleteAsyncFooter: item is on screen; deferring footer for job " & jobId
+        MSCANHealth.NoteOnScreenDeferral
+        NotifyScanBusyUi
+        Exit Sub
+    End If
+
     MSCANModLogging.WriteLog "CompleteAsyncFooter: applying " & mode & " footer to: " & SafeSubject(mail)
 
     Dim applied As Boolean
@@ -535,7 +560,9 @@ Public Sub CompleteAsyncFooter(ByVal jobId As String)
     CleanupAttachmentScanDir payloadDir
     MSCANModStatus.ShowStatus "AES footer ready: " & Left$(SafeSubject(mail), 50)
     MarkJobApplied footerPath
-    MSCANModQueueManager.NoteScanOutcome True
+    ' Reporting success unconditionally reset the failure streak, so the
+    ' circuit breaker never tripped on a store that refused every write.
+    MSCANModQueueManager.NoteScanOutcome applied
     NotifyScanBusyUi
     Exit Sub
 
@@ -1294,6 +1321,13 @@ End Function
 Public Function IsLikelyTrackingBeacon(ByVal imgTag As String) As Boolean
     Dim t As String
     t = LCase$(imgTag)
+
+    ' Defanging keeps the tag and its dimensions, so without this the same tag
+    ' matches again on the next pass and the body is rewritten every scan.
+    If InStr(t, AES_DEFANGED_ATTR) > 0 Then
+        IsLikelyTrackingBeacon = False
+        Exit Function
+    End If
 
     If InStr(t, "width=""1""") > 0 Or InStr(t, "width='1'") > 0 Or InStr(t, "width=1") > 0 Then
         IsLikelyTrackingBeacon = True
@@ -3014,9 +3048,12 @@ Private Function InsertFooterIntoMail(mail As Object, footerPath As String) As B
     Const FOOTER_MARKER_AES As String = "<!-- AES Start -->"
     Const FOOTER_MARKER_LEGACY As String = "<!-- GeoFooter Start -->"
 
+    ' Both ends, always. StripBlockBetween only removes bounded blocks, so a
+    ' start marker with no end could never be stripped and every later scan
+    ' would append another footer instead of replacing this one.
     If InStr(1, footerHTML, FOOTER_MARKER_AES, vbTextCompare) = 0 And _
        InStr(1, footerHTML, FOOTER_MARKER_LEGACY, vbTextCompare) = 0 Then
-        footerHTML = FOOTER_MARKER_AES & vbCrLf & footerHTML
+        footerHTML = FOOTER_MARKER_AES & vbCrLf & footerHTML & vbCrLf & "<!-- AES End -->"
     End If
 
     ' Normal mail: HTML body. ReportItem (ReadNotify IPNRN etc.): Body only.
@@ -3409,31 +3446,81 @@ Public Function MailHasFooter(ByVal mail As Object) As Boolean
 End Function
 
 ' Fast path for queue/catch-up - avoids reading HTMLBody.
+' Whether this message has already been scanned.
+'
+' A failed property read used to report False, which sent an already-footered
+' message through a full rescan and another body rewrite. A read that errors now
+' falls back to the body, and an unreadable body answers True: skipping a scan
+' costs one missing footer, while a wrong False costs a rewrite on every pass
+' for as long as the message stays in the catch-up window.
 Public Function IsAesScanned(ByVal mail As Object) As Boolean
     On Error Resume Next
     IsAesScanned = False
     If mail Is Nothing Then Exit Function
+
     Dim up As Object
+    Err.Clear
     Set up = mail.UserProperties.Find(AES_SCANNED_PROP)
+    If Err.Number <> 0 Then
+        Err.Clear
+        IsAesScanned = BodyShowsAesFooter(mail, True)
+        Exit Function
+    End If
+
     If Not up Is Nothing Then
         IsAesScanned = (CStr(up.Value) = "1")
+        Exit Function
     End If
+
+    ' No property. On IMAP and Gmail stores named properties are often not
+    ' round-tripped at all, so the body is the more reliable record.
+    IsAesScanned = BodyShowsAesFooter(mail, False)
 End Function
 
-Public Sub MarkAesScanned(ByVal mail As Object)
+' Does the body carry a scan block? Returns unknownAnswer when the body itself
+' cannot be read, so callers decide which way to fail.
+Private Function BodyShowsAesFooter(ByVal mail As Object, ByVal unknownAnswer As Boolean) As Boolean
     On Error Resume Next
-    If mail Is Nothing Then Exit Sub
+    Dim bodyText As String
+    Err.Clear
+    bodyText = ItemBodyText(mail)
+    If Err.Number <> 0 Or Len(bodyText) = 0 Then
+        Err.Clear
+        BodyShowsAesFooter = unknownAnswer
+        Exit Function
+    End If
+    BodyShowsAesFooter = (CountAesScanResults(bodyText) > 0)
+End Function
+
+' Stamps the message as scanned. Returns False when the mark did not stick -
+' the caller must know, because an unmarked message with a footer already in it
+' is rescanned and rewritten on every later pass.
+Public Function MarkAesScanned(ByVal mail As Object) As Boolean
+    On Error Resume Next
+    MarkAesScanned = False
+    If mail Is Nothing Then Exit Function
+
     Dim ups As Object
     Dim up As Object
     Set ups = mail.UserProperties
-    If ups Is Nothing Then Exit Sub
+    If ups Is Nothing Then Exit Function
     Set up = ups.Find(AES_SCANNED_PROP)
     If up Is Nothing Then Set up = ups.Add(AES_SCANNED_PROP, 1) ' olText
-    If Not up Is Nothing Then
-        up.Value = "1"
-        mail.Save
+    If up Is Nothing Then Exit Function
+
+    Err.Clear
+    up.Value = "1"
+    mail.Save
+    If Err.Number <> 0 Then
+        MSCANModLogging.WriteLogWarn "HEALTH | scanned mark not saved (#" & Err.Number & " - " & _
+            Err.Description & ") for: " & SafeSubject(mail)
+        Err.Clear
+        MSCANHealth.NoteMarkFailed
+        Exit Function
     End If
-End Sub
+
+    MarkAesScanned = True
+End Function
 
 Public Function MailHasFullFooter(ByVal mail As Object) As Boolean
     On Error Resume Next

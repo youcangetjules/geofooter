@@ -13,6 +13,17 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-09-30 — 1.4.8: Exactly one footer per email
+- Requirement: a message must never carry more than one AES footer, and a footer inherited from a previous email in the chain must be removed.
+- Both write paths already stripped before inserting, so the bug was in the stripping. `StripAllAesScanResults` exits as soon as `FindAesFooterBounds` cannot find an END marker, and IMAP strips HTML comments while Outlook/Word can rewrite the anchor ids. A marker-less footer survived and the new one was appended next to it.
+- Added a structural fallback: `FindAesFooterTrace` (heading, then anchor), `FooterContainerStart` (anchor wins over the nearest div/table - the heading sits in a table nested inside the anchored div, so cutting the table alone left an empty shell), `TagNameAt`, and `RemoveEnclosingBlockAt` which matches nested same-name tags. Returns the body unchanged when no container is identifiable rather than risking sender content.
+- Verified the algorithm with a throwaway Python port over 6 cases (simple div, nested divs, reply chain with two footers, nested tables, no container, no footer). The first run failed two cases and exposed the empty-shell bug, which is why the anchor takes priority.
+- `CountAesScanResults` no longer early-returns on the first marker style; it takes the max across comments, anchors, and the visible heading.
+- `ApplyFooterToMail` no longer skips a stamped message that holds more than one footer.
+- Diagnostics: `CheckSingleFooter` on the finished body, `MSCANHealth.NoteFooterCount`, `dupFooters`/`missingFooters` in the snapshot, and two new patterns in `scripts/aes_log_health.py`.
+- Note: the health lines in today's log confirm the VBA **is** imported and running 1.4.6+ (`VbaProject.OTM`'s timestamp is not updated live). This session: 13 commits, 0 conflicts, 0 UI stalls.
+- Follow-up: re-import `MSCANModule1.bas` and `MSCANHealth.bas`.
+
 ### 2026-09-29 — 1.4.7: Purge stale scan job scripts
 - A process check turned up 5 concurrent `wscript` nudges and 3290 `aes_geo_job_*.vbs` files in `%LOCALAPPDATA%\GeoFooter` (2521 older than a week, oldest 8 July). Each scan writes one and nothing deleted them.
 - That folder is also where the delayed queue tick script is written, and today's log has one `could not write tick script` failure — a plausible contributor.

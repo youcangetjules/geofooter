@@ -13,6 +13,10 @@ Private m_NudgeWiredLogged As Boolean
 ' Set when CommitMailHtml gave up because the store kept changing the item.
 Private m_LastCommitConflict As Boolean
 
+' The rendered footer heading. Survives comment stripping and id rewriting, so
+' it is the last-resort way to find a footer that must be removed.
+Private Const AES_VISIBLE_HEADING As String = "Aliniant AES Scan Result"
+
 '===============================================================================
 ' CONFIGURATION
 ' - These constants serve as default fallbacks.
@@ -1888,9 +1892,20 @@ Private Function ApplyFooterToMail(ByVal mail As Object, ByVal footerPath As Str
     ' Quoted reply chains contain older scan blocks. Strip every one and
     ' leave the new result at the bottom. Skip only when THIS item was
     ' already stamped and this is not an explicit rescan or a full scan.
-    If mode <> "full" And IsAesScanned(mail) And Not forceReplace Then
+    ' A mail stamped as scanned is normally left alone. It still gets rewritten
+    ' when it carries more than one scan block - a reply quoting a footered mail
+    ' arrives that way, and one footer per message is not negotiable.
+    Dim existingFooters As Long
+    existingFooters = CountAesScanResults(ItemBodyText(mail))
+
+    If mode <> "full" And IsAesScanned(mail) And Not forceReplace And existingFooters <= 1 Then
         MSCANModLogging.WriteLog "ApplyFooterToMail: compact footer already present, skipping: " & SafeSubject(mail)
         ApplyFooterToMail = True
+    ElseIf existingFooters > 1 Then
+        MSCANModLogging.WriteLogWarn "HEALTH | " & CStr(existingFooters) & _
+            " footers found; collapsing to one for: " & SafeSubject(mail)
+        MSCANHealth.NoteFooterCount existingFooters
+        ApplyFooterToMail = ReplaceAesFooterInMail(mail, footerPath)
     ElseIf IsAesScanned(mail) Or MailBodyHasAesFooter(mail) Then
         If forceReplace Then
             MSCANModLogging.WriteLog "ApplyFooterToMail: rescan replacing existing footer: " & SafeSubject(mail)
@@ -2586,13 +2601,25 @@ Private Function StripAesMarkupFromBody(ByVal bodyHtml As String) As String
 End Function
 
 ' How many AES / legacy scan blocks are in this body (quoted chain included).
+'
+' Each marker style degrades differently: IMAP strips HTML comments, Outlook and
+' Word can rewrite or drop the anchor ids, but the rendered heading survives
+' almost anything. Counting each style and taking the highest means a body
+' holding one comment-marked footer and one stripped footer reports 2, not 1.
 Private Function CountAesScanResults(ByVal bodyHtml As String) As Long
-    CountAesScanResults = CountMarker(bodyHtml, "<!-- AES Start -->")
-    If CountAesScanResults > 0 Then Exit Function
-    CountAesScanResults = CountMarker(bodyHtml, "<!-- GeoFooter Start -->")
-    If CountAesScanResults > 0 Then Exit Function
-    CountAesScanResults = CountMarker(bodyHtml, "id='aes-footer-start'") + _
-                          CountMarker(bodyHtml, "id=""aes-footer-start""")
+    Dim byComment As Long
+    Dim byAnchor As Long
+    Dim byVisible As Long
+
+    byComment = CountMarker(bodyHtml, "<!-- AES Start -->") + _
+                CountMarker(bodyHtml, "<!-- GeoFooter Start -->")
+    byAnchor = CountMarker(bodyHtml, "id='aes-footer-start'") + _
+               CountMarker(bodyHtml, "id=""aes-footer-start""")
+    byVisible = CountMarker(bodyHtml, AES_VISIBLE_HEADING)
+
+    CountAesScanResults = byComment
+    If byAnchor > CountAesScanResults Then CountAesScanResults = byAnchor
+    If byVisible > CountAesScanResults Then CountAesScanResults = byVisible
 End Function
 
 Private Function CountMarker(ByVal src As String, ByVal marker As String) As Long
@@ -2635,7 +2662,152 @@ Private Function StripAllAesScanResults(ByVal bodyHtml As String) As String
         s = Left$(s, startPos - 1) & Mid$(s, endPos + endLen)
         guard = guard + 1
     Loop
+
+    ' The loop above only removes a block whose END marker survived. A footer
+    ' that lost its markers (IMAP strips HTML comments, Word rewrites ids) would
+    ' otherwise stay and the new footer would be appended beside it. Remove any
+    ' block still carrying the rendered heading by its enclosing element.
+    Dim hit As Long
+    Dim before As String
+    guard = 0
+    Do While guard < 20
+        hit = FindAesFooterTrace(s)
+        If hit = 0 Then Exit Do
+        before = s
+        s = RemoveEnclosingBlockAt(s, hit)
+        If s = before Then
+            ' Could not identify a container. Stop rather than spin; the
+            ' invariant check reports the leftover.
+            Exit Do
+        End If
+        guard = guard + 1
+    Loop
+
     StripAllAesScanResults = s
+End Function
+
+' Position of anything that betrays a footer: the rendered heading first, then
+' the anchor id (an emptied shell left by an earlier partial removal).
+Private Function FindAesFooterTrace(ByVal html As String) As Long
+    FindAesFooterTrace = InStr(1, html, AES_VISIBLE_HEADING, vbTextCompare)
+    If FindAesFooterTrace > 0 Then Exit Function
+    FindAesFooterTrace = InStr(1, html, "id='aes-footer-start'", vbTextCompare)
+    If FindAesFooterTrace > 0 Then Exit Function
+    FindAesFooterTrace = InStr(1, html, "id=""aes-footer-start""", vbTextCompare)
+End Function
+
+' Start of the element to delete. The AES anchor wins when it precedes the hit:
+' the heading normally sits in a table nested inside the anchored div, and
+' cutting only that table would leave the empty footer shell behind.
+Private Function FooterContainerStart(ByVal html As String, ByVal hitPos As Long) As Long
+    Dim head As String
+    Dim at As Long
+    Dim lt As Long
+    Dim divPos As Long
+    Dim tablePos As Long
+
+    head = Left$(html, hitPos)
+
+    at = InStrRev(head, "id='aes-footer-start'", , vbTextCompare)
+    If at = 0 Then at = InStrRev(head, "id=""aes-footer-start""", , vbTextCompare)
+    If at > 0 Then
+        lt = InStrRev(Left$(html, at), "<")
+        If lt > 0 Then
+            FooterContainerStart = lt
+            Exit Function
+        End If
+    End If
+
+    divPos = InStrRev(head, "<div", , vbTextCompare)
+    tablePos = InStrRev(head, "<table", , vbTextCompare)
+    If tablePos > divPos Then
+        FooterContainerStart = tablePos
+    Else
+        FooterContainerStart = divPos
+    End If
+End Function
+
+' Name of the element opening at openPos (which points at the '<').
+Private Function TagNameAt(ByVal html As String, ByVal openPos As Long) As String
+    Dim i As Long
+    Dim ch As String
+    Dim tagText As String
+
+    For i = openPos + 1 To Len(html)
+        ch = Mid$(html, i, 1)
+        If ch = " " Or ch = ">" Or ch = "/" Or ch = vbCr Or ch = vbLf Or ch = vbTab Then Exit For
+        tagText = tagText & ch
+        If Len(tagText) > 12 Then Exit For
+    Next i
+    TagNameAt = LCase$(tagText)
+End Function
+
+' Removes the <div> or <table> that encloses hitPos, matching nested tags of the
+' same name so the correct closing tag is used. Returns the input unchanged if
+' no container can be identified - it never guesses, because a wrong cut here
+' would delete the sender's content.
+Private Function RemoveEnclosingBlockAt(ByVal html As String, ByVal hitPos As Long) As String
+    On Error Resume Next
+    RemoveEnclosingBlockAt = html
+    If hitPos <= 1 Or Len(html) = 0 Then Exit Function
+
+    Dim openPos As Long
+    Dim tagName As String
+
+    openPos = FooterContainerStart(html, hitPos)
+    If openPos = 0 Then Exit Function
+    tagName = TagNameAt(html, openPos)
+    If tagName <> "div" And tagName <> "table" Then Exit Function
+
+    Dim openTag As String
+    Dim closeTag As String
+    Dim depth As Long
+    Dim scanAt As Long
+    Dim nextOpen As Long
+    Dim nextClose As Long
+    Dim guard As Long
+
+    openTag = "<" & tagName
+    closeTag = "</" & tagName
+    depth = 0
+    scanAt = openPos
+
+    Do While guard < 5000
+        guard = guard + 1
+        nextOpen = InStr(scanAt + 1, html, openTag, vbTextCompare)
+        nextClose = InStr(scanAt + 1, html, closeTag, vbTextCompare)
+        If nextClose = 0 Then Exit Function
+
+        If nextOpen > 0 And nextOpen < nextClose Then
+            depth = depth + 1
+            scanAt = nextOpen
+        ElseIf depth > 0 Then
+            depth = depth - 1
+            scanAt = nextClose
+        Else
+            Dim closeEnd As Long
+            closeEnd = InStr(nextClose, html, ">")
+            If closeEnd = 0 Then Exit Function
+            RemoveEnclosingBlockAt = Left$(html, openPos - 1) & Mid$(html, closeEnd + 1)
+            Exit Function
+        End If
+    Loop
+End Function
+
+' One footer per message, always. Called on the finished body just before it is
+' written, so a duplicate is reported against the message that carries it
+' rather than being noticed days later.
+Private Function CheckSingleFooter(ByVal finalHtml As String, ByVal context As String, _
+                                   ByVal subjectHint As String) As Long
+    On Error Resume Next
+    Dim n As Long
+    n = CountAesScanResults(finalHtml)
+    CheckSingleFooter = n
+    If n = 1 Then Exit Function
+
+    MSCANModLogging.WriteLogWarn "HEALTH | footer count is " & CStr(n) & " (expected 1) after " & _
+        context & " for: " & Left$(subjectHint, 60)
+    MSCANHealth.NoteFooterCount n
 End Function
 
 ' Removes the status strip from the footer payload and returns it. The strip
@@ -2886,6 +3058,7 @@ Private Function InsertFooterIntoMail(mail As Object, footerPath As String) As B
 
         Dim finalIns As String
         finalIns = InjectAesTopBanner(newBody, bannerForIns)
+        CheckSingleFooter finalIns, "insert", SafeSubject(mail)
         If Not CommitMailHtml(mail, entryIdIns, finalIns) Then
             If m_LastCommitConflict Then
                 MSCANModLogging.WriteLog "InsertFooterIntoMail: item busy - skipping the no-banner retry."
@@ -3028,6 +3201,7 @@ Private Function ReplaceAesFooterInMail(ByVal mail As Object, ByVal footerPath A
 
     Dim finalHtml As String
     finalHtml = InjectAesTopBanner(replacedBody, bannerForBody)
+    CheckSingleFooter finalHtml, "replace", SafeSubject(mail)
     If Not CommitMailHtml(mail, entryId, finalHtml) Then
         If m_LastCommitConflict Then
             MSCANModLogging.WriteLog "ReplaceAesFooterInMail: item busy - skipping the no-banner retry."

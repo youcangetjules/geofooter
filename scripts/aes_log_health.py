@@ -34,6 +34,8 @@ PATTERNS: list[tuple[str, str, str]] = [
     ("commit_fail", "CommitMailHtml attempt", "CommitMailHtml attempts that failed"),
     ("commit_giveup", "item keeps changing", "Commits abandoned (item never settled)"),
     ("stall", "HEALTH | UI stall", "UI thread stalls"),
+    ("dup_footer", "HEALTH | footer count is", "Messages not carrying exactly one footer"),
+    ("collapse", "footers found; collapsing", "Duplicate footers collapsed"),
     ("storm", "HEALTH | commit conflict storm", "Conflict storms detected"),
     ("backlog", "HEALTH | queue backlog", "Queue backlog warnings"),
     ("process", "ProcessQueue: Started", "Queue drain passes"),
@@ -215,6 +217,11 @@ def verdict(counts: Counter[str], stall_ms: list[int], queue_sizes: list[int]) -
         )
     if counts["tick_fail"]:
         findings.append(f"{counts['tick_fail']} tick scripts could not be written; delayed work may never run.")
+    if counts["dup_footer"] or counts["collapse"]:
+        findings.append(
+            f"{counts['dup_footer'] + counts['collapse']} messages did not carry exactly one footer. "
+            "Old footers quoted in a reply chain are surviving removal."
+        )
     if counts["footer_fail"]:
         findings.append(f"{counts['footer_fail']} messages ended up with no footer.")
 

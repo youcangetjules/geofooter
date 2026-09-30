@@ -20,6 +20,18 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.8] — 2026-09-30
+
+### Fixed
+
+- A message could end up with more than one scan footer. `StripAllAesScanResults` only removed a block whose **end** marker survived, and markers do not always survive: IMAP strips HTML comments and Outlook or Word can rewrite the `aes-footer-start` anchor. A footer quoted from an earlier email in a reply chain therefore stayed in the body and the new footer was appended beside it. Any block still carrying the rendered "Aliniant AES Scan Result" heading is now removed by its enclosing `<div>` or `<table>`, matching nested tags so only the footer is cut. If no container can be identified the body is left untouched rather than guessed at.
+- `CountAesScanResults` returned after the first marker style that matched, so a body holding one comment-marked footer and one stripped footer reported 1. It now counts each style and takes the highest.
+- A message already stamped as scanned was skipped without checking how many footers it carried. It is now rewritten whenever it holds more than one.
+
+### Added
+
+- The finished body is checked before it is written and anything other than exactly one footer is logged as a `HEALTH` warning naming the message, counted in the session snapshot as `dupFooters` / `missingFooters`, and reported by `scripts/aes_log_health.py`.
+
 ## [1.4.7] — 2026-09-29
 
 ### Fixed

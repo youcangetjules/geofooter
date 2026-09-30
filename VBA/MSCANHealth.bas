@@ -38,6 +38,9 @@ Private m_ConflictStormLogged As Boolean
 
 Private m_FootersApplied As Long
 Private m_FootersAbandoned As Long
+Private m_DuplicateFooters As Long
+Private m_MissingFooters As Long
+Private m_WorstFooterCount As Long
 
 Private m_ComposeDeferrals As Long
 Private m_QueuePeak As Long
@@ -59,6 +62,9 @@ Public Sub StartSession()
     m_ConflictStormLogged = False
     m_FootersApplied = 0
     m_FootersAbandoned = 0
+    m_DuplicateFooters = 0
+    m_MissingFooters = 0
+    m_WorstFooterCount = 0
     m_ComposeDeferrals = 0
     m_QueuePeak = 0
     m_BacklogWarned = False
@@ -146,6 +152,22 @@ Public Sub NoteFooterAbandoned()
     m_FootersAbandoned = m_FootersAbandoned + 1
 End Sub
 
+' Every message must carry exactly one scan block. Anything else means old
+' footers are surviving removal (markers stripped in transit) or a message is
+' being footered twice.
+Public Sub NoteFooterCount(ByVal count As Long)
+    On Error Resume Next
+    If count = 1 Then Exit Sub
+
+    If count > 1 Then
+        m_DuplicateFooters = m_DuplicateFooters + 1
+        If count > m_WorstFooterCount Then m_WorstFooterCount = count
+    Else
+        m_MissingFooters = m_MissingFooters + 1
+    End If
+    MaybeSnapshot
+End Sub
+
 '------------------------------------------------------------------------
 ' Queue and compose health
 '------------------------------------------------------------------------
@@ -194,6 +216,9 @@ Public Sub LogSnapshot(ByVal reason As String)
         " conflicts=" & CStr(m_CommitConflicts) & "(" & CStr(conflictPct) & "%)" & _
         " applied=" & CStr(m_FootersApplied) & _
         " abandoned=" & CStr(m_FootersAbandoned) & _
+        " dupFooters=" & CStr(m_DuplicateFooters) & _
+        IIf(m_WorstFooterCount > 1, "(worst " & CStr(m_WorstFooterCount) & ")", "") & _
+        " missingFooters=" & CStr(m_MissingFooters) & _
         " queuePeak=" & CStr(m_QueuePeak) & _
         " composeDeferrals=" & CStr(m_ComposeDeferrals) & _
         " uiStalls=" & CStr(m_Stalls) & _
@@ -206,5 +231,6 @@ End Sub
 Public Function HealthSummary() As String
     HealthSummary = "commits " & CStr(m_CommitAttempts) & ", conflicts " & CStr(m_CommitConflicts) & _
         ", applied " & CStr(m_FootersApplied) & ", abandoned " & CStr(m_FootersAbandoned) & _
+        ", duplicate footers " & CStr(m_DuplicateFooters) & _
         ", queue peak " & CStr(m_QueuePeak) & ", UI stalls " & CStr(m_Stalls)
 End Function

@@ -13,6 +13,15 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-05 — 1.4.11: Review of the footer deferral
+
+- Review of the 1.4.10 footer path. `CompleteAsyncFooter` removed the job and then returned when the mail was on screen, so the "apply it on the next nudge" branch never had a job left to apply.
+- The waiting job is put back, logged once, and excluded from `PendingBlockingJobCount`, which is what the queue and the catch-up sweep now use. One open message no longer blocks every other scan.
+- `CommitMailHtml` discards the unsaved edit before the retry. `DiscardUnsavedChanges` warns when `Saved` stays False: `Close olDiscard` does not reload a message that is still selected in the reading pane.
+- `CaptionMatchesForeground` treats a window title that contains the Inspector or Explorer caption as the same window.
+- `HtmlHasSenderContent` skips its regular expressions when the remaining HTML is over 40,000 characters. Confirmed separately that VBScript does honour `\u00A0` in that pattern, and that `ActiveInlineResponse` on the Inbox returns False rather than raising.
+- Follow-up: re-import `MSCANModule1.bas`, `MSCANIdle.bas`, `MSCANModQueueManager.bas`.
+
 ### 2026-10-05 — 1.4.10: Idle drafts blocked AES; failed footer save emptied a mail body
 
 - Reported as "hanging on appending the footer, and the body of the email has disappeared". Log: 977 compose deferrals 09:00-09:30, 60 mails queued and never drained, the 09:04 compact job for "Invoice PR-14673 due today" never completed or timed out. Live check: an unsent reply Inspector was open the whole time.

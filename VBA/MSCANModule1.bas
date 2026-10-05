@@ -65,6 +65,34 @@ Public Function PendingAsyncJobCountFast() As Long
     End If
 End Function
 
+' Jobs that should stop a new scan from starting. Reconciles first, like
+' PendingAsyncJobCount. A footer waiting because its mail is on screen is
+' pending but idle, so it is not counted: with one in-flight slot, counting it
+' would pause every other message until the user clicked away.
+Public Function PendingBlockingJobCount() As Long
+    On Error Resume Next
+    EnsureAsyncJobs
+    ReconcileAsyncJobs
+    PendingBlockingJobCount = 0
+    If m_AsyncJobs Is Nothing Then Exit Function
+    If m_AsyncJobs.Count = 0 Then Exit Function
+
+    Dim keys As Variant
+    Dim i As Long
+    Dim job As Object
+    Dim n As Long
+    keys = m_AsyncJobs.keys
+    For i = LBound(keys) To UBound(keys)
+        Set job = m_AsyncJobs(keys(i))
+        If Not job.Exists("OnScreen") Then
+            n = n + 1
+        ElseIf Not CBool(job("OnScreen")) Then
+            n = n + 1
+        End If
+    Next i
+    PendingBlockingJobCount = n
+End Function
+
 ' Safety net: the external VBS callback can fail (e.g. Outlook restarted, bridge
 ' methods not yet exposed). Whenever the busy UI is refreshed, sweep pending jobs:
 ' if the Python output file already exists, finish the job locally; if the job is
@@ -527,11 +555,18 @@ Public Sub CompleteAsyncFooter(ByVal jobId As String)
         Exit Sub
     End If
 
-    ' Rewriting the message on screen re-renders it under the user. The job
-    ' stays pending and the next nudge applies it once they move on.
+    ' Rewriting the message on screen re-renders it under the user. The job was
+    ' already taken out of the pending list above; put it back or this pass is
+    ' the last one and the footer is never applied. It does not count as
+    ' in-flight, or the single scan slot stays taken while the mail is selected.
     If MSCANIdle.IsItemOnScreen(entryId) Then
-        MSCANModLogging.WriteLog "CompleteAsyncFooter: item is on screen; deferring footer for job " & jobId
-        MSCANHealth.NoteOnScreenDeferral
+        job("OnScreen") = True
+        If Not job.Exists("OnScreenLogged") Then
+            MSCANModLogging.WriteLog "CompleteAsyncFooter: item is on screen; deferring footer for job " & jobId
+            job("OnScreenLogged") = True
+            MSCANHealth.NoteOnScreenDeferral
+        End If
+        Set m_AsyncJobs(jobId) = job
         NotifyScanBusyUi
         Exit Sub
     End If
@@ -2527,16 +2562,16 @@ Private Function CommitMailHtml(ByRef mail As Object, ByVal entryId As String, B
         MSCANHealth.EndOp "CommitMailHtml", opTick
         If conflict Then MSCANHealth.NoteCommitConflict SafeSubject(mail)
 
+        ' Before the retry re-reads the item. A failed Save can leave the
+        ' in-memory copy with no body, and the next attempt would build on that.
+        DiscardUnsavedChanges mail, entryId
+
         If conflict And attempt >= 2 Then
             m_LastCommitConflict = True
             MSCANModLogging.WriteLog "CommitMailHtml: item keeps changing - leaving it for a later pass."
-            DiscardUnsavedChanges mail, entryId
             Exit Function
         End If
-        If attempt = MAX_ATTEMPTS Then
-            DiscardUnsavedChanges mail, entryId
-            Exit Function
-        End If
+        If attempt = MAX_ATTEMPTS Then Exit Function
 
         MSCANIdle.WaitMs 400
         Set mail = ResolveMailByEntryID(entryId)
@@ -2570,6 +2605,22 @@ Private Sub DiscardUnsavedChanges(ByVal mail As Object, ByVal entryId As String)
     If Err.Number <> 0 Then
         MSCANModLogging.WriteLog "DiscardUnsavedChanges: #" & Err.Number & " - " & Err.Description
         Err.Clear
+        Exit Sub
+    End If
+
+    ' Close olDiscard on the reading-pane item does not reload the stored
+    ' message while it stays selected. Saved stays False and a later Save,
+    ' including one Outlook makes itself, would persist the emptied body.
+    Dim stillDirty As Boolean
+    Err.Clear
+    stillDirty = Not CBool(mail.Saved)
+    If Err.Number <> 0 Then
+        Err.Clear
+        Exit Sub
+    End If
+    If stillDirty Then
+        MSCANModLogging.WriteLogWarn "HEALTH | unsaved AES changes stayed on the message. Select another " & _
+            "message and do not save this one: " & SafeSubject(mail)
     End If
 End Sub
 
@@ -2583,6 +2634,10 @@ Private Function HtmlHasSenderContent(ByVal html As String) As Boolean
     rest = StripAllAesScanResults(StripAesTopBannersFromBody(html))
     If InStr(1, rest, "<img", vbTextCompare) > 0 Then Exit Function
     If InStr(1, rest, "<v:imagedata", vbTextCompare) > 0 Then Exit Function
+    ' The emptied-body failure is a few hundred characters. A remaining body
+    ' this large is the sender's, and four regular expressions over it run on
+    ' the Outlook UI thread.
+    If Len(rest) > 40000 Then Exit Function
 
     Dim re As Object
     Set re = CreateObject("VBScript.RegExp")

@@ -31,6 +31,9 @@ Private m_LastNewMailExAt As Date
 Private m_LastNewMailExSubject As String
 Private m_LastCatchUpResult As String
 Private m_CatchUpHeartbeatPending As Boolean
+' When the heartbeat wscript was actually launched, so a cleared pending flag
+' cannot spawn a second one while the first is still sleeping.
+Private m_HeartbeatLaunchedAt As Date
 Private m_ScanFailStreak As Long
 Private m_ScanPauseLogged As Boolean
 Private m_LastDeferLogAt As Date
@@ -266,10 +269,11 @@ Public Sub ProcessQueue()
         GoTo EXIT_SUB
     End If
 
-    ' PendingAsyncJobCount reconciles finished and timed-out jobs first, so a
-    ' wedged job cannot hold the queue shut past the job timeout.
+    ' PendingBlockingJobCount reconciles finished and timed-out jobs first, so a
+    ' wedged job cannot hold the queue shut past the job timeout. A footer
+    ' deferred because its mail is on screen does not count.
     Dim inFlight As Long
-    inFlight = MSCANModule1.PendingAsyncJobCount()
+    inFlight = MSCANModule1.PendingBlockingJobCount()
     If inFlight >= MAX_INFLIGHT_SCANS Then
         If m_LastDeferLogAt = 0 Or DateDiff("s", m_LastDeferLogAt, Now) >= 30 Then
             MSCANModLogging.WriteLog "ProcessQueue: deferring tick, " & inFlight & _
@@ -669,7 +673,6 @@ Public Sub NudgeQueueWork()
         MSCANModLogging.WriteLog "NudgeQueueWork: resuming after compose window closed."
     End If
 
-    MaybeDrainQueueIfStale
     ' Always cheap-check for diagnostics commands (file missing = instant return).
     DrainDiagCommands
 
@@ -703,6 +706,10 @@ Public Sub NudgeQueueWork()
         If Not IsStartupQuiet() Then LaunchCatchUpHeartbeat
         Exit Sub
     End If
+
+    ' Below the latch gate on purpose. Run from here, a plain click on a message
+    ' started a full header and body export on the click itself.
+    MaybeDrainQueueIfStale
 
     If hadPostSend Or hadQuietResume Or hadQueueTick Then
         DrainPostSendSubjects
@@ -820,7 +827,7 @@ Public Sub CatchUpMissedInboxMail(Optional ByVal force As Boolean = False)
         If Not m_MailQueue Is Nothing Then
             If m_MailQueue.Count > 0 Then Exit Sub
         End If
-        If MSCANModule1.PendingAsyncJobCount() > 0 Then Exit Sub
+        If MSCANModule1.PendingBlockingJobCount() > 0 Then Exit Sub
         If m_LastCatchUpAt > 0 Then
             If DateDiff("s", m_LastCatchUpAt, Now) < CATCHUP_MIN_INTERVAL_SEC Then Exit Sub
         End If
@@ -1033,7 +1040,19 @@ Private Sub LaunchCatchUpHeartbeat()
     If IsStartupQuiet() Then Exit Sub
     If m_CatchUpHeartbeatPending Then Exit Sub
 
+    ' The pending flag alone is not enough: NudgeQueueWork clears it on every
+    ' nudge, including one caused by the user clicking a message, while the
+    ' previous wscript is still inside its 90s sleep. Browsing mail therefore
+    ' used to leave one sleeping process per message opened, and each of them
+    ' woke up and drove more item loads. Wall-clock time is the real guard.
+    If m_HeartbeatLaunchedAt > 0 Then
+        If DateDiff("s", m_HeartbeatLaunchedAt, Now) < (CATCHUP_HEARTBEAT_MS \ 1000) Then
+            Exit Sub
+        End If
+    End If
+
     m_CatchUpHeartbeatPending = True
+    m_HeartbeatLaunchedAt = Now
 
     Dim vbsPath As String
     vbsPath = Environ$("LOCALAPPDATA") & "\GeoFooter\aes_catchup_heartbeat.vbs"
@@ -1051,6 +1070,7 @@ Private Sub LaunchCatchUpHeartbeat()
 
 EH:
     m_CatchUpHeartbeatPending = False
+    m_HeartbeatLaunchedAt = 0
     MSCANModLogging.WriteLog "LaunchCatchUpHeartbeat error: #" & Err.Number & " - " & Err.Description
 End Sub
 

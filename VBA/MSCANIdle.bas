@@ -120,7 +120,7 @@ Private Function ComposeWindowInForeground() As Boolean
                     ComposeWindowInForeground = True
                     Exit Function
                 End If
-                If StrComp(CStr(insp.Caption), fg, vbTextCompare) = 0 Then
+                If CaptionMatchesForeground(CStr(insp.Caption), fg) Then
                     ComposeWindowInForeground = True
                     Exit Function
                 End If
@@ -146,12 +146,23 @@ Private Function ComposeWindowInForeground() As Boolean
                 ComposeWindowInForeground = True
                 Exit Function
             End If
-            If StrComp(CStr(exp.Caption), fg, vbTextCompare) = 0 Then
+            If CaptionMatchesForeground(CStr(exp.Caption), fg) Then
                 ComposeWindowInForeground = True
                 Exit Function
             End If
         End If
     Next exp
+End Function
+
+' Equal, or the caption sits inside the window title. Outlook sometimes adds
+' a suffix to the title that Inspector.Caption and Explorer.Caption omit.
+Private Function CaptionMatchesForeground(ByVal caption As String, ByVal foreground As String) As Boolean
+    If Len(caption) = 0 Or Len(foreground) = 0 Then Exit Function
+    If StrComp(caption, foreground, vbTextCompare) = 0 Then
+        CaptionMatchesForeground = True
+    ElseIf InStr(1, foreground, caption, vbTextCompare) > 0 Then
+        CaptionMatchesForeground = True
+    End If
 End Function
 
 Private Function ForegroundCaption() As String

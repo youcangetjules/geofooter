@@ -20,6 +20,15 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.11] — 2026-10-05
+
+### Fixed
+
+- A finished footer for the message on screen was removed from the pending list and never applied. The job stays pending and is applied once the message is no longer selected.
+- That waiting footer no longer occupies the only scan slot, so other mail keeps scanning while one message is open.
+- A failed footer save discards the unsaved edit before the retry, and warns when Outlook keeps the unsaved copy anyway (the reading pane does).
+- Compose detection still counts a draft as active when the window title has a suffix the caption does not.
+
 ## [1.4.10] — 2026-10-05
 
 ### Fixed

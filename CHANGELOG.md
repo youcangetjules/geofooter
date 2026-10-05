@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.13] — 2026-10-05
+
+### Fixed
+
+- Quick Actions rescan the open message. SL, BA, BB, TS, and NT each start AES Short Scan. The previous call used `FindControl(Tag=...)`, which from Python returns the Task Pane instead of the Short Scan button, so the click saved the rule and did not scan.
+
 ## [1.4.12] — 2026-10-05
 
 ### Fixed

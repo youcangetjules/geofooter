@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-05 — 1.4.13: Quick Actions start a Short Scan
+
+- BA, BB, TS, and NT saved the sender rule and then called `CommandBars.FindControl(Tag="AES_SHORTSCAN")`. From Python that returns the Task Pane control, so Execute never started a scan. The button is found by walking the toolbars for that tag. SL (the links report) starts the same scan after the report opens.
+- A Full No Trust click still converts the message to text here only when the Short Scan button cannot be started. Otherwise the scan is the one writer.
+- Follow-up: none for VBA. The next chip click uses this file. The 1.4.12 footer apply still needs `MSCANModule1.bas` re-imported if that has not been done.
+
 ### 2026-10-05 — 1.4.12: Apply the footer on the message being read
 
 - Diagnostic at 10:18: in-flight scans 1, queue 0, and the log was `CompleteAsyncFooter: item is on screen; deferring footer` for every finished scan. Reconcile then fired continuously (`output found, completing job` dozens of times). At 90s the deadline failed the job: Kenable parcel at 10:03:31, Product Lead at 10:06:53. The footer file was ready both times.

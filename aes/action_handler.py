@@ -491,6 +491,10 @@ def handle_open_report(params: dict, logger: logging.Logger) -> int:
     try:
         os.startfile(str(path))  # type: ignore[attr-defined]
         logger.info("open-report: opened %s", path)
+        # SL is the links report. The other quick-action chips rescan from
+        # handle_url. Attachment, beacon, and risk reports are not chips.
+        if "links" in {part.lower() for part in path.parts}:
+            _replace_open_footer(logger)
         return 0
     except Exception as exc:
         logger.exception("open-report: startfile failed")
@@ -622,36 +626,26 @@ def handle_url(url: str, logger: logging.Logger) -> int:
     converted = False
     replaced = False
     locked = False
-    if convert_fnt:
+    try:
+        _outlook, open_item = _outlook_mail_item()
+        locked = _mail_is_locked_text(open_item)
+    except Exception:
+        locked = False
+    # Every quick action (BA, BB, TS, NT) starts a Short Scan. One writer:
+    # painting the footer here as well flips the message between text and HTML.
+    replaced = _replace_open_footer(logger)
+    if not replaced and convert_fnt:
         converted = _apply_full_no_trust_text(logger)
-    else:
-        try:
-            _outlook, open_item = _outlook_mail_item()
-            locked = _mail_is_locked_text(open_item)
-        except Exception:
-            locked = False
-        if locked:
-            logger.info("Leaving text-only mail unchanged after %s", action)
-        elif replace_footer:
-            # One writer. Painting HTML and scanning at the same time flips the
-            # message between text and HTML ("message has been changed").
-            replaced = _replace_open_footer(logger)
-            if not replaced:
-                refreshed = _refresh_open_mail_action_buttons(
-                    action=action,
-                    sender=sender,
-                    domain=domain,
-                    logger=logger,
-                    beacons_on=beacons_on,
-                )
-        else:
-            refreshed = _refresh_open_mail_action_buttons(
-                action=action,
-                sender=sender,
-                domain=domain,
-                logger=logger,
-                beacons_on=beacons_on,
-            )
+    elif not replaced and not locked and replace_footer:
+        refreshed = _refresh_open_mail_action_buttons(
+            action=action,
+            sender=sender,
+            domain=domain,
+            logger=logger,
+            beacons_on=beacons_on,
+        )
+    elif not replaced and locked:
+        logger.info("Leaving text-only mail unchanged after %s", action)
 
     state = "was already set — rule refreshed" if already else "rule saved"
     if converted or locked:
@@ -701,20 +695,70 @@ def _outlook_mail_item():
     return outlook, item
 
 
+def _short_scan_control(explorer):
+    """The AES Short Scan toolbar button.
+
+    CommandBars.FindControl(Tag=...) does not pass Tag through from Python.
+    It returns an unrelated control (the Task Pane), and Execute then does
+    not scan. Walk the bars and match the tag.
+    """
+    try:
+        bars = explorer.CommandBars
+        bar_count = int(bars.Count)
+    except Exception:
+        return None
+    for i in range(1, bar_count + 1):
+        try:
+            controls = bars.Item(i).Controls
+            control_count = int(controls.Count)
+        except Exception:
+            continue
+        for j in range(1, control_count + 1):
+            try:
+                ctl = controls.Item(j)
+                if str(getattr(ctl, "Tag", "") or "") == "AES_SHORTSCAN":
+                    return ctl
+            except Exception:
+                continue
+    return None
+
+
 def _replace_open_footer(logger: logging.Logger) -> bool:
     """Run AES Short Scan so the open mail's footer is replaced, not left stale."""
     try:
         outlook, _item = _outlook_mail_item()
-        explorer = outlook.ActiveExplorer
-        if explorer is None:
+        explorers = []
+        try:
+            active = outlook.ActiveExplorer
+            if active is not None:
+                explorers.append(active)
+        except Exception:
+            pass
+        try:
+            all_explorers = outlook.Explorers
+            for i in range(1, int(all_explorers.Count) + 1):
+                explorers.append(all_explorers.Item(i))
+        except Exception:
+            pass
+        if not explorers:
             return False
-        ctl = explorer.CommandBars.FindControl(Tag="AES_SHORTSCAN")
-        if ctl is None:
-            logger.warning("Footer replace: AES Short Scan button not found")
-            return False
-        ctl.Execute()
-        logger.info("Footer replace: AES Short Scan started")
-        return True
+        seen = set()
+        for explorer in explorers:
+            try:
+                key = int(explorer.HWND)
+            except Exception:
+                key = id(explorer)
+            if key in seen:
+                continue
+            seen.add(key)
+            ctl = _short_scan_control(explorer)
+            if ctl is None:
+                continue
+            ctl.Execute()
+            logger.info("Footer replace: AES Short Scan started")
+            return True
+        logger.warning("Footer replace: AES Short Scan button not found")
+        return False
     except Exception as exc:
         logger.warning("Footer replace failed: %s", exc)
         return False

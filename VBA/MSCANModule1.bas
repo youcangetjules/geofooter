@@ -66,9 +66,10 @@ Public Function PendingAsyncJobCountFast() As Long
 End Function
 
 ' Jobs that should stop a new scan from starting. Reconciles first, like
-' PendingAsyncJobCount. A footer waiting because its mail is on screen is
-' pending but idle, so it is not counted: with one in-flight slot, counting it
-' would pause every other message until the user clicked away.
+' PendingAsyncJobCount. A job flagged OnScreen is waiting, not running, and
+' is not counted. Nothing sets that flag now that footers are applied to the
+' message on screen; the exclusion stays so a waiting job cannot take the
+' only scan slot again.
 Public Function PendingBlockingJobCount() As Long
     On Error Resume Next
     EnsureAsyncJobs
@@ -115,15 +116,14 @@ Public Sub ReconcileAsyncJobs()
     Dim limit As Long
     Dim modeName As String
     Dim expired As Boolean
+    Dim ready As Boolean
     For i = LBound(keys) To UBound(keys)
         If m_AsyncJobs.Exists(keys(i)) Then
             Set job = m_AsyncJobs(keys(i))
 
-            ' Deadline first, whatever is on disk. This used to sit in the
-            ' ElseIf chain below, so a job whose output existed but never
-            ' passed JobOutputLooksReady was never timed out - and with
-            ' MAX_INFLIGHT_SCANS = 1 that one job stopped the queue for the
-            ' rest of the session while mail kept piling up behind it.
+            ' The deadline is for a scan that never produced a usable footer.
+            ' A finished footer is applied anyway: failing it at 90s threw the
+            ' result away whenever the message was still selected.
             expired = False
             If job.Exists("StartedAt") Then
                 limit = 90
@@ -134,20 +134,22 @@ Public Sub ReconcileAsyncJobs()
                 If DateDiff("s", CDate(job("StartedAt")), Now) > limit Then expired = True
             End If
 
-            If expired Then
+            ready = False
+            If fso.FileExists(CStr(job("FooterPath"))) Then
+                ' Python creates/truncates the file on open, so size 0 is not ready.
+                If fso.GetFile(CStr(job("FooterPath"))).Size > 0 Then
+                    ready = JobOutputLooksReady(job)
+                End If
+            End If
+
+            If ready Then
+                MSCANModLogging.WriteLog "ReconcileAsyncJobs: output found, completing job " & keys(i)
+                CompleteAsyncFooter CStr(keys(i))
+            ElseIf expired Then
                 MSCANModLogging.WriteLogWarn "HEALTH | job " & keys(i) & " passed its " & CStr(limit) & _
-                    "s deadline; failing it so the queue can move on."
+                    "s deadline with no usable output; failing it so the queue can move on."
                 MSCANHealth.NoteJobTimeout
                 FailAsyncFooter CStr(keys(i))
-            ElseIf fso.FileExists(CStr(job("FooterPath"))) Then
-                ' Wait until the file has content - Python creates/truncates on open
-                ' before writing, so FileExists alone can race an empty file.
-                If fso.GetFile(CStr(job("FooterPath"))).Size > 0 Then
-                    If JobOutputLooksReady(job) Then
-                        MSCANModLogging.WriteLog "ReconcileAsyncJobs: output found, completing job " & keys(i)
-                        CompleteAsyncFooter CStr(keys(i))
-                    End If
-                End If
             ElseIf fso.FileExists(CStr(job("FooterPath")) & ".fail") Then
                 MSCANModLogging.WriteLog "ReconcileAsyncJobs: fail marker found for job " & keys(i)
                 On Error Resume Next
@@ -555,22 +557,9 @@ Public Sub CompleteAsyncFooter(ByVal jobId As String)
         Exit Sub
     End If
 
-    ' Rewriting the message on screen re-renders it under the user. The job was
-    ' already taken out of the pending list above; put it back or this pass is
-    ' the last one and the footer is never applied. It does not count as
-    ' in-flight, or the single scan slot stays taken while the mail is selected.
-    If MSCANIdle.IsItemOnScreen(entryId) Then
-        job("OnScreen") = True
-        If Not job.Exists("OnScreenLogged") Then
-            MSCANModLogging.WriteLog "CompleteAsyncFooter: item is on screen; deferring footer for job " & jobId
-            job("OnScreenLogged") = True
-            MSCANHealth.NoteOnScreenDeferral
-        End If
-        Set m_AsyncJobs(jobId) = job
-        NotifyScanBusyUi
-        Exit Sub
-    End If
-
+    ' Apply even when this message is the one on screen. Skipping it left the
+    ' footer unwritten for as long as the user looked at the mail, the job
+    ' script polled the whole time, and at 90s the deadline deleted the result.
     MSCANModLogging.WriteLog "CompleteAsyncFooter: applying " & mode & " footer to: " & SafeSubject(mail)
 
     Dim applied As Boolean

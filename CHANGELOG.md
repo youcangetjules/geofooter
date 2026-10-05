@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.12] — 2026-10-05
+
+### Fixed
+
+- A finished footer is written onto the message that is open in the reading pane. Leaving it until the user clicked away meant the footer never appeared, and the job script kept polling.
+- A scan that already has a footer is no longer failed at the 90 second deadline. That deadline deleted the Kenable parcel footer and the Product Lead footer while those messages stayed selected.
+
 ## [1.4.11] — 2026-10-05
 
 ### Fixed

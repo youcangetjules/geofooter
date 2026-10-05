@@ -13,6 +13,13 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-05 — 1.4.12: Apply the footer on the message being read
+
+- Diagnostic at 10:18: in-flight scans 1, queue 0, and the log was `CompleteAsyncFooter: item is on screen; deferring footer` for every finished scan. Reconcile then fired continuously (`output found, completing job` dozens of times). At 90s the deadline failed the job: Kenable parcel at 10:03:31, Product Lead at 10:06:53. The footer file was ready both times.
+- `CompleteAsyncFooter` no longer returns early for `IsItemOnScreen`. One write is the footer the user is waiting to see. The poll storm was the deferral putting the job back while the job script was still nudging.
+- `ReconcileAsyncJobs` applies a ready footer even after the deadline. The deadline now fails only a job with no usable output, which is the case that used to hold the single scan slot.
+- Follow-up: re-import `MSCANModule1.bas`. The Product Lead scan that was in flight at 10:20 will still be deferred until that import; short-scan it again afterwards.
+
 ### 2026-10-05 — 1.4.11: Review of the footer deferral
 
 - Review of the 1.4.10 footer path. `CompleteAsyncFooter` removed the job and then returned when the mail was on screen, so the "apply it on the next nudge" branch never had a job left to apply.

@@ -344,6 +344,34 @@ EH:
     NeutralizeBeaconsInMail = 0
 End Function
 
+' Same neutralisation on an HTML string, for callers that are about to write
+' the body anyway. Writing and saving here as well costs a repaint and opens
+' another window for "message has been changed" before their own commit.
+Public Function NeutralizeBeaconsInHtml(ByVal mail As Object, ByVal html As String) As String
+    On Error GoTo EH
+    NeutralizeBeaconsInHtml = html
+    If Len(html) = 0 Then Exit Function
+
+    Dim mode As String
+    mode = BeaconBlockingMode()
+
+    Dim blocked As Long
+    Dim body As String
+    blocked = 0
+    body = NeutralizeTagsIn(html, "<img", mode, blocked)
+    body = NeutralizeTagsIn(body, "<v:imagedata", mode, blocked)
+    If blocked = 0 Then Exit Function
+    If StrComp(body, html, vbBinaryCompare) = 0 Then Exit Function
+
+    NeutralizeBeaconsInHtml = body
+    MSCANModLogging.WriteLog "NeutralizeBeaconsInHtml: " & blocked & " beacon(s) " & _
+        IIf(mode = "strip", "stripped", "defanged") & " for sender " & GetMailSenderSmtp(mail)
+    Exit Function
+EH:
+    MSCANModLogging.WriteLog "NeutralizeBeaconsInHtml error: #" & Err.Number & " - " & Err.Description
+    NeutralizeBeaconsInHtml = html
+End Function
+
 Private Function NeutralizeTagsIn(ByVal body As String, ByVal tagPrefix As String, _
                                   ByVal mode As String, ByRef blocked As Long) As String
     Dim result As String

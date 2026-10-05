@@ -6,10 +6,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html):
 **MAJOR.MINOR.PATCH** — roughly **90% of releases are patches**.
 
-| Bump | When |
-|------|------|
-| **PATCH** | Default — fixes, wording, scoring tweaks, icons, docs |
-| **MINOR** | New backward-compatible features (ribbon buttons, tabs, modes) |
+| Bump      | When                                                            |
+| --------- | --------------------------------------------------------------- |
+| **PATCH** | Default — fixes, wording, scoring tweaks, icons, docs           |
+| **MINOR** | New backward-compatible features (ribbon buttons, tabs, modes)  |
 | **MAJOR** | Rare — breaking Outlook/VBA contracts, DB schema, or public CLI |
 
 The canonical version string lives in `geofooter/version.py` and the plain-text `VERSION` file.
@@ -19,6 +19,16 @@ Every git commit must start with a short **caption** (one line) stating what was
 e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
+
+## [1.4.10] — 2026-10-05
+
+### Fixed
+
+- An idle draft no longer stops AES. `IsUserComposing` counted any open unsent Inspector as typing, so a reply left open in the background deferred every footer, queue tick and job timeout. It now needs input in the last 4 seconds and a compose window in the foreground.
+- A rescan supersedes any pending job for the same mail. The stale job used to commit right after the rescan touched the item, fail with "message has been changed", and leave Outlook's copy without a body.
+- `CommitMailHtml` refuses to save a body that is empty apart from the AES footer, and discards the unsaved changes after a failed commit so a later Save cannot persist an emptied copy. The high-risk text-only path has the same guard.
+- Beacon blocking in the footer paths edits the HTML string instead of making its own `HTMLBody` write and Save before the footer commit.
+- `ReconcileAsyncJobs` checks the job deadline before looking for output, and failed scan starts release the body payload directory as well as the attachment one.
 
 ## [1.4.9] — 2026-09-30
 

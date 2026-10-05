@@ -42,6 +42,7 @@ Private m_DuplicateFooters As Long
 Private m_MissingFooters As Long
 Private m_WorstFooterCount As Long
 Private m_MarkFailures As Long
+Private m_JobTimeouts As Long
 
 Private m_ComposeDeferrals As Long
 Private m_OnScreenDeferrals As Long
@@ -68,6 +69,7 @@ Public Sub StartSession()
     m_MissingFooters = 0
     m_WorstFooterCount = 0
     m_MarkFailures = 0
+    m_JobTimeouts = 0
     m_ComposeDeferrals = 0
     m_OnScreenDeferrals = 0
     m_QueuePeak = 0
@@ -154,6 +156,16 @@ End Sub
 
 Public Sub NoteFooterAbandoned()
     m_FootersAbandoned = m_FootersAbandoned + 1
+End Sub
+
+' A scan job was killed for passing its deadline. Only one scan runs at a
+' time, so a job that never finishes holds up every message behind it.
+Public Sub NoteJobTimeout()
+    On Error Resume Next
+    m_JobTimeouts = m_JobTimeouts + 1
+    If m_JobTimeouts = 3 Then
+        MSCANModLogging.WriteLogWarn "HEALTH | 3 scan jobs have timed out; Python may be hanging."
+    End If
 End Sub
 
 ' The scanned mark failed to save. The footer is in the body but the message
@@ -247,6 +259,7 @@ Public Sub LogSnapshot(ByVal reason As String)
         IIf(m_WorstFooterCount > 1, "(worst " & CStr(m_WorstFooterCount) & ")", "") & _
         " missingFooters=" & CStr(m_MissingFooters) & _
         " markFailures=" & CStr(m_MarkFailures) & _
+        " jobTimeouts=" & CStr(m_JobTimeouts) & _
         " queuePeak=" & CStr(m_QueuePeak) & _
         " composeDeferrals=" & CStr(m_ComposeDeferrals) & _
         " onScreenDeferrals=" & CStr(m_OnScreenDeferrals) & _

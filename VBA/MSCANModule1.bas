@@ -86,10 +86,32 @@ Public Sub ReconcileAsyncJobs()
     Dim job As Object
     Dim limit As Long
     Dim modeName As String
+    Dim expired As Boolean
     For i = LBound(keys) To UBound(keys)
         If m_AsyncJobs.Exists(keys(i)) Then
             Set job = m_AsyncJobs(keys(i))
-            If fso.FileExists(CStr(job("FooterPath"))) Then
+
+            ' Deadline first, whatever is on disk. This used to sit in the
+            ' ElseIf chain below, so a job whose output existed but never
+            ' passed JobOutputLooksReady was never timed out - and with
+            ' MAX_INFLIGHT_SCANS = 1 that one job stopped the queue for the
+            ' rest of the session while mail kept piling up behind it.
+            expired = False
+            If job.Exists("StartedAt") Then
+                limit = 90
+                modeName = ""
+                If job.Exists("Mode") Then modeName = LCase$(CStr(job("Mode")))
+                If modeName = "full" Then limit = 160
+                If modeName = "deep" Then limit = 240
+                If DateDiff("s", CDate(job("StartedAt")), Now) > limit Then expired = True
+            End If
+
+            If expired Then
+                MSCANModLogging.WriteLogWarn "HEALTH | job " & keys(i) & " passed its " & CStr(limit) & _
+                    "s deadline; failing it so the queue can move on."
+                MSCANHealth.NoteJobTimeout
+                FailAsyncFooter CStr(keys(i))
+            ElseIf fso.FileExists(CStr(job("FooterPath"))) Then
                 ' Wait until the file has content - Python creates/truncates on open
                 ' before writing, so FileExists alone can race an empty file.
                 If fso.GetFile(CStr(job("FooterPath"))).Size > 0 Then
@@ -104,16 +126,6 @@ Public Sub ReconcileAsyncJobs()
                 fso.DeleteFile CStr(job("FooterPath")) & ".fail", True
                 On Error GoTo EH
                 FailAsyncFooter CStr(keys(i))
-            ElseIf job.Exists("StartedAt") Then
-                limit = 90
-                modeName = ""
-                If job.Exists("Mode") Then modeName = LCase$(CStr(job("Mode")))
-                If modeName = "full" Then limit = 160
-                If modeName = "deep" Then limit = 240
-                If DateDiff("s", CDate(job("StartedAt")), Now) > limit Then
-                    MSCANModLogging.WriteLog "ReconcileAsyncJobs: job " & keys(i) & " timed out, failing."
-                    FailAsyncFooter CStr(keys(i))
-                End If
             End If
         End If
     Next i
@@ -344,12 +356,12 @@ Public Sub ProcessEmail(ByVal mail As Object, Optional ByVal forceRescan As Bool
     ' Python runs in a separate WScript process so Outlook UI (drafts) stay responsive.
     If Not StartAsyncGeolocationJob(mail, savedFilePath, "compact", forceRescan) Then
         MSCANModLogging.WriteLog "ProcessEmail: Failed to start async geolocation for: " & SafeSubject(mail)
-        CleanupAttachmentScanDir m_LastAttachmentScanDir
-        m_LastAttachmentScanDir = ""
+        ReleaseScanSidecars
     End If
     Exit Sub
 EH:
     MSCANModLogging.WriteLog "ProcessEmail FATAL error: #" & Err.Number & " - " & Err.Description & " for subject: " & SafeSubject(mail)
+    ReleaseScanSidecars
 End Sub
 
 ' Append or replace with the full AES analysis footer (Complete Footer button).
@@ -378,15 +390,13 @@ Public Sub ProcessCompleteFooter(ByVal mail As Object)
 
     If Not StartAsyncGeolocationJob(mail, savedFilePath, "full") Then
         MSCANModLogging.WriteLog "ProcessCompleteFooter: Failed to start async geolocation for: " & SafeSubject(mail)
-        CleanupAttachmentScanDir m_LastAttachmentScanDir
-        m_LastAttachmentScanDir = ""
+        ReleaseScanSidecars
     End If
     Exit Sub
 
 EH:
     MSCANModLogging.WriteLog "ProcessCompleteFooter FATAL error: #" & Err.Number & " - " & Err.Description & " for subject: " & SafeSubject(mail)
-    CleanupAttachmentScanDir m_LastAttachmentScanDir
-    m_LastAttachmentScanDir = ""
+    ReleaseScanSidecars
 End Sub
 
 ' Ribbon-only Deep Scan: never mutates the email footer; opens an HTML report when done.
@@ -613,46 +623,81 @@ Private Sub MarkJobApplied(ByVal footerPath As String)
     ts.Close
 End Sub
 
-' Each scan writes a one-shot aes_geo_job_*.vbs and never removes it. They had
-' accumulated to 3290 files (back to July) in %LOCALAPPDATA%\GeoFooter, which is
-' also where the queue tick script is written - a folder that size makes that
-' write slower and occasionally fail. Called once per session at startup.
+' Scan scratch files that nothing else removes. Every scan leaves a one-shot
+' aes_geo_job_*.vbs, an exported headers file and, depending on how it ended,
+' a .applied or .fail sidecar. None of them had a deleter, so they had reached
+' thousands of files - 4955 header exports going back to last October, which
+' matters beyond disk because those contain full transport headers.
+'
+' Runs once per session at startup.
 Public Sub PurgeOldJobScripts(Optional ByVal maxAgeDays As Long = 2)
     On Error Resume Next
 
-    Dim folderPath As String
-    folderPath = Environ$("LOCALAPPDATA") & "\GeoFooter"
-    If Len(folderPath) = 0 Then Exit Sub
+    Dim root As String
+    root = Environ$("LOCALAPPDATA") & "\GeoFooter"
+    If Len(root) = 0 Then Exit Sub
 
     Dim fso As Object
     Set fso = CreateObject("Scripting.FileSystemObject")
     If fso Is Nothing Then Exit Sub
-    If Not fso.FolderExists(folderPath) Then Exit Sub
+    If Not fso.FolderExists(root) Then Exit Sub
+
+    Dim removed As Long
+    removed = PurgeMatching(fso, root, "aes_geo_job_", ".vbs", maxAgeDays)
+    removed = removed + PurgeMatching(fso, root, "", ".applied", maxAgeDays)
+    removed = removed + PurgeMatching(fso, root, "", ".fail", maxAgeDays)
+    removed = removed + PurgeMatching(fso, root & "\headers", "headers_", ".txt", maxAgeDays)
+    removed = removed + PurgeMatching(fso, root, "headers_", ".txt", maxAgeDays)
+
+    If removed > 0 Then
+        MSCANModLogging.WriteLog "PurgeOldJobScripts: removed " & CStr(removed) & _
+            " scan scratch files older than " & CStr(maxAgeDays) & " days."
+    End If
+End Sub
+
+' Deletes files in one folder matching an optional name prefix and extension.
+' An empty prefix matches anything with that extension.
+Private Function PurgeMatching(ByVal fso As Object, ByVal folderPath As String, _
+                               ByVal prefix As String, ByVal extension As String, _
+                               ByVal maxAgeDays As Long) As Long
+    On Error Resume Next
+    PurgeMatching = 0
+    If Not fso.FolderExists(folderPath) Then Exit Function
 
     Dim cutoff As Date
-    Dim removed As Long
     Dim file As Object
     Dim fileName As String
+    Dim removed As Long
     cutoff = DateAdd("d", -maxAgeDays, Now)
 
     For Each file In fso.GetFolder(folderPath).Files
         fileName = LCase$(file.Name)
-        If Left$(fileName, 12) = "aes_geo_job_" Then
-            If Right$(fileName, 4) = ".vbs" And file.DateLastModified < cutoff Then
-                file.Delete True
-                If Err.Number = 0 Then
-                    removed = removed + 1
-                Else
-                    Err.Clear
+        If Len(extension) = 0 Or Right$(fileName, Len(extension)) = LCase$(extension) Then
+            If Len(prefix) = 0 Or Left$(fileName, Len(prefix)) = LCase$(prefix) Then
+                If file.DateLastModified < cutoff Then
+                    file.Delete True
+                    If Err.Number = 0 Then
+                        removed = removed + 1
+                    Else
+                        Err.Clear
+                    End If
                 End If
             End If
         End If
     Next file
 
-    If removed > 0 Then
-        MSCANModLogging.WriteLog "PurgeOldJobScripts: removed " & CStr(removed) & _
-            " job scripts older than " & CStr(maxAgeDays) & " days."
-    End If
+    PurgeMatching = removed
+End Function
+
+' Both scratch directories from the scan that just failed to start. The body
+' payload directory is created for every scan including compact, but only the
+' deep path used to clean it up, so these accumulated.
+Private Sub ReleaseScanSidecars()
+    On Error Resume Next
+    CleanupAttachmentScanDir m_LastAttachmentScanDir
+    m_LastAttachmentScanDir = ""
+    CleanupAttachmentScanDir m_LastDeepPayloadDir
+    m_LastDeepPayloadDir = ""
 End Sub
 
 Private Sub ClearJobSidecars(ByVal footerPath As String)
@@ -1587,6 +1632,8 @@ Private Function StartAsyncGeolocationJob(ByVal mail As Object, ByVal headerFile
     cmd = """" & runExe & """ """ & pythonScript & """ """ & headerFilePath & """ """ & outputFile & """ " & footerMode
 
     EnsureAsyncJobs
+    SupersedeJobsForEntry entryId
+
     Dim job As Object
     Set job = CreateObject("Scripting.Dictionary")
     job.CompareMode = vbTextCompare
@@ -1630,6 +1677,34 @@ ErrHandler:
     MSCANModLogging.WriteLog "StartAsyncGeolocationJob error: #" & Err.Number & " - " & Err.Description
     StartAsyncGeolocationJob = False
 End Function
+
+' A new scan of a mail replaces any scan of it still pending. An older job
+' committing straight after the rescan touched the item hits "message has been
+' changed", and a failed Save can leave Outlook's copy without a body.
+Private Sub SupersedeJobsForEntry(ByVal entryId As String)
+    On Error Resume Next
+    If m_AsyncJobs Is Nothing Then Exit Sub
+    If m_AsyncJobs.Count = 0 Then Exit Sub
+
+    Dim keys As Variant
+    Dim i As Long
+    Dim job As Object
+    keys = m_AsyncJobs.keys
+    For i = LBound(keys) To UBound(keys)
+        Set job = Nothing
+        Set job = m_AsyncJobs(keys(i))
+        If Not job Is Nothing Then
+            If StrComp(CStr(job("EntryID")), entryId, vbTextCompare) = 0 Then
+                m_AsyncJobs.Remove keys(i)
+                CleanupAttachmentScanDir CStr(job("AttachDir"))
+                If job.Exists("PayloadDir") Then CleanupAttachmentScanDir CStr(job("PayloadDir"))
+                MarkJobApplied CStr(job("FooterPath"))
+                MSCANModLogging.WriteLog "StartAsyncGeolocationJob: superseded pending job " & keys(i) & _
+                    " for the same mail."
+            End If
+        End If
+    Next i
+End Sub
 
 ' This Outlook build does not expose ThisOutlookSession publics on the COM
 ' Application object (and Outlook has no Application.Run), so the script cannot
@@ -2099,6 +2174,12 @@ Private Function ApplyHighRiskTextOnlyMail(ByVal mail As Object, ByVal footerPat
         htmlBody = mail.HTMLBody
         Err.Clear
         On Error GoTo ErrHandler
+        If Len(Trim$(alreadyPlain)) = 0 And Not HtmlHasSenderContent(htmlBody) Then
+            MSCANModLogging.WriteLogWarn "HEALTH | ApplyHighRiskTextOnlyMail: refusing to rewrite - the message " & _
+                "body is empty: " & SafeSubject(mail)
+            DiscardUnsavedChanges mail, CStr(mail.EntryID)
+            Exit Function
+        End If
         If Len(Trim$(htmlBody)) > 0 Then
             htmlBody = StripAesMarkupFromBody(htmlBody)
             restoreId = SaveMitigatedHtmlBackup(mail, htmlBody, htmlBackupPath)
@@ -2412,6 +2493,17 @@ Private Function CommitMailHtml(ByRef mail As Object, ByVal entryId As String, B
     If mail Is Nothing Or Len(newHtml) = 0 Then Exit Function
     If Len(entryId) = 0 Then entryId = CStr(mail.EntryID)
 
+    ' After a failed Save Outlook can hand back the item with its body
+    ' properties gone ("Converted from text/plain format" and nothing else).
+    ' Footering that copy and saving it is what makes the loss permanent.
+    If Not HtmlHasSenderContent(newHtml) Then
+        m_LastCommitConflict = True
+        MSCANModLogging.WriteLogWarn "HEALTH | CommitMailHtml: refusing to save - the message body is empty " & _
+            "apart from the AES footer: " & SafeSubject(mail)
+        DiscardUnsavedChanges mail, entryId
+        Exit Function
+    End If
+
     Dim attempt As Long
     Dim conflict As Boolean
     Dim opTick As Long
@@ -2438,9 +2530,13 @@ Private Function CommitMailHtml(ByRef mail As Object, ByVal entryId As String, B
         If conflict And attempt >= 2 Then
             m_LastCommitConflict = True
             MSCANModLogging.WriteLog "CommitMailHtml: item keeps changing - leaving it for a later pass."
+            DiscardUnsavedChanges mail, entryId
             Exit Function
         End If
-        If attempt = MAX_ATTEMPTS Then Exit Function
+        If attempt = MAX_ATTEMPTS Then
+            DiscardUnsavedChanges mail, entryId
+            Exit Function
+        End If
 
         MSCANIdle.WaitMs 400
         Set mail = ResolveMailByEntryID(entryId)
@@ -2449,6 +2545,62 @@ Private Function CommitMailHtml(ByRef mail As Object, ByVal entryId As String, B
             Exit Function
         End If
     Next attempt
+End Function
+
+' Drops the half-written footer, banner attachments and HTMLBody from a failed
+' commit so Outlook reloads the stored message instead of keeping a dirty copy
+' that a later Save (ours or the user's) would write back. Skipped when the
+' mail is open in a window: Close would shut the user's window.
+Private Sub DiscardUnsavedChanges(ByVal mail As Object, ByVal entryId As String)
+    On Error Resume Next
+    If mail Is Nothing Then Exit Sub
+    If CBool(mail.Saved) Then Exit Sub
+
+    Dim insp As Object
+    For Each insp In Application.Inspectors
+        If StrComp(CStr(insp.CurrentItem.EntryID), entryId, vbTextCompare) = 0 Then
+            MSCANModLogging.WriteLogWarn "HEALTH | unsaved AES changes left on an open window; close it without " & _
+                "saving to keep the original body: " & SafeSubject(mail)
+            Exit Sub
+        End If
+    Next insp
+
+    Err.Clear
+    mail.Close olDiscard
+    If Err.Number <> 0 Then
+        MSCANModLogging.WriteLog "DiscardUnsavedChanges: #" & Err.Number & " - " & Err.Description
+        Err.Clear
+    End If
+End Sub
+
+' True when the HTML has something from the sender once AES's own banner and
+' footer are removed: visible text or an image.
+Private Function HtmlHasSenderContent(ByVal html As String) As Boolean
+    On Error GoTo EH
+    HtmlHasSenderContent = True
+
+    Dim rest As String
+    rest = StripAllAesScanResults(StripAesTopBannersFromBody(html))
+    If InStr(1, rest, "<img", vbTextCompare) > 0 Then Exit Function
+    If InStr(1, rest, "<v:imagedata", vbTextCompare) > 0 Then Exit Function
+
+    Dim re As Object
+    Set re = CreateObject("VBScript.RegExp")
+    re.Global = True
+    re.IgnoreCase = True
+    re.Pattern = "<(head|style|script|title)[\s\S]*?</\1\s*>"
+    rest = re.Replace(rest, "")
+    re.Pattern = "<!--[\s\S]*?-->"
+    rest = re.Replace(rest, "")
+    re.Pattern = "<[^>]*>"
+    rest = re.Replace(rest, "")
+    re.Pattern = "&nbsp;|&#160;|[\s\u00A0\u200B]+"
+    rest = re.Replace(rest, "")
+    HtmlHasSenderContent = (Len(rest) > 0)
+    Exit Function
+EH:
+    ' Cannot tell - do not block the footer on a helper failure.
+    HtmlHasSenderContent = True
 End Function
 
 ' Locate AES footer block. IMAP often strips <!-- comments -->, so also use
@@ -3059,10 +3211,9 @@ Private Function InsertFooterIntoMail(mail As Object, footerPath As String) As B
     ' Normal mail: HTML body. ReportItem (ReadNotify IPNRN etc.): Body only.
     If TypeOf mail Is Outlook.MailItem Then
         footerHTML = EmbedAesFooterMark(mail, footerHTML)
+        Dim blockBeaconsIns As Boolean
         On Error Resume Next
-        If MSCANModSenderRules.ShouldBlockBeacons(mail) Then
-            MSCANModSenderRules.NeutralizeBeaconsInMail mail
-        End If
+        blockBeaconsIns = MSCANModSenderRules.ShouldBlockBeacons(mail)
         Err.Clear
         On Error GoTo ErrHandler
 
@@ -3075,6 +3226,7 @@ Private Function InsertFooterIntoMail(mail As Object, footerPath As String) As B
 
         ' Never force BodyFormat - on IMAP/Google that flattens the message to text.
         Dim bodyHtml As String: bodyHtml = mail.HTMLBody
+        If blockBeaconsIns Then bodyHtml = MSCANModSenderRules.NeutralizeBeaconsInHtml(mail, bodyHtml)
         bodyHtml = StripAesTopBannersFromBody(bodyHtml)
         bodyHtml = StripAllAesScanResults(bodyHtml)
         bodyHtml = DisableRiskTableLinksInHtml(bodyHtml, footerHTML)
@@ -3195,10 +3347,9 @@ Private Function ReplaceAesFooterInMail(ByVal mail As Object, ByVal footerPath A
     ' Never force BodyFormat while an HTML body exists - on IMAP/Google
     ' stores that regenerates the body from the plain-text copy and
     ' flattens the whole message to text.
+    Dim blockBeacons As Boolean
     On Error Resume Next
-    If MSCANModSenderRules.ShouldBlockBeacons(mail) Then
-        MSCANModSenderRules.NeutralizeBeaconsInMail mail
-    End If
+    blockBeacons = MSCANModSenderRules.ShouldBlockBeacons(mail)
     Err.Clear
     On Error GoTo ErrHandler
 
@@ -3214,6 +3365,7 @@ Private Function ReplaceAesFooterInMail(ByVal mail As Object, ByVal footerPath A
         ' Do NOT flip BodyFormat here - that flattens IMAP/Google mail to text.
         bodyHtml = mail.HTMLBody
     End If
+    If blockBeacons Then bodyHtml = MSCANModSenderRules.NeutralizeBeaconsInHtml(mail, bodyHtml)
     bodyHtml = StripAesTopBannersFromBody(bodyHtml)
     ' Drop every earlier scan, including ones quoted in the reply chain,
     ' then place this scan once, at the bottom.

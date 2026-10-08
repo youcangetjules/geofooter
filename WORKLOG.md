@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-08 — 1.4.14: Stop GURI forcing itself maximized
+
+- `expand_to_screen` ran on launch, tray open, a second GURI start, and opening Aura. Each call set `WindowMaximized` and `showMaximized()`, so restoring the window never stuck.
+- Those paths now show and raise the window only. The first open is 1280×800 (or smaller to fit the screen), centred. Later opens restore the saved size from `QSettings` (`Aliniant/GURI`).
+- Follow-up: quit GURI and start it again. The copy already running is the old build.
+
 ### 2026-10-05 — 1.4.13: Quick Actions start a Short Scan
 
 - BA, BB, TS, and NT saved the sender rule and then called `CommandBars.FindControl(Tag="AES_SHORTSCAN")`. From Python that returns the Task Pane control, so Execute never started a scan. The button is found by walking the toolbars for that tag. SL (the links report) starts the same scan after the report opens.

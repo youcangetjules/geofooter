@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
     QCheckBox, QToolButton, QDateEdit, QFormLayout, QSpinBox, QHeaderView,
     QInputDialog,
 )
-from PySide6.QtCore import Qt, QTimer, Signal, QSize, QPoint, QObject, QDate, QRectF
+from PySide6.QtCore import Qt, QTimer, Signal, QSize, QPoint, QObject, QDate, QRectF, QSettings
 from PySide6.QtGui import (
     QFont,
     QColor,
@@ -8998,6 +8998,29 @@ Current Page: {self.current_page + 1}
         self.ollama_system_edit.setMaximumHeight(72)
         form.addWidget(self.ollama_system_edit, 2, 1, 1, 3)
 
+        form.addWidget(QLabel("History"), 3, 0)
+        self.ollama_history_cb = QCheckBox("Send history.md as standing context")
+        self.ollama_history_cb.setChecked(
+            bool(cfg.get("history_enabled", True))
+        )
+        self.ollama_history_cb.setToolTip(
+            "Prepends the contents of history.md to the system prompt on every "
+            "request, so the model knows who you are and what you are working on."
+        )
+        form.addWidget(self.ollama_history_cb, 3, 1, 1, 2)
+
+        edit_history_btn = QPushButton("Edit history.md")
+        edit_history_btn.setToolTip("Create the file if needed and open it for editing.")
+        edit_history_btn.clicked.connect(self._ollama_open_history)
+        form.addWidget(edit_history_btn, 3, 3)
+
+        self.ollama_history_hint = QLabel()
+        self.ollama_history_hint.setObjectName("hint")
+        self.ollama_history_hint.setStyleSheet("color: #5a7280; font-size: 11px;")
+        self.ollama_history_hint.setWordWrap(True)
+        form.addWidget(self.ollama_history_hint, 4, 1, 1, 3)
+        self._ollama_refresh_history_hint()
+
         root.addLayout(form)
 
         status_row = QHBoxLayout()
@@ -9064,11 +9087,58 @@ Current Page: {self.current_page + 1}
             "model": self.ollama_model_combo.currentText().strip(),
             "system": self.ollama_system_edit.toPlainText().strip(),
             "timeout": int(self.ollama_cfg.get("timeout") or 120),
+            "history_enabled": bool(
+                getattr(self, "ollama_history_cb", None)
+                and self.ollama_history_cb.isChecked()
+            ),
+            "history_path": str(self.ollama_cfg.get("history_path") or ""),
+            "history_max_chars": int(
+                self.ollama_cfg.get("history_max_chars") or 8000
+            ),
         }
+
+    def _ollama_refresh_history_hint(self) -> None:
+        """Show where history.md is and whether it has any usable content."""
+        if not hasattr(self, "ollama_history_hint"):
+            return
+        try:
+            from guri.ollama_client import history_path, read_history
+
+            path = history_path(self.ollama_cfg)
+            if not path.is_file():
+                text = f"Not created yet — will be written to {path}"
+            else:
+                body = read_history({**self.ollama_cfg, "history_enabled": True})
+                if body:
+                    text = f"{path} — {len(body):,} chars sent with each prompt"
+                else:
+                    text = f"{path} — empty or still the starter template (not sent)"
+        except Exception as exc:  # noqa: BLE001
+            text = f"history.md unavailable: {exc}"
+        self.ollama_history_hint.setText(text)
+
+    def _ollama_open_history(self) -> None:
+        """Create history.md from the template if needed, then open it."""
+        try:
+            from guri.ollama_client import ensure_history_file
+
+            path = ensure_history_file(self.ollama_cfg)
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.warning(self, "History", f"Could not prepare history.md:\n{exc}")
+            return
+        try:
+            os.startfile(str(path))  # noqa: S606
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.information(
+                self, "History", f"Could not open the editor ({exc}).\n\nFile: {path}"
+            )
+        self._ollama_refresh_history_hint()
+        self.status_bar.showMessage(f"history.md: {path}")
 
     def _ollama_save_settings(self) -> None:
         self.ollama_cfg = self._ollama_collect_cfg()
         ollama_save_config(self.ollama_cfg)
+        self._ollama_refresh_history_hint()
         self.ollama_status.setText("Status: settings saved")
         self.ollama_status.setStyleSheet("color: #1b7a3d;")
         self.status_bar.showMessage("Ollama settings saved")
@@ -10866,9 +10936,59 @@ Current Page: {self.current_page + 1}
         menu.addAction("Mark as Done", lambda: self._mark_item_status(item, "Done", actions_tree=True))
         menu.addAction("Mark as Replied", lambda: self._mark_item_status(item, "Replied", actions_tree=True))
         menu.addSeparator()
+        menu.addAction("Ignore this email", lambda: self._ignore_item_email(item))
+        sender_addr = self._item_sender_address(item)
+        ignore_sender_label = (
+            f"Ignore this sender ({sender_addr})" if sender_addr else "Ignore this sender"
+        )
+        sender_act = menu.addAction(
+            ignore_sender_label, lambda: self._ignore_item_sender(item)
+        )
+        sender_act.setEnabled(bool(sender_addr))
+        menu.addSeparator()
         menu.addAction("Open in Outlook", lambda: self._open_detected_in_outlook(item))
         menu.addAction("View Details", lambda: self._view_email_details(item))
         menu.exec(self.actions_tree.mapToGlobal(position))
+
+    @staticmethod
+    def _item_mail(item) -> Dict[str, Any]:
+        """The mail dict behind a tree row, whether stored flat or nested."""
+        det = item.data(0, Qt.ItemDataRole.UserRole) or {}
+        if not isinstance(det, dict):
+            return {}
+        mail = det.get("mail")
+        return mail if isinstance(mail, dict) else det
+
+    def _item_sender_address(self, item) -> str:
+        mail = self._item_mail(item)
+        return normalize_sender_address(str(mail.get("sender") or ""))
+
+    def _ignore_item_email(self, item) -> None:
+        """Drop this one message from prioritisation, leaving the sender alone."""
+        det = item.data(0, Qt.ItemDataRole.UserRole) or {}
+        mail = self._item_mail(item)
+        if not mail:
+            self.status_bar.showMessage("Could not read that row's email")
+            return
+        key = mail_feedback_key(mail, det if isinstance(det, dict) else {})
+        self.relevance_feedback = ignore_email(self.relevance_feedback, key)
+        self._refresh_after_feedback()
+        subject = str(mail.get("subject") or "").strip()
+        self.status_bar.showMessage(
+            f"Ignored email{f' - {subject[:60]}' if subject else ''}"
+        )
+
+    def _ignore_item_sender(self, item) -> None:
+        """Drop every message from this counterparty from prioritisation."""
+        addr = self._item_sender_address(item)
+        if not addr:
+            QMessageBox.information(
+                self, "Ignore Sender", "Could not read a sender address for that row."
+            )
+            return
+        self.relevance_feedback = ignore_sender(self.relevance_feedback, addr)
+        self._refresh_after_feedback()
+        self.status_bar.showMessage(f"Ignored sender {addr} - removed from prioritisation")
 
     def _mark_item_status(self, item, status: str, actions_tree: bool = False) -> None:
         det = item.data(0, Qt.ItemDataRole.UserRole) or {}
@@ -12954,26 +13074,49 @@ Preview:
                 msec,
             )
 
+    def _window_settings(self) -> QSettings:
+        return QSettings("Aliniant", "GURI")
+
+    def _restore_window_geometry(self) -> None:
+        """Open at the last size the user left. The first open is a normal window."""
+        geo = self._window_settings().value("main/geometry")
+        if geo and self.restoreGeometry(geo):
+            return
+        screen = self.screen() or QApplication.primaryScreen()
+        if screen is None:
+            self.resize(1280, 800)
+            return
+        avail = screen.availableGeometry()
+        width = min(1280, max(640, avail.width() - 80))
+        height = min(800, max(480, avail.height() - 80))
+        self.resize(width, height)
+        frame = self.frameGeometry()
+        frame.moveCenter(avail.center())
+        self.move(frame.topLeft())
+
+    def _save_window_geometry(self) -> None:
+        try:
+            self._window_settings().setValue("main/geometry", self.saveGeometry())
+        except Exception:
+            pass
+
     def _tray_open_guri(self) -> None:
-        """Open/maximize from the tray after the menu has fully dismissed."""
+        """Open from the tray after the menu has fully dismissed."""
         # Longer defer than a single event-loop tick — Windows still holds
         # foreground ownership for a beat after the tray menu closes.
         QTimer.singleShot(150, self.expand_to_screen)
 
     def expand_to_screen(self) -> None:
-        """Restore and maximize the main window (tray / launch)."""
+        """Show the window and bring it forward, at the size the user left it."""
         if getattr(self, "_expanding_to_screen", False):
             return
         self._expanding_to_screen = True
         try:
-            # Avoid setGeometry(full screen) before maximize — that double-layouts
-            # the heavy Welcome UI and feels like the tray action hung.
-            self.setWindowState(
-                (self.windowState() & ~Qt.WindowState.WindowMinimized)
-                | Qt.WindowState.WindowMaximized
-            )
-            self.show()
-            self.showMaximized()
+            state = self.windowState()
+            if state & Qt.WindowState.WindowMinimized:
+                self.setWindowState(state & ~Qt.WindowState.WindowMinimized)
+            if not self.isVisible():
+                self.show()
             self.raise_()
             self.activateWindow()
             # Soft foreground nudge only — no AttachThreadInput (can deadlock).
@@ -13050,6 +13193,7 @@ Preview:
     
     def _quit_application(self):
         """Quit the application completely."""
+        self._save_window_geometry()
         self._stop_auto_refresh()
         if self.tray_icon:
             self.tray_icon.hide()
@@ -13057,6 +13201,7 @@ Preview:
     
     def closeEvent(self, event):
         """Handle application closing — hide to tray when that option is on."""
+        self._save_window_geometry()
         if (
             self.tray_available
             and self.tray_icon
@@ -13153,6 +13298,7 @@ def main():
             return
 
     window = GURIViewerGUI()
+    window._restore_window_geometry()
     window._instance_server = server  # keep alive
 
     def _on_instance_connection() -> None:
@@ -13181,7 +13327,6 @@ def main():
 
     server.newConnection.connect(_on_instance_connection)
 
-    # Always launch filling the screen (availableGeometry + maximized)
     window.expand_to_screen()
     if want_raise:
         QTimer.singleShot(0, window.expand_to_screen)

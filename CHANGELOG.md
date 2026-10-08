@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.14] — 2026-10-08
+
+### Fixed
+
+- GURI no longer forces itself maximized. Launch, the tray, a second start, and the Aura tab bring the existing window forward at the size you left. The first open is a normal window, and that size is remembered.
+
 ## [1.4.13] — 2026-10-05
 
 ### Fixed

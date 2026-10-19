@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-19 — 1.4.16: Soften the footer strip
+
+- Strip background `#46525c` (was `#39444d`). The 1px rules moved with it to `#606d79`, and `assets/icons/aes_mark_footer.png` was recolored so the A tile is the same slate.
+- Follow-up: rescan a message to see the new strip. No VBA import.
+
 ### 2026-10-19 — 1.4.15: Internal same-domain mail shows its hop address and a lower score
 
 - Coleago-to-Coleago headers carry Microsoft transport addresses as `(2603:…)`, which the public-IP patterns never matched, so the footer said Sender IP Unknown. The first origin-side address that is not link-local is now shown, and the place line reads "Internal within same domain" when every To/Cc address shares the sender domain.

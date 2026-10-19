@@ -579,11 +579,11 @@ def footer_quip(level: str, score: int) -> str:
         return "Scanned. Read it with your eyes open."
 
 
-# Footer scan strip. #3f4c55 was the slate at 80%; this is 10% darker.
-AES_STRIP_BG = "#39444d"
+# Footer scan strip. A step lighter than #39444d so the slate reads softer.
+AES_STRIP_BG = "#46525c"
 AES_STRIP_TEXT = "#ffffff"
 AES_STRIP_MUTED = "#d5dee4"
-AES_STRIP_RULE = "#535f6a"
+AES_STRIP_RULE = "#606d79"
 AES_STRIP_DOT = "#3ecf8e"
 AES_STRIP_FONT = "Segoe UI, Arial, sans-serif"
 # Outlook drops padding on a div. This row is the gap above the strip.

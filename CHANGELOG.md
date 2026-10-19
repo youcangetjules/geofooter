@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.16] — 2026-10-19
+
+### Changed
+
+- The footer strip is a slightly lighter slate (`#46525c`, was `#39444d`). The row lines and the orange A tile use the same step so they still match.
+
 ## [1.4.15] — 2026-10-19
 
 ### Fixed

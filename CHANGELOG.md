@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.15] — 2026-10-19
+
+### Fixed
+
+- A message that stays inside one domain shows the hop address and the location "Internal within same domain". The summary no longer says Sender IP Unknown.
+- That mail is no longer scored for missing SPF, DKIM, DMARC, or origin geo. Those checks apply to mail that arrived from outside. A Coleago-to-Coleago message that scored about 19 now scores 0 unless something else on the message (a link, an attachment) adds risk.
+
 ## [1.4.14] — 2026-10-08
 
 ### Fixed

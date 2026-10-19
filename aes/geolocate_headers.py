@@ -1408,6 +1408,68 @@ class HeaderParser:
         self.logger.debug("DEBUG: No valid public sender IP found")
         return None, None
 
+    def recipients_share_sender_domain(self, headers: str, sender_domain: Optional[str]) -> bool:
+        """True when every To/Cc address is on the sender's domain."""
+        domain = (sender_domain or "").strip().lower().rstrip(".")
+        if not domain:
+            return False
+        flat = self.unfold_headers(headers)
+        addresses: List[str] = []
+        for field in ("To", "Cc"):
+            match = re.search(rf"^{field}:\s*(.+)$", flat, re.IGNORECASE | re.MULTILINE)
+            if not match:
+                continue
+            addresses.extend(re.findall(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", match.group(1)))
+        domains = set()
+        for address in addresses:
+            found = self._domain_from_email(self._normalize_email(address))
+            if found:
+                domains.add(found)
+        return bool(domains) and domains == {domain}
+
+    @staticmethod
+    def _ip_tokens_in_received(line: str) -> Tuple[str, List[str]]:
+        """Hostname after 'from', and every IP written in parentheses on the hop."""
+        host = ""
+        host_match = re.match(r"from\s+(\S+)", line.strip(), re.IGNORECASE)
+        if host_match:
+            host = host_match.group(1).strip("[]")
+        found: List[str] = []
+        for inner in re.findall(r"\(([^)]*)\)", line):
+            bracketed = re.findall(r"\[([^\]]+)\]", inner)
+            candidates = bracketed or [inner.strip()]
+            for candidate in candidates:
+                candidate = candidate.split("%", 1)[0].strip()
+                if " " in candidate:
+                    candidate = candidate.split()[-1]
+                try:
+                    ipaddress.ip_address(candidate)
+                except ValueError:
+                    continue
+                found.append(candidate)
+        return host, found
+
+    def extract_internal_hop_ip(self, headers: str) -> Tuple[Optional[str], Optional[str]]:
+        """First origin-side address on a same-domain message.
+
+        Link-local addresses (the submitting server talking to itself) are
+        kept only when the hop list has nothing else.
+        """
+        fallback: Tuple[Optional[str], Optional[str]] = (None, None)
+        for block in reversed(self.extract_received_blocks(headers)):
+            host, ips = self._ip_tokens_in_received(block)
+            for ip in ips:
+                try:
+                    parsed = ipaddress.ip_address(ip)
+                except ValueError:
+                    continue
+                if parsed.is_link_local or parsed.is_loopback or parsed.is_unspecified:
+                    if fallback[0] is None:
+                        fallback = (ip, host or None)
+                    continue
+                return ip, host or None
+        return fallback
+
 class AuthenticationParser:
     """Parses authentication-related headers."""
     
@@ -2077,16 +2139,30 @@ class SecurityAssessor:
         self,
         geo_results: List[GeoLocationResult],
         auth_info: AuthenticationInfo,
-        sender_domain_whois: Dict[str, Any]
+        sender_domain_whois: Dict[str, Any],
+        internal_same_domain: bool = False,
     ) -> SecurityAssessment:
         """Calculate security risk score and assessment."""
         score = 0
         factors: List[str] = []
         components: List[RiskScoreComponent] = []
         domain_age_flag = None
-        
-        score = self._assess_authentication(auth_info, score, factors, components)
-        score = self._assess_geolocation(geo_results, score, factors, components)
+
+        if internal_same_domain:
+            # SPF, DKIM, and DMARC are often absent when mail never leaves the
+            # organisation. Scoring those gaps made same-domain mail look like
+            # an unauthenticated outside sender.
+            self._record_factor(
+                factors,
+                components,
+                "Origin / network",
+                "Internal within same domain",
+                0,
+                note="Missing public authentication and origin geo are not scored",
+            )
+        else:
+            score = self._assess_authentication(auth_info, score, factors, components)
+            score = self._assess_geolocation(geo_results, score, factors, components)
         score, domain_age_flag = self._assess_domain_age(
             sender_domain_whois, score, factors, components
         )
@@ -2949,9 +3025,12 @@ class HTMLReportGenerator:
         per_hop_analysis = self._extract_hop_details(headers, lite=lite)
 
         # Route/ASN risk needs hop AbuseIPDB scores; apply after hop enrichment.
-        security_assessment = SecurityAssessor().apply_route_path_risk(
-            security_assessment, per_hop_analysis
-        )
+        # Same-domain mail stays on the organisation's own servers, so those
+        # hops are not an outside route.
+        if geo_result.geo_source != "internal-same-domain":
+            security_assessment = SecurityAssessor().apply_route_path_risk(
+                security_assessment, per_hop_analysis
+            )
         if time_checks is not None and headers:
             m_date = re.search(r'^Date:\s*(.+)$', headers, re.IGNORECASE | re.MULTILINE)
             try:
@@ -8357,12 +8436,27 @@ def main():
         # Extract sender information
         sender_email, sender_domain = header_parser.extract_sender_info(headers)
         sender_ip, sender_hostname = header_parser.extract_original_sender_ip(headers)
-        
+        internal_same_domain = False
+        if not sender_ip and header_parser.recipients_share_sender_domain(headers, sender_domain):
+            sender_ip, _internal_host = header_parser.extract_internal_hop_ip(headers)
+            if sender_ip:
+                internal_same_domain = True
+                sender_hostname = None
+
         logger.info(f"Sender: {sender_email} ({sender_domain})")
         logger.info(f"IP: {sender_ip} ({sender_hostname})")
-        
-        # Geolocate sender IP
-        geo_result = geo_service.geolocate_ip(sender_ip) if sender_ip else GeoLocationResult(ip="Unknown")
+
+        # Geolocate sender IP. A same-domain message has no public origin, so
+        # the address is shown as internal instead of a datacentre lookup.
+        if internal_same_domain and sender_ip:
+            geo_result = GeoLocationResult(
+                ip=sender_ip,
+                city="Internal within same domain",
+                success=False,
+                geo_source="internal-same-domain",
+            )
+        else:
+            geo_result = geo_service.geolocate_ip(sender_ip) if sender_ip else GeoLocationResult(ip="Unknown")
         
         # Get WHOIS information
         whois_info = whois_service.get_whois_info(sender_domain) if sender_domain else {}
@@ -8372,7 +8466,8 @@ def main():
         
         # Assess security risk
         security_assessment = security_assessor.assess_security_risk(
-            [geo_result], auth_info, whois_info
+            [geo_result], auth_info, whois_info,
+            internal_same_domain=internal_same_domain,
         )
         
         # Generate HTML report

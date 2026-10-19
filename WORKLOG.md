@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-19 — 1.4.15: Internal same-domain mail shows its hop address and a lower score
+
+- Coleago-to-Coleago headers carry Microsoft transport addresses as `(2603:…)`, which the public-IP patterns never matched, so the footer said Sender IP Unknown. The first origin-side address that is not link-local is now shown, and the place line reads "Internal within same domain" when every To/Cc address shares the sender domain.
+- Missing SPF, DKIM, DMARC, origin geo, and route-hop reputation are not scored in that case. Those gaps are normal inside one organisation. Domain age and later link or attachment findings still count.
+- Follow-up: rescan the message. No VBA import.
+
 ### 2026-10-08 — 1.4.14: Stop GURI forcing itself maximized
 
 - `expand_to_screen` ran on launch, tray open, a second GURI start, and opening Aura. Each call set `WindowMaximized` and `showMaximized()`, so restoring the window never stuck.

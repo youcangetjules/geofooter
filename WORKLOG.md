@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.4.17: Wait until Recipients is finished before offering to add it
+
+- `currentTextChanged` on the Create GURI Recipients combo was calling `_check_new_recipient`, so typing `c` opened "Would you like to add it?". The add prompt now runs on `editingFinished` (leave field or Enter). Subject suggestions still update while typing. Incomplete email fragments are ignored until they look like a full address.
+- Follow-up: restart GURI. No VBA import.
+
 ### 2026-10-19 — 1.4.16: Soften the footer strip
 
 - Strip background `#46525c` (was `#39444d`). The 1px rules moved with it to `#606d79`, and `assets/icons/aes_mark_footer.png` was recolored so the A tile is the same slate.

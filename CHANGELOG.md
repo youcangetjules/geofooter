@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.17] — 2026-10-20
+
+### Fixed
+
+- Create GURI no longer asks to add a recipient on every keystroke. The prompt runs when you leave the Recipients field or press Enter, and only when the entry looks finished (for example `name@domain.com`).
+
 ## [1.4.16] — 2026-10-19
 
 ### Changed

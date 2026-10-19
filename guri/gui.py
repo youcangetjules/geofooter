@@ -3852,7 +3852,14 @@ class GURIViewerGUI(QMainWindow):
         self.recipients_combobox = QComboBox()
         self.recipients_combobox.setEditable(True)
         self.recipients_combobox.addItems(sorted(self.recipients_list))
-        self.recipients_combobox.currentTextChanged.connect(self._on_recipient_change)
+        # Subject suggestions can follow as the user types. The "add to list"
+        # prompt must wait until they leave the field or press Enter.
+        self.recipients_combobox.currentTextChanged.connect(
+            self._update_subject_dropdown
+        )
+        recipients_line = self.recipients_combobox.lineEdit()
+        if recipients_line is not None:
+            recipients_line.editingFinished.connect(self._check_new_recipient)
         recipients_hbox.addWidget(self.recipients_combobox)
         
         add_recipient_btn = QPushButton("+ Add New")
@@ -5201,26 +5208,39 @@ Current Page: {self.current_page + 1}
         except Exception as e:
             self.logger.error(f"Error saving recipients: {e}")
     
-    def _check_new_recipient(self, event=None):
-        """Check if the entered recipient is new and offer to add it."""
-        recipient = self.recipients_combobox.currentText().strip()
-        
+    @staticmethod
+    def _recipient_entry_complete(recipient: str) -> bool:
+        """True when the field looks finished enough to offer adding it."""
         if not recipient:
+            return False
+        if recipient == NON_EMAIL_PLACEHOLDER:
+            return True
+        if "@" in recipient:
+            local, _, domain = recipient.partition("@")
+            return bool(local) and "." in domain and not domain.startswith(".")
+        # Non-email labels (codes, short names) still need more than a keystroke.
+        return len(recipient) >= 3
+
+    def _check_new_recipient(self, event=None):
+        """Offer to add a finished recipient that is not already on the list."""
+        recipient = self.recipients_combobox.currentText().strip()
+
+        if not self._recipient_entry_complete(recipient):
             return
-        
+
         # If it's already in the list, no action needed
         if recipient in self.recipients_list:
             return
-        
+
         # Ask if user wants to add it
         response = QMessageBox.question(
             self,
-            "New Recipient", 
+            "New Recipient",
             f"'{recipient}' is not in the recipients list.\n\nWould you like to add it?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.Yes
         )
-        
+
         if response == QMessageBox.StandardButton.Yes:
             self.recipients_list.append(recipient)
             self.recipients_combobox.clear()
@@ -5228,12 +5248,12 @@ Current Page: {self.current_page + 1}
             self.recipients_combobox.setCurrentText(recipient)
             self._save_recipients()
             self.status_bar.showMessage(f"Added '{recipient}' to recipients list")
-    
+
     def _add_new_recipient(self):
         """Manually add a new recipient."""
         # Get current value
         current = self.recipients_combobox.currentText().strip()
-        
+
         if current and current not in self.recipients_list:
             self.recipients_list.append(current)
             self.recipients_combobox.clear()
@@ -5246,11 +5266,6 @@ Current Page: {self.current_page + 1}
             QMessageBox.information(self, "Already Exists", f"'{current}' is already in the recipients list")
         else:
             QMessageBox.warning(self, "No Recipient", "Please enter a recipient first")
-    
-    def _on_recipient_change(self, event=None):
-        """Handle recipient change - check for new recipient and update subject dropdown."""
-        self._check_new_recipient(event)
-        self._update_subject_dropdown(event)
     
     def _update_subject_dropdown(self, event=None):
         """Update subject dropdown based on selected recipient."""

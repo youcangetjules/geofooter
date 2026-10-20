@@ -7,7 +7,7 @@ Attribute VB_Name = "MSCANPixel"
 '===============================================================================
 Option Explicit
 
-Private Const DEFAULT_BASE_URL As String = "https://track.i-txone.com"
+Private Const DEFAULT_BASE_URL As String = "https://track.aliniant.net"
 Private Const PIXEL_ATTR As String = "data-aes-pixel"
 
 Private Type GUID_T

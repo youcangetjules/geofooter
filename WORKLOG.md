@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.5.4: Pixel endpoint moves to a dedicated VM at track.aliniant.net
+
+- `DEFAULT_BASE_URL` in `VBA\MSCANPixel.bas` and `aes/pixel_tracking.py` is now `https://track.aliniant.net`. The nginx files are renamed to `cloud/pixel/nginx-track.aliniant.net*.conf` (TLS 1.2+). New `cloud/pixel/deploy.sh` sets up a fresh Ubuntu 24.04 VM: apt nginx/certbot (renewed by `certbot.timer`), `/opt/aes-pixel`, the env file written from a key on stdin, the systemd unit, the stage-1 site and certificate, then the stage-2 site and a `/healthz` check. `.gitattributes` gets `cloud/** eol=lf`.
+- Why: the operator wants the pixel kept off the TXOne server ("just to keep it clean"), so it gets its own instance. TXOne config changes go only through Workflow Manager (Server Health → On-Server → Nginx Performance, on the VM). From the read-only TXOne review, for Workflow Manager to pick up: the live 100 r/m is rejecting the operator's own `POST /api/query`; the repo's 1000 r/m (1.65.227) was never deployed; and the repo `api_server/nginx.conf` lacks the server's `txeco-api.conf` include.
+- Follow-up: the operator registers aliniant.net, creates the VM (static IP, HTTP/HTTPS allowed) and an A record `track.aliniant.net`. Then copy `cloud/pixel/` to it and run `deploy.sh` with the DPAPI `aes_pixel_key` on stdin, set `enabled=1` in `aes_pixel.ini`, and re-import `MSCANPixel`.
+
 ### 2026-10-20 — 1.5.3: Keep the pixel nginx site out of workflow-api's catch-all traffic
 
 - `cloud/pixel/nginx-track.i-txone.com*.conf`: install name `sites-enabled/zz-aes-pixel` (after `workflow-api`, which has no `default_server` and so is the implicit catch-all). Removed `[::]` listens (the server has no global IPv6 and workflow-api has no IPv6 listeners) and added `limit_conn aes_pixel_conn 10`. BUG-020.

@@ -1,3 +1,6 @@
 # Outlook VBA imports .bas/.cls as text; keep CRLF so File > Import works.
 *.bas text eol=crlf
 *.cls text eol=crlf
+
+# Server-side files run on Linux; bash and systemd need LF.
+cloud/** text eol=lf

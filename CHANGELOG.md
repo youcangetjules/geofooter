@@ -20,6 +20,17 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.4] — 2026-10-20
+
+### Changed
+
+- Read-tracking pixels are served from `https://track.aliniant.net` on a dedicated Aliniant VM, which keeps them off the TXOne server entirely. The nginx site files are renamed to `cloud/pixel/nginx-track.aliniant.net*.conf`.
+
+### Added
+
+- `cloud/pixel/deploy.sh`: sets up the pixel endpoint on a fresh Ubuntu 24.04 VM (packages, service, nginx, Let's Encrypt certificate, health check). The key is read from stdin. Safe to re-run.
+- `.gitattributes`: `cloud/**` is checked out with LF line endings so bash and systemd can read the files.
+
 ## [1.5.3] — 2026-10-20
 
 ### Fixed

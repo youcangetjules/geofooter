@@ -122,6 +122,7 @@ Public Function HandleItemSend(ByVal Item As Object, ByRef Cancel As Boolean) As
     If MSCANCore.HasClassification(mailItem.Subject) Then
         MSCANCore.Log "Email already classified, allowing send"
         ApplyReadNotifyWithConflictRetry mailItem, True, "", True
+        MSCANPixel.ApplyOwnPixel mailItem
         SchedulePostSendFooterScan mailItem
         HandleItemSend = True
         Exit Function
@@ -150,6 +151,7 @@ Public Function HandleItemSend(ByVal Item As Object, ByRef Cancel As Boolean) As
         IIf(Len(m_FormReadNotifySuffix) > 0, " (" & m_FormReadNotifySuffix & ")", "")
 
     ApplyReadNotifyWithConflictRetry mailItem, m_FormReadNotify, m_FormReadNotifySuffix, False
+    MSCANPixel.ApplyOwnPixel mailItem
     LogSendDiagnostics mailItem, "ItemSend-after-mutate"
     SchedulePostSendFooterScan mailItem
     HandleItemSend = True

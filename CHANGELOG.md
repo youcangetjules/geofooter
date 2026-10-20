@@ -20,6 +20,22 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-10-20
+
+### Added
+
+- **Read tracking for outgoing mail.** HTML mail sent from the Aliniant account gets an invisible AES pixel (`https://track.aliniant.com/p/<id>.gif`), added at send time after classification and ReadNotify. Earlier AES pixels quoted in replies and forwards are removed first.
+- **GURI Tracking tab.** Lists each tracked send with opens, likely reads, first/last open and last client, plus a per-open detail list. Opens are collected every 5 minutes in the background while GURI is open. Each tracked send gets a GURI record (risk field `OUTGOING (tracked)`). Your own views are left out (opens from the IP that polls), and Gmail/Yahoo proxy fetches and Apple Mail pre-fetches are labelled.
+- **Pixel endpoint** in `cloud/pixel/`: a stdlib-only Python service (loopback port 8791, SQLite, 400-day retention, per-pixel cap), a hardened systemd unit (64 MB / 10% CPU) and a self-contained nginx site for `track.aliniant.com`.
+
+### Changed
+
+- Our own pixel quoted back in an incoming reply no longer counts as a third-party beacon.
+
+### Notes
+
+- Off by default. Set `enabled=1` in `%LOCALAPPDATA%\GeoFooter\aes_pixel.ini` once the endpoint is deployed. Re-import `MSCANPixel` (new), `MSCANEventHandlers` and `MSCANModule1`.
+
 ## [1.4.30] — 2026-10-20
 
 ### Fixed

@@ -13,6 +13,16 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.5.0: AES read-tracking pixel for outgoing Aliniant mail
+
+- New `VBA\MSCANPixel.bas`: `ApplyOwnPixel` (called from both `HandleItemSend` paths) adds a 1x1 `data-aes-pixel` img before `</body>` for `IsAliniantSend` HTML mail, using a CoCreateGuid hex id, and writes `%LOCALAPPDATA%\GeoFooter\pixels\<id>.json` (UTF-8 via ADODB). Earlier own pixels are stripped first. It never cancels a send; it is timed via `MSCANHealth` and controlled by `aes_pixel.ini` (default off). `CollectEmailBeacons` skips `IsOwnPixelTag`. Added to `IMPORT.txt` and `Import_VBA_to_Outlook.ps1`.
+- New `aes/pixel_tracking.py`: ledger import (strips ReadNotify suffixes), `poll()` against `/opens` with `X-AES-Key` (DPAPI secret `aes_pixel_key`, already generated on this PC), own-IP exclusion including retro-marking, client classification, and summaries for GURI.
+- `guri/gui.py`: Tracking tab (after AES Scores). Background poll every 5 min via `_PixelPollBridge`; GURI records are created on the UI thread with `generate_guri`.
+- New `cloud/pixel/`: `aes_pixel_server.py`, `aes-pixel.service`, and nginx stage-1 (HTTP, ACME webroot) and stage-2 (HTTPS) site files.
+- Hosting decision: i-txone.com (GCP, us-central1), chosen by the operator over AWS London. Constraint from the operator: do not disturb anything running there. Deploy adds only new files; the only shared touch is `nginx -t` then a graceful `systemctl reload nginx`, twice.
+- Tests: `tests/test_pixel_tracking.py` (7). Offscreen smoke test of the Tracking tab passed.
+- Follow-up: operator adds an A record `track.aliniant.com -> 35.208.12.24` at 20i; then deploy and set `enabled=1`. Re-import `MSCANPixel`, `MSCANEventHandlers` and `MSCANModule1`.
+
 ### 2026-10-20 — 1.4.30: Action buttons no longer truncated
 
 - `aes/geolocate_headers.py` `_build_action_buttons_html`: one `styled_cell` helper for every button (the data-removal button had a copy), with `line-height:14px; mso-line-height-rule:exactly`, 5px bottom padding, 4px under each cell and an 8px spacer table under the row. BUG-017.

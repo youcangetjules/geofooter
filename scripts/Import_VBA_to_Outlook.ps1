@@ -36,6 +36,7 @@ $ModuleFiles = @(
     "MSCANAppBootstrap.bas",
     "MSCANClassificationDialog.bas",
     "MSCANReadNotify.bas",
+    "MSCANPixel.bas",
     "MSCANToolbar.bas",
     "MSCANModSenderRules.bas",
     "MSCANModule1.bas",

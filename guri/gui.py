@@ -165,6 +165,7 @@ from guri.inbox_search import (
     search_inbox_conversations,
 )
 import aes.score_history as aes_score_history
+import aes.pixel_tracking as aes_pixel_tracking
 from aura.gui_tab import DataBrokersPanel
 from guri.file_scraper import (
     ScanLocation,
@@ -578,6 +579,12 @@ class _InboxSearchBridge(QObject):
 
     progress = Signal(str)
     finished = Signal(object, str)  # payload dict or None, error
+
+
+class _PixelPollBridge(QObject):
+    """Marshal tracking-pixel polls back to the UI thread."""
+
+    finished = Signal(object)  # poll result dict
 
 
 def _guri_logo_path() -> str:
@@ -2186,6 +2193,9 @@ class GURIViewerGUI(QMainWindow):
 
         # Tab 8c: AES per-sender threat scores (view / override / reset)
         self._create_aes_scores_tab()
+
+        # Tab 8c2: Read tracking for outgoing mail (AES pixel)
+        self._create_tracking_tab()
 
         # Tab 8d: Data broker removal (Incogni-style tracking)
         self._create_data_brokers_tab()
@@ -8259,6 +8269,177 @@ Current Page: {self.current_page + 1}
             self.status_bar.showMessage("Select a conversation or message first")
             return
         self._open_inbox_search_item(item)
+
+    # ------------------------------------------------------------------ #
+    # Tracking tab (AES read-tracking pixel on outgoing mail)
+    # ------------------------------------------------------------------ #
+
+    _TRACKING_COLUMNS = (
+        "Sent", "Subject", "Recipients", "Opens", "Likely reads",
+        "First open", "Last open", "Last client", "GURI",
+    )
+    _TRACKING_POLL_MS = 5 * 60 * 1000
+
+    def _create_tracking_tab(self) -> None:
+        frame = QWidget()
+        self.tracking_tab_index = self.notebook.addTab(frame, "Tracking")
+        root = QVBoxLayout(frame)
+        root.setContentsMargins(12, 12, 12, 12)
+        root.setSpacing(10)
+
+        head = QLabel("Read tracking for outgoing mail")
+        head.setStyleSheet(f"font-size: 14px; font-weight: 700; color: {PALETTE['accent']};")
+        root.addWidget(head)
+        sub = QLabel(
+            "Mail sent from the Aliniant account carries an AES tracking pixel. Opens are "
+            "collected every 5 minutes while GURI is open. Your own views (Sent Items) are "
+            "left out. Gmail and Yahoo fetch images through their own servers, so the IP is "
+            "theirs; Apple Mail fetches on delivery, so those count as opens but not likely reads."
+        )
+        sub.setWordWrap(True)
+        sub.setStyleSheet(f"color: {PALETTE['muted']};")
+        root.addWidget(sub)
+
+        toolbar = QHBoxLayout()
+        refresh_btn = QPushButton("Refresh opens")
+        refresh_btn.clicked.connect(self._tracking_poll)
+        toolbar.addWidget(refresh_btn)
+        toolbar.addStretch(1)
+        root.addLayout(toolbar)
+
+        self.tracking_tree = QTreeWidget()
+        self.tracking_tree.setHeaderLabels(self._TRACKING_COLUMNS)
+        self.tracking_tree.setRootIsDecorated(False)
+        self.tracking_tree.setSortingEnabled(True)
+        for col, width in enumerate((130, 280, 220, 55, 85, 130, 130, 200)):
+            self.tracking_tree.setColumnWidth(col, width)
+        self.tracking_tree.currentItemChanged.connect(lambda *_: self._tracking_show_detail())
+        root.addWidget(self.tracking_tree, stretch=3)
+
+        self.tracking_detail = QTreeWidget()
+        self.tracking_detail.setHeaderLabels(("Time", "IP", "Client", "Note"))
+        self.tracking_detail.setRootIsDecorated(False)
+        for col, width in enumerate((150, 140, 260)):
+            self.tracking_detail.setColumnWidth(col, width)
+        root.addWidget(self.tracking_detail, stretch=1)
+
+        self.tracking_status = QLabel("")
+        self.tracking_status.setStyleSheet(f"color: {PALETTE['muted']};")
+        root.addWidget(self.tracking_status)
+
+        self._tracking_busy = False
+        self._tracking_bridge = _PixelPollBridge()
+        self._tracking_bridge.finished.connect(self._on_tracking_polled)
+        self.tracking_timer = QTimer(self)
+        self.tracking_timer.timeout.connect(self._tracking_poll)
+        self.tracking_timer.start(self._TRACKING_POLL_MS)
+
+        self._tracking_reload()
+        if aes_pixel_tracking.load_config().get("enabled"):
+            QTimer.singleShot(3000, self._tracking_poll)
+
+    def _tracking_poll(self) -> None:
+        if self._tracking_busy:
+            return
+        self._tracking_busy = True
+        self.tracking_status.setText("Collecting opens…")
+        bridge = self._tracking_bridge
+
+        def work() -> None:
+            try:
+                result = aes_pixel_tracking.poll()
+            except Exception as exc:
+                result = {"ledger": 0, "opens": 0, "error": f"{type(exc).__name__}: {exc}"}
+            bridge.finished.emit(result)
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _on_tracking_polled(self, result: Dict[str, Any]) -> None:
+        self._tracking_busy = False
+        created = 0
+        if self.db is not None:
+            for send in aes_pixel_tracking.sends_without_guri():
+                try:
+                    guri = self.db.generate_guri(
+                        send["sender"] or "unknown",
+                        send["recipients"] or "",
+                        send["subject"] or "",
+                        send["sent_local"] or datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "OUTGOING (tracked)",
+                        "01",
+                    )
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("Tracking: GURI for %s failed: %s", send["pixel"], exc)
+                    continue
+                aes_pixel_tracking.set_guri(send["pixel"], guri)
+                created += 1
+        self._tracking_reload()
+        when = datetime.now().strftime("%H:%M")
+        bits = [f"Last collected {when}", f"{result.get('opens', 0)} new open(s)"]
+        if created:
+            bits.append(f"{created} GURI record(s) created")
+        if result.get("error"):
+            bits.append(f"error: {result['error']}")
+        self.tracking_status.setText(" · ".join(bits))
+
+    @staticmethod
+    def _tracking_fmt_ts(ts: int) -> str:
+        return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M") if ts else "—"
+
+    def _tracking_reload(self) -> None:
+        tree = self.tracking_tree
+        try:
+            rows = aes_pixel_tracking.summaries()
+        except Exception as exc:
+            tree.clear()
+            self.tracking_status.setText(f"Could not read {aes_pixel_tracking.db_path()}: {exc}")
+            return
+        current = tree.currentItem()
+        current_pixel = current.data(0, Qt.ItemDataRole.UserRole) if current else None
+        tree.setSortingEnabled(False)
+        tree.clear()
+        for row in rows:
+            item = _SortableTreeItem([
+                row["sent_local"],
+                row["subject"],
+                row["recipients"],
+                str(row["opens"]),
+                str(row["likely_reads"]),
+                self._tracking_fmt_ts(row["first_open"]),
+                self._tracking_fmt_ts(row["last_open"]),
+                row["last_client"] or "—",
+                row["guri"] or "—",
+            ])
+            item.setData(0, Qt.ItemDataRole.UserRole, row["pixel"])
+            tree.addTopLevelItem(item)
+            if row["pixel"] == current_pixel:
+                tree.setCurrentItem(item)
+        tree.setSortingEnabled(True)
+        if not rows:
+            enabled = aes_pixel_tracking.load_config().get("enabled")
+            self.tracking_status.setText(
+                "No tracked mail yet." if enabled
+                else f"Tracking is off. Set enabled=1 in {aes_pixel_tracking.config_path()} to turn it on."
+            )
+
+    def _tracking_show_detail(self) -> None:
+        self.tracking_detail.clear()
+        item = self.tracking_tree.currentItem()
+        if item is None:
+            return
+        pixel = item.data(0, Qt.ItemDataRole.UserRole)
+        for hit in aes_pixel_tracking.opens_for(str(pixel or "")):
+            if hit["own"]:
+                note = "your own view (not counted)"
+            elif hit["prefetch"]:
+                note = "automatic pre-fetch, may not be a read"
+            elif hit["proxied"]:
+                note = "IP belongs to the mail provider's image proxy"
+            else:
+                note = ""
+            self.tracking_detail.addTopLevelItem(QTreeWidgetItem([
+                self._tracking_fmt_ts(hit["ts"]), hit["ip"], hit["client"], note,
+            ]))
 
     # ------------------------------------------------------------------ #
     # AES Scores tab

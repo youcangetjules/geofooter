@@ -1320,7 +1320,7 @@ Private Function CollectEmailBeacons(ByVal htmlBody As String, ByRef beaconUrls 
         tagEnd = InStr(tagStart, htmlBody, ">")
         If tagEnd = 0 Then Exit Do
         tagText = Mid$(htmlBody, tagStart, tagEnd - tagStart + 1)
-        If IsLikelyTrackingBeacon(tagText) Then
+        If IsLikelyTrackingBeacon(tagText) And Not MSCANPixel.IsOwnPixelTag(tagText) Then
             count = count + 1
             imgUrl = ExtractImgSrc(tagText)
             If Len(imgUrl) > 0 Then

@@ -1,0 +1,35 @@
+[Unit]
+Description=AES read-tracking pixel endpoint (loopback only, behind nginx)
+After=network.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+StateDirectory=aes-pixel
+EnvironmentFile=/etc/aes-pixel.env
+ExecStart=/usr/bin/python3 /opt/aes-pixel/aes_pixel_server.py
+Restart=on-failure
+RestartSec=5
+
+# Keep well clear of the production workload on this host.
+Nice=10
+CPUQuota=10%
+MemoryMax=64M
+TasksMax=32
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+IPAddressDeny=any
+IPAddressAllow=localhost
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+
+[Install]
+WantedBy=multi-user.target

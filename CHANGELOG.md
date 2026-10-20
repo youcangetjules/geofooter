@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.2] — 2026-10-20
+
+### Changed
+
+- Read-tracking pixels are served from `https://track.i-txone.com` instead of `track.aliniant.com` (aliniant.com is a separate WordPress site). The i-txone.com wildcard DNS already covers the name, so no DNS change is needed. The nginx site files are renamed to `cloud/pixel/nginx-track.i-txone.com*.conf`. `base_url` in `aes_pixel.ini` still overrides the default.
+
 ## [1.5.1] — 2026-10-20
 
 ### Added

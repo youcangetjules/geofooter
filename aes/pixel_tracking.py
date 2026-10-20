@@ -8,7 +8,7 @@ public IP that polls), labels proxy and pre-fetch traffic, and keeps a local
 SQLite copy that the GURI Tracking tab reads.
 
 Files under ``%LOCALAPPDATA%\\GeoFooter``:
-  aes_pixel.ini          enabled=0|1, base_url=https://track.aliniant.com
+  aes_pixel.ini          enabled=0|1, base_url=https://track.i-txone.com
   pixels\\{id}.json       one per tracked send (written by VBA)
   pixel_opens.sqlite     sends, opens, poll state
 """
@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
-DEFAULT_BASE_URL = "https://track.aliniant.com"
+DEFAULT_BASE_URL = "https://track.i-txone.com"
 SECRET_NAME = "aes_pixel_key"
 PIXEL_ID = re.compile(r"^[0-9a-f]{32}$")
 # ReadNotify runs first at send time and rewrites recipients to

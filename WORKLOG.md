@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.5.2: Pixel endpoint moved to track.i-txone.com
+
+- `VBA\MSCANPixel.bas` and `aes/pixel_tracking.py` `DEFAULT_BASE_URL` changed to `https://track.i-txone.com`. The nginx files are renamed to `cloud/pixel/nginx-track.i-txone.com.http.conf` / `.conf`, with the new `server_name` and letsencrypt paths.
+- Why: the operator said aliniant.com is a separate WordPress site, and i-txone.com already has the infrastructure. `*.i-txone.com` is a wildcard A record to 35.208.12.24 (StackDNS), so no DNS work is needed. Read-only check: the server has a single `workflow-api` site (`server_name i-txone.com`) and a single cert (`i-txone.com`), so a separate `track.i-txone.com` server block and cert do not overlap with it.
+- Follow-up: deploy (ask before each `nginx -t` + reload), then set `enabled=1` in `aes_pixel.ini`. Re-import `MSCANPixel`.
+
 ### 2026-10-20 — 1.5.1: Scaredy-cat restore link on high-risk mitigated mail
 
 - `VBA\MSCANModule1.bas` `ApplyHighRiskTextOnlyMail`: writes `BuildMitigatedHtml` (restore link in a `bgcolor` cell at the top, `NoticeToHtml` turning "Label:" plus URL lines into labelled links, sender text via `TextToHtml`/`HtmlEsc`) as HTML instead of `olFormatPlain`. Mitigation is still detected by the "AES HIGH RISK MITIGATION" text in `Body` everywhere (`BodyIsLockedAsText`, `_mail_is_locked_text`), so nothing re-footers it. Restore is unchanged (loads the `mitigated_html` backup). Logic checked with a Python port on the notice from the Substack screenshot.

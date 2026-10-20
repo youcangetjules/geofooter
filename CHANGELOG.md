@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.11] — 2026-10-20
+
+### Fixed
+
+- The aliniant.net holding image was already updated on the server, but browsers kept the old one for up to 7 days. The file is now `aliniant-village.jpg` so a refresh loads the new picture.
+
 ## [1.5.10] — 2026-10-20
 
 ### Changed

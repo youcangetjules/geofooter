@@ -37,7 +37,10 @@ fi
 
 echo "== page"
 install -d -m 755 "$WEBROOT" /var/www/aliniant-net-acme
-install -m 644 "$HERE/index.html" "$HERE/aliniant-shire.jpg" "$HERE/favicon.ico" "$WEBROOT/"
+install -m 644 "$HERE/index.html" "$HERE/aliniant-village.jpg" "$HERE/favicon.ico" "$WEBROOT/"
+# Drop the previous image name so browsers that still have it cached get a 404
+# and reload the page (which points at the new file).
+rm -f "$WEBROOT/aliniant-shire.jpg"
 
 echo "== nginx"
 if [ ! -f /etc/letsencrypt/live/aliniant.net/fullchain.pem ]; then

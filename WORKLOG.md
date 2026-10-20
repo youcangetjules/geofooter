@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.5.11: Cache-bust the holding-page image
+
+- Renamed `aliniant-shire.jpg` to `aliniant-village.jpg` and updated `index.html`, the nginx location and `deploy.sh` (which also removes the old file). Browsers had been holding the previous JPEG for up to 7 days (`expires 7d`). Live HTML now points at the new name; the old URL returns 404.
+
 ### 2026-10-20 — 1.5.10: New holding-page image and dark-grey panels
 
 - Replaced `cloud/site/aliniant.net/aliniant-shire.jpg` with the operator's solarpunk Shire image (1024x939, 350 KB). `index.html`: page background `#2c2c2c`, cream text, warmer paw fill and link colour so they read on dark grey; image dimensions and alt text updated.

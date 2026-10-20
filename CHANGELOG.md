@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.8] — 2026-10-20
+
+### Fixed
+
+- Images under `cloud/` are stored as binary in git. The `cloud/** eol=lf` rule had altered the holding page's JPEG and favicon when they were committed (BUG-021).
+
 ## [1.5.7] — 2026-10-20
 
 ### Added

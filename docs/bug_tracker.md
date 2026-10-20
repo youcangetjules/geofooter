@@ -213,6 +213,16 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Closed
 
+### BUG-021 — Images under cloud/ were corrupted in git by the eol=lf rule
+
+- **Severity:** S3
+- **Area:** repo
+- **Status:** fixed
+- **Reported:** 2026-10-20
+- **Summary:** 1.5.4 added `cloud/** text eol=lf` to `.gitattributes` so bash and systemd files keep LF. It also forced the text filter onto binary files, so committing `cloud/site/aliniant.net/aliniant-shire.jpg` and `favicon.ico` in 1.5.7 (`361bd27`) rewrote their CRLF byte pairs. The blobs in the repo no longer matched the files (git warned "CRLF will be replaced by LF"). The deployed copies were not affected, because they were copied from the working tree.
+- **Repro:** `git hash-object --no-filters <file>` vs `git rev-parse HEAD:<file>` differed for both files.
+- **Fixed in:** 1.5.8. `cloud/**/*.jpg|png|ico binary` comes after the LF rule, and both files were re-staged; the blobs now match the files on disk.
+
 ### BUG-020 — Pixel nginx site could have taken over i-txone.com's catch-all traffic
 
 - **Severity:** S2

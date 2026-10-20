@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.5.8: Keep cloud/ images binary in git
+
+- `.gitattributes`: `cloud/**/*.jpg`, `*.png` and `*.ico` are marked `binary`, after the `cloud/** text eol=lf` rule. The holding page's JPEG and favicon were re-staged, and their blobs now match the files on disk. BUG-021.
+- Why: the LF rule from 1.5.4 rewrote CRLF bytes inside both images in the 1.5.7 commit. The server copies were fine (copied from the working tree).
+
 ### 2026-10-20 — 1.5.7: aliniant.net holding page
 
 - New `cloud/site/aliniant.net/`: `index.html` (centred image, fits any screen), `aliniant-shire.jpg` (the operator's watercolour, 1024x977, 401 KB, no EXIF), `favicon.ico` (16/32/48 px from `assets/brand/abyitself.ico`, 4.7 KB), stage-1/2 nginx files, and `deploy.sh` (same rules as the pixel: installs only missing packages, enabled as `zz-aliniant-net`, `nginx -t` + graceful reload). Stage 2: www and HTTP redirect to `https://aliniant.net`, CSP `default-src 'none'`, nosniff, no-referrer, 20 r/s per IP, and everything except `/`, the image and the favicon returns 404.

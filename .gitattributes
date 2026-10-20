@@ -4,3 +4,7 @@
 
 # Server-side files run on Linux; bash and systemd need LF.
 cloud/** text eol=lf
+# Binary assets under cloud/ must not get the eol=lf text filter.
+cloud/**/*.jpg binary
+cloud/**/*.png binary
+cloud/**/*.ico binary

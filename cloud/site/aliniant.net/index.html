@@ -10,25 +10,31 @@
   html, body { background: #2c2c2c; }
   body {
     margin: 0;
-    padding: 24px 12px 40px;
+    padding: 12px 12px 16px;
+    box-sizing: border-box;
     color: #e8dcc8;
     font-family: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
     text-align: center;
+    --band: 11.5rem;
+    --side: 7rem;
+    --scene-h: min(calc(100vh - var(--band)), calc((100vw - var(--side)) * 939 / 1024));
   }
   .stage {
     display: flex;
     align-items: stretch;
     justify-content: center;
     gap: 16px;
-    max-width: 920px;
+    width: 100%;
+    height: var(--scene-h);
     margin: 0 auto;
   }
   img.scene {
     display: block;
-    flex: 0 1 760px;
-    min-width: 0;
-    width: 100%;
-    height: auto;
+    flex: 0 0 auto;
+    /* Fill the window height, less the text/paw band; never wider than the window. */
+    height: 100%;
+    width: auto;
+    max-width: calc(100vw - var(--side));
     border-radius: 6px;
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
   }
@@ -44,22 +50,24 @@
   .trail.up .step:nth-child(even) { transform: translateX(var(--sway)) rotate(12deg); }
   .trail.down .step:nth-child(odd)  { transform: translateX(var(--sway)) rotate(168deg); }
   .trail.down .step:nth-child(even) { transform: translateX(calc(-1 * var(--sway))) rotate(192deg); }
+  .copy { padding-top: 14px; }
   h1 {
-    margin: 28px 0 10px;
-    font-size: clamp(1.6rem, 4.5vw, 2.3rem);
+    margin: 0 0 8px;
+    font-size: clamp(1.25rem, 3.2vw, 1.9rem);
     font-weight: normal;
     letter-spacing: 0.02em;
   }
   p {
     margin: 0 auto;
     max-width: 34em;
-    font-size: clamp(1.05rem, 2.6vw, 1.25rem);
-    line-height: 1.6;
+    font-size: clamp(0.95rem, 2vw, 1.15rem);
+    line-height: 1.5;
   }
   a { color: #f0a060; text-decoration-thickness: 1px; text-underline-offset: 3px; }
   a:hover { color: #ffc48a; }
-  .paw { display: block; margin: 26px auto 0; width: 64px; height: 64px; opacity: 0.9; }
+  .paw { display: block; margin: 14px auto 0; width: 48px; height: 48px; opacity: 0.9; }
   @media (max-width: 640px) {
+    body { --band: 13.5rem; --side: 3.5rem; }
     .stage { gap: 6px; }
     .trail { flex-basis: 24px; }
     .step { --sway: 4px; width: 22px; height: 22px; }
@@ -109,10 +117,12 @@
       <svg class="step"><use href="#paw"/></svg>
     </div>
   </div>
-  <h1>You've reached www.aliniant.net</h1>
-  <p>Check out <a href="https://www.aliniant.com" rel="noopener">www.aliniant.com</a> for more details
-     — but stay tuned here: we're sharing some of our engineering tools here soon.</p>
-  <svg class="paw" role="img" aria-label="Signed with a dragon's paw print"><use href="#paw"/></svg>
+  <div class="copy">
+    <h1>You've reached www.aliniant.net</h1>
+    <p>Check out <a href="https://www.aliniant.com" rel="noopener">www.aliniant.com</a> for more details
+       — but stay tuned here: we're sharing some of our engineering tools here soon.</p>
+    <svg class="paw" role="img" aria-label="Signed with a dragon's paw print"><use href="#paw"/></svg>
+  </div>
 </main>
 </body>
 </html>

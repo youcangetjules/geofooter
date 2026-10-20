@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.5.12: Holding image fills the viewport height
+
+- `index.html`: `--scene-h: min(100vh - text band, width-limited height from 1024/939 aspect)`. The stage and image use that height; paw trails stretch with it. On phones the reserved text band is a little taller.
+- Published; live HTML matches the repo.
+
 ### 2026-10-20 — 1.5.11: Cache-bust the holding-page image
 
 - Renamed `aliniant-shire.jpg` to `aliniant-village.jpg` and updated `index.html`, the nginx location and `deploy.sh` (which also removes the old file). Browsers had been holding the previous JPEG for up to 7 days (`expires 7d`). Live HTML now points at the new name; the old URL returns 404.

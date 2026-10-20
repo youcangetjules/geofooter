@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.12] — 2026-10-20
+
+### Changed
+
+- The aliniant.net holding image now scales to the window height (leaving room for the welcome text), keeping its aspect ratio and never overflowing the width.
+
 ## [1.5.11] — 2026-10-20
 
 ### Fixed

@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.27] — 2026-10-20
+
+### Documentation
+
+- `docs/bug_tracker.md` now records the bugs found this week: Settings freezing Outlook (BUG-009), sleep logged as UI stalls (BUG-010), the false ribbon "button not found" popup (BUG-011), the hop ASN mix-up (BUG-012, closed), the header strip that fails on every footer (BUG-013) and the wrong `whois` package in the venv (BUG-014).
+- New always-on rule `.cursor/rules/bug-tracker.mdc`: every bug seen is logged in the tracker in the same turn, and updated in the same commit as its fix.
+
 ## [1.4.26] — 2026-10-20
 
 ### Fixed

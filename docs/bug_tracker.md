@@ -10,6 +10,7 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 2. Fill Severity, Area, Status, and the short repro / impact.
 3. When fixed, move the entry to **Closed** and set **Fixed in** (commit hash and/or version).
 4. Prefer one bug per entry. Link related commits or PR URLs when useful.
+5. **Log every bug seen, as soon as it is seen** — in a log, a screenshot, a test, or while reading code — even if it is not fixed in the same change, and even if it looks minor. When a fix ships, update the entry in the same commit. A recurring error line in `VBA_Log.txt` counts as a bug; a symptom with no known cause goes in `performance.md` first.
 
 ### Severity
 
@@ -31,6 +32,55 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 ---
 
 ## Open
+
+### BUG-014 — WHOIS lookups always fail: wrong `whois` package in the venv
+
+- **Severity:** S3
+- **Area:** AES / Install
+- **Status:** open
+- **Reported:** 2026-10-20
+- **Summary:** Every WHOIS lookup in `aes/geolocate_headers.py` fails with "module 'whois' has no attribute 'whois'". The `.venv` has the `whois` package (which exposes `query()`) instead of `python-whois` (which exposes `whois.whois()`), and both install as the module `whois`. Domain age and registrant data are missing from every report; the scan carries on without them.
+- **Repro:** `.venv\Scripts\python.exe -c "import whois; whois.whois('example.com')"` raises AttributeError.
+- **Workaround:** `pip uninstall whois` then `pip install python-whois` in the venv.
+- **Follow-up:** Guard the import so the wrong package is reported once instead of per lookup.
+
+### BUG-013 — `StripSensitiveHeadersFromMail` fails on every footer apply
+
+- **Severity:** S4
+- **Area:** VBA
+- **Status:** open
+- **Reported:** 2026-10-20
+- **Summary:** `MSCANModule1.StripSensitiveHeadersFromMail` tries to rewrite `PR_TRANSPORT_MESSAGE_HEADERS` (`0x007D001F`) and Outlook refuses with `-2147024891` (access denied, "does not support this operation"). Logged 1,391 times since 2026-10-01, roughly once per footer. The headers are never stripped, and each attempt parses the whole header block on the UI thread for nothing.
+- **Repro:** Let any mail be footered; `VBA_Log.txt` logs the error straight after "Footer inserted successfully".
+- **Workaround:** none needed; the footer still applies.
+- **Follow-up:** Either drop the strip (the store treats the property as read-only) or stop after the first refusal in a session.
+
+### BUG-011 — Ribbon shows "AES button '…' was not found" while the scan is running
+
+- **Severity:** S3
+- **Area:** Ribbon
+- **Status:** fixed (pending operator verification after `install.ps1`)
+- **Reported:** 2026-10-20
+- **Summary:** `TryExecuteOnBar` wrapped `ctl.Execute()` in the same catch as the button match. When the VBA macro started and `Execute` then threw back, the host treated it as no match, fell through to the dead `Application.Run` path (BUG-005) and showed the popup. Seen on 24 Sep, 28 Sep, 16 Oct and 20 Oct.
+- **Fixed in:** 1.4.25 (`AesRibbonHost/Connect.cs`). Needs Outlook fully quit and `AesRibbonHost\install.ps1`.
+
+### BUG-010 — PC sleep logged as multi-hour UI stalls
+
+- **Severity:** S4
+- **Area:** VBA
+- **Status:** fixed (pending VBA re-import)
+- **Reported:** 2026-10-20
+- **Summary:** `MSCANHealth.EndOp` measured with `GetTickCount`, which keeps counting while Windows sleeps. Operations that straddled a sleep were logged as stalls of 79,700,593 ms, 70,033,485 ms and 8,052,375 ms, which skewed the worst-stall stat and the HEALTH warnings.
+- **Fixed in:** 1.4.26 (`c1d4f9c`). Readings over 300 s are logged once as a probable sleep and excluded.
+
+### BUG-009 — Outlook frozen while AES Settings is open
+
+- **Severity:** S1
+- **Area:** VBA
+- **Status:** fixed (pending VBA re-import)
+- **Reported:** 2026-10-20
+- **Summary:** `MSCANSettings` ran the Python settings dialog with `shell.Run(cmd, 1, True)`, so Outlook stopped responding (no mail, no typing) until the dialog was closed. The ribbon Settings button takes the same path through the VBA toolbar.
+- **Fixed in:** 1.4.26 (`c1d4f9c`). The dialog runs through `aes_settings_launch.vbs`; the result is applied on the next ItemLoad. Re-import `MSCANSettings`, `MSCANModule1`, `MSCANHealth`.
 
 ### BUG-008 — Footer never applies while a draft is open, and a stale job empties the mail body
 
@@ -79,6 +129,7 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 - **Workaround:** Alt+F8 → `CreateToolbar` (or `RecoverAesUi`), or restart Outlook so `MSCANAppBootstrap.DeferredToolbar` rebuilds the bar.
 - **Follow-up:** Remove the dead `Run` path for the scan buttons. Settings (1.4.2) no longer depends on it: if the toolbar button is missing, the ribbon starts `aes/settings_dialog.py` directly.
 - **Update 2026-09-25:** Settings click logged `no matching button for tag=AES_SETTINGS` and four `Application.Run` misses. Direct launch is the Settings fallback. Short Scan and the other VBA buttons still need the toolbar.
+- **Update 2026-10-20:** The false popup when the toolbar button *was* found is BUG-011 (fixed 1.4.25). This entry stays open for the dead `Run` path itself.
 
 ### BUG-003 — Buttons do nothing / old dialogs appear: VBA import never saved to `VbaProject.OTM`
 
@@ -134,7 +185,14 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Closed
 
-_(none yet)_
+### BUG-012 — Hop ASN shows the receiving server's network (AS15169 instead of AS11377)
+
+- **Severity:** S2
+- **Area:** AES
+- **Status:** fixed
+- **Reported:** 2026-10-20
+- **Summary:** In the Route Table, a SendGrid hop showed AS15169 (Google). `_fill_ip_registration` and `_apply_address_and_host_decoding` also resolved the hop's `by_host` (mx.google.com), which overwrote the sender's ASN. A wrong ASN feeds route risk scoring.
+- **Fixed in:** 1.4.18. Only the hop's own FQDN and HELO are used, and an ASN is only replaced when blank or equal to the BGP value. Covered by `tests/test_hop_asn.py`.
 
 ---
 

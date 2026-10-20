@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.4.27: Bug tracker kept current with every bug seen
+
+- `docs/bug_tracker.md`: added BUG-009 to BUG-014 (open/fixed-pending) and BUG-012 under Closed; dated update on BUG-005; "How to use" step 5 says every bug seen is logged straight away.
+- `.cursor/rules/bug-tracker.mdc` (alwaysApply) makes that a standing agent rule. Left `AGENTS.md` alone because it has the operator's own uncommitted edits.
+- Follow-up: BUG-013 and BUG-014 are logged but not fixed yet.
+
 ### 2026-10-20 — 1.4.26: VBA audit for loops and Outlook interruptions
 
 - Audited every `Do` loop, `DoEvents`, `Sleep` and wait-on-exit shell call in `VBA\`. All loops are bounded and no DoEvents spins remain. No stray wscript processes were running. The catch-up heartbeat fires every 90 s and finishes inside a second, which is expected.

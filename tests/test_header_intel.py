@@ -209,6 +209,67 @@ def test_bulk_classification_and_unsubscribe_urls():
     assert hi.bulk_signals("From: a@b.com\n").data["kind"] == "Personal"
 
 
+def _history(days_old=30, seen_ids=(), senders=None):
+    from datetime import datetime, timedelta
+
+    stamp = (datetime.now() - timedelta(days=days_old)).strftime("%Y-%m-%d %H:%M:%S")
+    base = {"old@friend.com": {"count": 3, "first_seen": stamp}}
+    base.update(senders or {})
+    return {"senders": base, "seen": {hi.message_id_key(i): stamp for i in seen_ids}}
+
+
+HIJACK = (
+    "From: Accounts <accounts@new-vendor.com>\n"
+    "Subject: RE: Invoice PR-14673 due today\n"
+    "Message-ID: <fresh1@new-vendor.com>\n"
+    "In-Reply-To: <fabricated123@aliniant.com>\n"
+    "References: <fabricated123@aliniant.com>\n"
+)
+
+
+def test_unseen_thread_from_first_time_sender_scores():
+    sec = hi.thread_signals(HIJACK, sender_email="accounts@new-vendor.com", history=_history())
+    assert [f["points"] for f in sec.findings] == [15]
+
+
+def test_seen_thread_is_fine():
+    sec = hi.thread_signals(
+        HIJACK, sender_email="accounts@new-vendor.com",
+        history=_history(seen_ids=["<fabricated123@aliniant.com>"]),
+    )
+    assert sec.findings == []
+
+
+def test_known_contact_or_repeat_sender_is_fine():
+    assert hi.thread_signals(
+        HIJACK, sender_email="accounts@new-vendor.com", history=_history(),
+        known_contacts=["accounts@new-vendor.com"],
+    ).findings == []
+    h = _history(senders={"accounts@new-vendor.com": {"count": 2, "first_seen": "2026-09-01 10:00:00"}})
+    assert hi.thread_signals(HIJACK, sender_email="accounts@new-vendor.com", history=h).findings == []
+
+
+def test_rescan_still_scores_first_time_sender():
+    h = _history(
+        seen_ids=["<fresh1@new-vendor.com>"],
+        senders={"accounts@new-vendor.com": {"count": 1, "first_seen": "2026-10-20 10:00:00"}},
+    )
+    sec = hi.thread_signals(HIJACK, sender_email="accounts@new-vendor.com", history=h)
+    assert [f["points"] for f in sec.findings] == [15]
+
+
+def test_fake_re_without_thread_headers():
+    h = "From: x@cold.com\nSubject: Re: our call\nMessage-ID: <a@cold.com>\n"
+    sec = hi.thread_signals(h, sender_email="x@cold.com", history=_history())
+    assert [f["points"] for f in sec.findings] == [10]
+
+
+def test_young_history_is_report_only():
+    sec = hi.thread_signals(HIJACK, sender_email="accounts@new-vendor.com", history=_history(days_old=3))
+    assert sec.findings == []
+    assert any("report-only" in r for r in sec.rows)
+
+
 def test_return_path_mismatch_scored_only_without_dmarc_pass():
     h = "Return-Path: <x@bounce.other.com>\nFrom: A <a@alpha.com>\n"
     assert hi.identity_signals(h, dmarc="pass").findings == []

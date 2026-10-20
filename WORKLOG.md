@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.4.23: Conversation-hijack check
+
+- `header_intel.thread_signals` hashes In-Reply-To/References IDs the same way `record_sender_email` does (`sha1(lower('<id>'))[:16]`) and looks them up in sender-history `seen`. `run_all` receives the history read before this message is recorded. A rescan subtracts the message's own Message-ID, so the result does not change on the second pass. A dry run over 221 stored headers first flagged 4 (a Substack newsletter and three ReadNotify receipts). Requiring a reply subject and skipping List-Unsubscribe/Auto-Submitted brought that to 0.
+- Limit: history only records inbound mail, so a reply to a message you sent counts as unseen. Known contacts (`recipients.txt`) and own domains are exempt for that reason.
+- Follow-up: rescan. No VBA import.
+
 ### 2026-10-20 — 1.4.22: Transport, sending client and bulk signals
 
 - `header_intel.parse_tls` covers the Google, Postfix, Microsoft and Exim formats. `_extract_hop_details` stores `tls`/`tls_version` on each hop, and the Route Table shows `with ESMTPS (TLS 1.3 …)`. `transport_signals` ignores `by … with SMTP` lines with no `from` (Gmail's internal handoffs). `client_signals` and `bulk_signals` were added, and `unsubscribe_urls` are appended to the link scanner's text input.

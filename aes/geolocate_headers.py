@@ -3039,6 +3039,8 @@ class HTMLReportGenerator:
                     dmarc=auth_info.dmarc,
                     lite=lite,
                     hops=per_hop_analysis,
+                    sender_email=sender_email or "",
+                    history=_read_sender_history(),
                 )
             except Exception as exc:
                 self.logger.warning("Header intelligence failed: %s", exc)

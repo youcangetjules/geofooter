@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.23] — 2026-10-20
+
+### Added
+
+- Conversation-hijack check. A first-time sender whose "Re:" message cites In-Reply-To/References IDs that AES has never seen scores +15 ("Claims to continue a thread we never saw"). A first-time "Re:" with no thread headers at all scores +10. Senders in GURI's recipients list or your own domains, bulk or automated mail, and newsletters and read receipts that only carry References are not scored. Scoring needs at least 14 days of sender history; with less, the Thread row is report-only. Run against 221 recent mails, it flagged none.
+
 ## [1.4.22] — 2026-10-20
 
 ### Added

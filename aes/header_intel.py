@@ -729,6 +729,135 @@ def bulk_signals(headers: str, *, esp: str = "") -> IntelSection:
     return sec
 
 
+# --------------------------------------------------------------------------- #
+# Conversation hijack (claims to continue a thread nobody saw)
+# --------------------------------------------------------------------------- #
+
+_REPLY_PREFIX = re.compile(r"^\s*(re|aw|sv|antw)\s*(\[\d+\])?\s*:", re.I)
+_FWD_PREFIX = re.compile(r"^\s*(fw|fwd|wg|tr)\s*:", re.I)
+HISTORY_MIN_DAYS = 14
+
+
+def _decoded_subject(headers: str) -> str:
+    from email.header import decode_header, make_header
+
+    raw = first_header(headers, "Subject")
+    try:
+        return str(make_header(decode_header(raw)))
+    except Exception:
+        return raw
+
+
+def message_id_key(msg_id: str) -> str:
+    """Same key ``record_sender_email`` stores in sender history ``seen``."""
+    import hashlib
+
+    mid = (msg_id or "").strip().lower()
+    return hashlib.sha1(mid.encode("utf-8")).hexdigest()[:16] if mid else ""
+
+
+def _history_days(history: Dict[str, Any]) -> float:
+    from datetime import datetime
+
+    stamps = [str(v.get("first_seen") or "") for v in (history.get("senders") or {}).values()]
+    stamps = [s for s in stamps if s]
+    if not stamps:
+        return 0.0
+    try:
+        oldest = datetime.strptime(min(stamps), "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return 0.0
+    return (datetime.now() - oldest).total_seconds() / 86400
+
+
+def load_known_contacts() -> List[str]:
+    """Addresses the user has sent to (GURI recipients list), lower-case."""
+    try:
+        from pathlib import Path
+
+        from geofooter.paths import datastore_path
+
+        path = Path(datastore_path("recipients.txt"))
+        if not path.is_file():
+            return []
+        return [
+            line.strip().lower()
+            for line in path.read_text(encoding="utf-8", errors="ignore").splitlines()
+            if "@" in line
+        ]
+    except Exception:
+        return []
+
+
+def thread_signals(
+    headers: str,
+    *,
+    sender_email: str,
+    history: Optional[Dict[str, Any]],
+    known_contacts: Iterable[str] = (),
+    own_domains: Iterable[str] = (),
+) -> IntelSection:
+    sec = IntelSection("Thread")
+    subject = _decoded_subject(headers)
+    is_reply = bool(_REPLY_PREFIX.match(subject))
+    is_fwd = bool(_FWD_PREFIX.match(subject))
+    ids = re.findall(r"<[^<>\s]+>", " ".join(header_values(headers, "In-Reply-To")
+                                             + header_values(headers, "References")))
+    ids = list(dict.fromkeys(i.lower() for i in ids))
+    if not (is_reply or is_fwd or ids):
+        return sec
+
+    history = history or {}
+    seen = history.get("seen") or {}
+    sender = (sender_email or "").strip().lower()
+    sender_count = int(((history.get("senders") or {}).get(sender) or {}).get("count", 0) or 0)
+    if message_id_key(first_header(headers, "Message-ID")) in seen:
+        # A rescan: this message is already counted, so leave it out.
+        sender_count = max(0, sender_count - 1)
+    known = {c.lower() for c in known_contacts}
+    own = {registrable_domain(d) for d in own_domains}
+    s_reg = registrable_domain(_domain_of(sender))
+    contact = sender in known or (s_reg and s_reg in own)
+    found = sum(1 for i in ids if message_id_key(i) in seen)
+
+    if ids:
+        sec.rows.append(
+            f"{'Reply' if is_reply else 'Message'} references {len(ids)} earlier message(s); "
+            f"{found} seen by AES"
+        )
+    elif is_reply:
+        sec.rows.append("Subject says reply, but there are no In-Reply-To or References headers")
+    if sender_count == 0:
+        sec.rows.append("First message AES has seen from this sender")
+    if contact:
+        sec.rows.append("Sender is a known contact (recipients list or own domain)")
+
+    days = _history_days(history)
+    if days < HISTORY_MIN_DAYS:
+        sec.rows.append(f"Sender history covers {days:.0f} days; thread checks are report-only until {HISTORY_MIN_DAYS}")
+        return sec
+    if sender_count or contact or not is_reply:
+        # Newsletters and read receipts carry References too; only a
+        # message that presents itself as a reply makes the claim.
+        return sec
+    auto = first_header(headers, "Auto-Submitted").lower()
+    if header_values(headers, "List-Unsubscribe") or (auto and auto != "no"):
+        return sec
+    if ids and found == 0:
+        sec.add(
+            "Claims to continue a thread we never saw",
+            15,
+            "First-time sender replying to messages AES has no record of; a conversation-hijack pattern",
+        )
+    elif is_reply and not ids:
+        sec.add(
+            "'Re:' subject with no thread headers from a first-time sender",
+            10,
+            "Fake reply used to make a cold message look like an existing conversation",
+        )
+    return sec
+
+
 def load_own_domains() -> List[str]:
     """Important domains configured in GURI (datastore/important_domains.txt)."""
     try:
@@ -756,13 +885,19 @@ def run_all(
     own_domains: Optional[Sequence[str]] = None,
     lite: bool = True,
     hops: Optional[List[Dict[str, Any]]] = None,
+    sender_email: str = "",
+    history: Optional[Dict[str, Any]] = None,
 ) -> List[IntelSection]:
-    """Every header check, in report order. ``lite`` skips DNS lookups."""
+    """Every header check, in report order. ``lite`` skips DNS lookups.
+
+    ``history`` is the sender-history dict read *before* this message is
+    recorded, so a first-time sender still has a count of zero.
+    """
     if not headers:
         return []
     own = list(own_domains) if own_domains is not None else load_own_domains()
     esp = esp_fingerprint(headers, hops)
-    return [
+    sections = [
         identity_signals(headers, dmarc=dmarc, own_domains=own),
         esp,
         signing_signals(headers, lite=lite),
@@ -770,3 +905,14 @@ def run_all(
         client_signals(headers),
         bulk_signals(headers, esp=str(esp.data.get("esp") or "")),
     ]
+    if history is not None:
+        sections.append(
+            thread_signals(
+                headers,
+                sender_email=sender_email,
+                history=history,
+                known_contacts=load_known_contacts(),
+                own_domains=own,
+            )
+        )
+    return sections

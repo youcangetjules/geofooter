@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.3] — 2026-10-20
+
+### Fixed
+
+- Pixel nginx site files (not deployed yet) can no longer take over i-txone.com traffic that matches no site name. They are installed as `zz-aes-pixel` so `workflow-api` stays the catch-all, the IPv6 listeners are gone so no new sockets open, and a per-IP connection limit is added (BUG-020).
+
 ## [1.5.2] — 2026-10-20
 
 ### Changed

@@ -213,6 +213,16 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Closed
 
+### BUG-020 — Pixel nginx site could have taken over i-txone.com's catch-all traffic
+
+- **Severity:** S2
+- **Area:** cloud
+- **Status:** fixed (before deploy)
+- **Reported:** 2026-10-20
+- **Summary:** `workflow-api` on i-txone.com has no `default_server`, so nginx sends any request whose Host/SNI matches no `server_name` (such as `www.i-txone.com`, other names covered by the wildcard DNS, or requests by IP) to whichever server block comes first on the socket. If the pixel site had been installed under a name that sorts before `workflow-api` (e.g. `aes-pixel`), it would have become that catch-all and answered 404 to that production traffic. The site files also added `[::]:80` / `[::]:443` listeners, which opens new sockets that `workflow-api` does not have.
+- **Repro:** Found by reading the stage-1/2 files against `nginx -T` on the server. Nothing was deployed.
+- **Fixed in:** 1.5.3. The site files say to install as `sites-enabled/zz-aes-pixel` (included after `workflow-api`). The IPv6 listeners are gone, so the listens match `workflow-api` exactly, and a per-IP `limit_conn` of 10 is added to protect the shared worker connections (768).
+
 ### BUG-016 — Shodan shows "lookup failed (HTTPError)" although Settings says OK
 
 - **Severity:** S4

@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.5.3: Keep the pixel nginx site out of workflow-api's catch-all traffic
+
+- `cloud/pixel/nginx-track.i-txone.com*.conf`: install name `sites-enabled/zz-aes-pixel` (after `workflow-api`, which has no `default_server` and so is the implicit catch-all). Removed `[::]` listens (the server has no global IPv6 and workflow-api has no IPv6 listeners) and added `limit_conn aes_pixel_conn 10`. BUG-020.
+- Why: the operator asked for certainty that the two pipelines stay separate. Read-only `nginx -T` showed both risks.
+- Follow-up: on deploy, check the include order with `nginx -T` before reload, then curl with Host `i-txone.com`, `www.i-txone.com`, by bare IP, and `track.i-txone.com`, comparing against the same requests made before the change.
+
 ### 2026-10-20 — 1.5.2: Pixel endpoint moved to track.i-txone.com
 
 - `VBA\MSCANPixel.bas` and `aes/pixel_tracking.py` `DEFAULT_BASE_URL` changed to `https://track.i-txone.com`. The nginx files are renamed to `cloud/pixel/nginx-track.i-txone.com.http.conf` / `.conf`, with the new `server_name` and letsencrypt paths.

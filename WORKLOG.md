@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.5.9: Holding page wording and dragon paw prints
+
+- `cloud/site/aliniant.net/index.html`: heading "You've reached www.aliniant.net", a line linking www.aliniant.com, and a dragon's paw signature. The paw is an inline SVG `<symbol>` (pad plus three toes with curved claws), reused by `<use href="#paw">` in two alternating trails beside the image (`.trail.up` / `.trail.down`, sway via the `--sway` CSS variable, 22 px on screens under 640 px). Asset paths are relative so the file previews locally. Nothing external, so it still fits the CSP (`default-src 'none'`).
+- Previewed with headless Edge at desktop width and inside a 390 px iframe (headless windows can't go that narrow). Published with `deploy.sh` (one graceful reload); the live page matches the local file, and the other names still answer as before.
+
 ### 2026-10-20 — 1.5.8: Keep cloud/ images binary in git
 
 - `.gitattributes`: `cloud/**/*.jpg`, `*.png` and `*.ico` are marked `binary`, after the `cloud/** text eol=lf` rule. The holding page's JPEG and favicon were re-staged, and their blobs now match the files on disk. BUG-021.

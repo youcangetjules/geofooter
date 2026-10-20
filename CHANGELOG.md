@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.9] — 2026-10-20
+
+### Changed
+
+- **aliniant.net holding page:** under the picture it now says "You've reached www.aliniant.net", points to www.aliniant.com for details and says engineering tools are coming soon. It is signed with a dragon's paw print, and a trail of paw prints runs up the left of the picture and down the right (smaller on phones).
+
 ## [1.5.8] — 2026-10-20
 
 ### Fixed

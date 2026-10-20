@@ -4,27 +4,115 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aliniant — the wise company with clever ideas</title>
-<meta name="description" content="Aliniant — the wise company with clever ideas.">
-<link rel="icon" href="/favicon.ico">
+<meta name="description" content="You've reached www.aliniant.net. Aliniant engineering tools are coming here soon.">
+<link rel="icon" href="favicon.ico">
 <style>
-  html, body { margin: 0; height: 100%; }
+  html { background: #f6efe1; }
   body {
-    background: #f6efe1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    margin: 0;
+    padding: 24px 12px 40px;
+    color: #6b3414;
+    font-family: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    text-align: center;
   }
-  img {
+  .stage {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 16px;
+    max-width: 920px;
+    margin: 0 auto;
+  }
+  img.scene {
     display: block;
-    max-width: 100vw;
-    max-height: 100vh;
-    width: auto;
+    flex: 0 1 760px;
+    min-width: 0;
+    width: 100%;
     height: auto;
+    border-radius: 6px;
+    box-shadow: 0 6px 24px rgba(107, 52, 20, 0.18);
+  }
+  .trail {
+    flex: 0 0 56px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+  }
+  .step { --sway: 9px; width: 40px; height: 40px; opacity: 0.5; }
+  .trail.up .step:nth-child(odd)  { transform: translateX(calc(-1 * var(--sway))) rotate(-12deg); }
+  .trail.up .step:nth-child(even) { transform: translateX(var(--sway)) rotate(12deg); }
+  .trail.down .step:nth-child(odd)  { transform: translateX(var(--sway)) rotate(168deg); }
+  .trail.down .step:nth-child(even) { transform: translateX(calc(-1 * var(--sway))) rotate(192deg); }
+  h1 {
+    margin: 28px 0 10px;
+    font-size: clamp(1.6rem, 4.5vw, 2.3rem);
+    font-weight: normal;
+    letter-spacing: 0.02em;
+  }
+  p {
+    margin: 0 auto;
+    max-width: 34em;
+    font-size: clamp(1.05rem, 2.6vw, 1.25rem);
+    line-height: 1.6;
+  }
+  a { color: #b4521c; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  a:hover { color: #8b3a14; }
+  .paw { display: block; margin: 26px auto 0; width: 64px; height: 64px; opacity: 0.85; }
+  @media (max-width: 640px) {
+    .stage { gap: 6px; }
+    .trail { flex-basis: 24px; }
+    .step { --sway: 4px; width: 22px; height: 22px; }
   }
 </style>
 </head>
 <body>
-<img src="/aliniant-shire.jpg" width="1024" height="977"
-     alt="A watercolour of a sunny Shire-like village. A banner reads: Aliniant — the wise company with clever ideas.">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="paw" viewBox="0 0 120 120">
+      <g fill="#8b3a14" transform="rotate(-8 60 60)">
+        <path d="M60 70 C45 70 36 80 38 92 C40 104 51 106 60 100 C69 106 80 104 82 92 C84 80 75 70 60 70 Z"/>
+        <g transform="translate(60 46)">
+          <ellipse rx="8.5" ry="12.5"/>
+          <path d="M-5.5 -8 Q-5 -24 3 -33 Q0.5 -21 5.5 -8 Z"/>
+        </g>
+        <g transform="translate(33 57) rotate(-32) scale(-1 1)">
+          <ellipse rx="7.5" ry="11.5"/>
+          <path d="M-5 -7 Q-4.5 -22 3 -30 Q0.5 -19 5 -7 Z"/>
+        </g>
+        <g transform="translate(87 57) rotate(32)">
+          <ellipse rx="7.5" ry="11.5"/>
+          <path d="M-5 -7 Q-4.5 -22 3 -30 Q0.5 -19 5 -7 Z"/>
+        </g>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+<main>
+  <div class="stage">
+    <div class="trail up" aria-hidden="true">
+      <svg class="step"><use href="#paw"/></svg>
+      <svg class="step"><use href="#paw"/></svg>
+      <svg class="step"><use href="#paw"/></svg>
+      <svg class="step"><use href="#paw"/></svg>
+      <svg class="step"><use href="#paw"/></svg>
+      <svg class="step"><use href="#paw"/></svg>
+    </div>
+    <img class="scene" src="aliniant-shire.jpg" width="1024" height="977"
+         alt="A watercolour of a sunny Shire-like village. A banner reads: Aliniant — the wise company with clever ideas.">
+    <div class="trail down" aria-hidden="true">
+      <svg class="step"><use href="#paw"/></svg>
+      <svg class="step"><use href="#paw"/></svg>
+      <svg class="step"><use href="#paw"/></svg>
+      <svg class="step"><use href="#paw"/></svg>
+      <svg class="step"><use href="#paw"/></svg>
+      <svg class="step"><use href="#paw"/></svg>
+    </div>
+  </div>
+  <h1>You've reached www.aliniant.net</h1>
+  <p>Check out <a href="https://www.aliniant.com" rel="noopener">www.aliniant.com</a> for more details
+     — but stay tuned here: we're sharing some of our engineering tools here soon.</p>
+  <svg class="paw" role="img" aria-label="Signed with a dragon's paw print"><use href="#paw"/></svg>
+</main>
 </body>
 </html>

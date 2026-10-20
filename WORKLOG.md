@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.4.29: Shodan free-plan 403 reported plainly
+
+- `aes/threat_intel.py`: `_shodan_ip` maps 403 to verdict unknown with "free plan can't look up this IP (needs Membership)" and 429 to "rate limited", instead of raising into "lookup failed (HTTPError)". `probe_provider('shodan')` adds a free-plan note. Verified live: 54.240.4.6 gives 403 on the oss plan, 8.8.8.8 gives 200.
+- Logged as BUG-016 (closed).
+- Follow-up: the Shodan key was echoed in a terminal traceback while diagnosing; operator to regenerate it at account.shodan.io.
+
 ### 2026-10-20 — 1.4.28: White background for the embedded full analysis
 
 - `aes/geolocate_headers.py`: the embedded full analysis is wrapped in a `bgcolor='#ffffff'` table cell inside the existing footer `div`. Outlook's Word renderer drops `div` backgrounds, so the sender's body colour (green on an eschools mail) showed through every row. Markers unchanged; `MailHasFullFooter` only checks presence.

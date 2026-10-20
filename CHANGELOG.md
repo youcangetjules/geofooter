@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.29] — 2026-10-20
+
+### Fixed
+
+- Shodan in the hop Reputation column no longer reads "lookup failed (HTTPError)" on the free (oss) plan. That plan refuses host lookups for most IPs with 403 "Requires membership or higher"; the scan now shows "free plan can't look up this IP (needs Membership)" and treats it as no data. A 429 reads "rate limited".
+- The Settings Shodan test notes when the key is on the free plan, since the key itself checks out fine there.
+
 ## [1.4.28] — 2026-10-20
 
 ### Fixed

@@ -368,6 +368,14 @@ def _shodan_ip(ip: str, key: str) -> ProviderResult:
     if resp.status_code == 404:
         r.verdict, r.summary = "clean", "not indexed"
         return r
+    # The free (oss) plan answers host lookups for only a few well-known IPs
+    # and refuses the rest with 403 "Requires membership or higher".
+    if resp.status_code == 403:
+        r.verdict, r.summary = "unknown", "free plan can't look up this IP (needs Membership)"
+        return r
+    if resp.status_code == 429:
+        r.verdict, r.summary = "unknown", "rate limited"
+        return r
     resp.raise_for_status()
     d = resp.json()
     tags = [str(t).lower() for t in (d.get("tags") or [])]
@@ -946,7 +954,11 @@ def probe_provider(provider: str, key: Optional[str] = None) -> Tuple[bool, str]
             resp = _http("GET", "https://api.shodan.io/api-info", params={"key": key}, timeout=8)
             if resp.status_code == 200:
                 d = resp.json()
-                return True, f"OK — plan {d.get('plan', '?')}, {d.get('query_credits', '?')} query credits"
+                plan = str(d.get("plan") or "?")
+                msg = f"OK — plan {plan}, {d.get('query_credits', '?')} query credits"
+                if plan.lower() == "oss":
+                    msg += " (free plan: most IP lookups refused, InternetDB covers them)"
+                return True, msg
         elif provider == "virustotal":
             resp = _http("GET", "https://www.virustotal.com/api/v3/ip_addresses/8.8.8.8",
                          headers={"x-apikey": key}, timeout=8)

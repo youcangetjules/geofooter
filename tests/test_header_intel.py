@@ -109,6 +109,68 @@ def test_b64_digits_rejects_words():
     assert hi._b64_digits("mail") == ""
 
 
+def test_dual_signing_alignment_and_policy_from_headers():
+    sec = hi.signing_signals(CARTO, lite=True)
+    text = "\n".join(sec.rows)
+    assert "Signed by carto.com and sendgrid.info" in text
+    assert "d=carto.com s=s1 a=rsa-sha256 (strict with From)" in text
+    assert "d=sendgrid.info s=smtpapi a=rsa-sha256 (not aligned with From)" in text
+    assert "SPF domain em8966.carto.com (relaxed with From)" in text
+    assert "p=reject" in text
+    assert sec.findings == []
+
+
+def test_unsigned_subject_scores():
+    h = (
+        "From: A <a@alpha.com>\n"
+        "DKIM-Signature: v=1; a=rsa-sha256; d=alpha.com; s=k1; h=to:date; bh=x; b=y\n"
+    )
+    sec = hi.signing_signals(h)
+    assert sec.findings[0]["points"] == 5
+    assert "from, subject" in sec.findings[0]["label"]
+
+
+def _rsa_spki_b64(bits: int) -> str:
+    import base64
+
+    n = (1 << (bits - 1)) | 1
+    nb = n.to_bytes(bits // 8, "big")
+
+    def tlv(tag, body):
+        ln = len(body)
+        if ln < 128:
+            return bytes([tag, ln]) + body
+        lb = ln.to_bytes((ln.bit_length() + 7) // 8, "big")
+        return bytes([tag, 0x80 | len(lb)]) + lb + body
+
+    rsa = tlv(0x30, tlv(0x02, b"\x00" + nb) + tlv(0x02, b"\x01\x00\x01"))
+    algo = tlv(0x30, bytes.fromhex("06092a864886f70d0101010500"))
+    return base64.b64encode(tlv(0x30, algo + tlv(0x03, b"\x00" + rsa))).decode()
+
+
+def test_dns_key_bits_and_dmarc_on_full_scan():
+    zone = {
+        "s1._domainkey.alpha.com": [f"v=DKIM1; k=rsa; p={_rsa_spki_b64(512)}"],
+        "_dmarc.alpha.com": ["v=DMARC1; p=none; rua=mailto:x@alpha.com"],
+    }
+    h = (
+        "From: A <a@alpha.com>\nSubject: hi\n"
+        "DKIM-Signature: v=1; a=rsa-sha256; d=alpha.com; s=s1; h=from:subject; bh=x; b=y\n"
+    )
+    sec = hi.signing_signals(h, lite=False, resolver=lambda name: zone.get(name, []))
+    text = "\n".join(sec.rows)
+    assert "RSA 512-bit" in text
+    assert "monitoring only" in text
+    assert [f["points"] for f in sec.findings] == [5]
+    assert hi._der_rsa_bits(__import__("base64").b64decode(_rsa_spki_b64(2048))) == 2048
+
+
+def test_compact_scan_does_no_dns():
+    calls = []
+    hi.signing_signals(CARTO, lite=True, resolver=lambda n: calls.append(n) or [])
+    assert calls == []
+
+
 def test_return_path_mismatch_scored_only_without_dmarc_pass():
     h = "Return-Path: <x@bounce.other.com>\nFrom: A <a@alpha.com>\n"
     assert hi.identity_signals(h, dmarc="pass").findings == []

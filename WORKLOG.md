@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.4.21: DKIM, alignment and DMARC policy depth
+
+- `header_intel.signing_signals` parses every `DKIM-Signature` (`d`, `s`, `a`, `h`), the alignment of `smtp.mailfrom` and `d=` with From, and the DMARC `p`/`sp`/`pct` from Authentication-Results. When not `lite` it also resolves `{s}._domainkey.{d}` and `_dmarc.{domain}` through `dns_auth_cache.json` (24h TTL). Key size comes from `cryptography.load_der_public_key`, with a small DER walker for bare PKCS#1 keys.
+- Installed `cryptography` in the project `.venv` and in `C:\Python313` (50.0.2); `C:\Python312` already had 46.0.3. These are the interpreters Outlook's launcher tries.
+- Follow-up: rescan with Full Scan to see the key size and DMARC record. No VBA import.
+
 ### 2026-10-20 — 1.4.20: ESP and tenant fingerprinting
 
 - `header_intel.esp_fingerprint` detects the platform and tenant. For SendGrid the account comes from `bounces+<id>-` in Return-Path, the base64 `from` token on the `ismtpd` hop, or the Feedback-ID. It annotates that hop (`decoded_location`, `asn_org`). Header intelligence now runs before `apply_route_path_risk`, so hops flagged `esp_trusted` are skipped. Tenant lists live in `aes_esp_tenants.json` (edited by hand for now; there is no UI).

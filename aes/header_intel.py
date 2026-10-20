@@ -372,6 +372,240 @@ def esp_fingerprint(
     return sec
 
 
+# --------------------------------------------------------------------------- #
+# DKIM signatures, identifier alignment, DMARC policy
+# --------------------------------------------------------------------------- #
+
+def _tags(value: str) -> Dict[str, str]:
+    out: Dict[str, str] = {}
+    for part in value.split(";"):
+        if "=" in part:
+            k, v = part.split("=", 1)
+            out[k.strip().lower()] = re.sub(r"\s+", "", v)
+    return out
+
+
+def dkim_signatures(headers: str) -> List[Dict[str, Any]]:
+    sigs = []
+    for val in header_values(headers, "DKIM-Signature"):
+        t = _tags(val)
+        sigs.append(
+            {
+                "d": t.get("d", "").lower(),
+                "s": t.get("s", ""),
+                "a": t.get("a", "").lower(),
+                "h": [h.strip().lower() for h in t.get("h", "").split(":") if h.strip()],
+            }
+        )
+    return sigs
+
+
+def _alignment(dom: str, from_dom: str) -> str:
+    dom, from_dom = (dom or "").lower(), (from_dom or "").lower()
+    if not dom or not from_dom:
+        return ""
+    if dom == from_dom:
+        return "strict"
+    if registrable_domain(dom) == registrable_domain(from_dom):
+        return "relaxed"
+    return "not aligned"
+
+
+def _der_rsa_bits(der: bytes) -> int:
+    """Modulus size of the first large INTEGER in a DER public key (SPKI or PKCS#1)."""
+    best = 0
+
+    def walk(buf: bytes, depth: int = 0) -> None:
+        nonlocal best
+        i = 0
+        while i + 2 <= len(buf) and depth < 6:
+            tag = buf[i]
+            ln = buf[i + 1]
+            i += 2
+            if ln & 0x80:
+                n = ln & 0x7F
+                if n == 0 or i + n > len(buf):
+                    return
+                ln = int.from_bytes(buf[i:i + n], "big")
+                i += n
+            body = buf[i:i + ln]
+            if tag == 0x02:
+                val = body.lstrip(b"\x00")
+                best = max(best, len(val) * 8 - (8 - val[0].bit_length() if val else 0))
+            elif tag == 0x30:
+                walk(body, depth + 1)
+            elif tag == 0x03 and body:
+                walk(body[1:], depth + 1)
+            i += ln
+
+    try:
+        walk(der)
+    except Exception:
+        return 0
+    return best
+
+
+def _cache_path():
+    import os
+    from pathlib import Path
+
+    return Path(os.environ.get("LOCALAPPDATA", "")) / "GeoFooter" / "dns_auth_cache.json"
+
+
+def _dns_txt(name: str, *, ttl_s: int = 86400) -> Optional[List[str]]:
+    """TXT strings for *name*, cached 24h. None when the lookup itself failed."""
+    import json
+    import time
+
+    path = _cache_path()
+    try:
+        cache = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    except Exception:
+        cache = {}
+    hit = cache.get(name)
+    if hit and time.time() - float(hit.get("t", 0)) < ttl_s:
+        return list(hit.get("txt") or [])
+    try:
+        import dns.resolver
+
+        res = dns.resolver.Resolver()
+        res.timeout, res.lifetime = 3, 5
+        try:
+            ans = res.resolve(name, "TXT")
+            txt = ["".join(p.decode("utf-8", "ignore") for p in r.strings) for r in ans]
+        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+            txt = []
+    except Exception:
+        return None
+    cache[name] = {"t": time.time(), "txt": txt}
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(cache), encoding="utf-8")
+        tmp.replace(path)
+    except OSError:
+        pass
+    return txt
+
+
+def dkim_key_bits(selector: str, domain: str, *, resolver=None) -> Tuple[int, str]:
+    """(bits, key type) for ``selector._domainkey.domain``; (0, "") if unknown."""
+    import base64
+
+    txts = (resolver or _dns_txt)(f"{selector}._domainkey.{domain}")
+    for txt in txts or []:
+        t = _tags(txt)
+        if "p" not in t:
+            continue
+        kind = t.get("k", "rsa").lower()
+        if not t["p"]:
+            return 0, "revoked"
+        if kind == "ed25519":
+            return 256, "ed25519"
+        try:
+            der = base64.b64decode(t["p"] + "=" * (-len(t["p"]) % 4))
+        except Exception:
+            return 0, kind
+        try:
+            from cryptography.hazmat.primitives.serialization import (
+                load_der_public_key,
+            )
+
+            return int(getattr(load_der_public_key(der), "key_size", 0) or 0), kind
+        except Exception:
+            # Older selectors publish bare PKCS#1, which load_der_public_key rejects.
+            return _der_rsa_bits(der), kind
+    return 0, ""
+
+
+def _dmarc_from_auth(headers: str) -> Dict[str, str]:
+    for val in header_values(headers, "Authentication-Results"):
+        m = re.search(r"\bdmarc=\w+\s*\(([^)]*)\)", val, re.I)
+        if m:
+            t = {k.lower(): v.lower() for k, v in re.findall(r"\b(p|sp|pct)=([\w]+)", m.group(1), re.I)}
+            if t.get("p"):
+                return t
+    return {}
+
+
+def signing_signals(
+    headers: str,
+    *,
+    lite: bool = True,
+    resolver=None,
+) -> IntelSection:
+    sec = IntelSection("Signing / alignment")
+    _n, from_addr = _addr(first_header(headers, "From"))
+    from_dom = _domain_of(from_addr)
+    sigs = dkim_signatures(headers)
+
+    if sigs:
+        doms = []
+        for s in sigs:
+            if s["d"] and s["d"] not in doms:
+                doms.append(s["d"])
+        sec.rows.append("Signed by " + " and ".join(doms) if doms else "DKIM signature without d=")
+        for s in sigs:
+            sec.rows.append(
+                f"d={s['d']} s={s['s']} a={s['a'] or '?'}"
+                + (f" ({_alignment(s['d'], from_dom)} with From)" if from_dom else "")
+            )
+        main = next((s for s in sigs if _alignment(s["d"], from_dom) in {"strict", "relaxed"}), sigs[0])
+        missing = [h for h in ("from", "subject") if h not in main["h"]]
+        if first_header(headers, "Reply-To") and "reply-to" not in main["h"]:
+            missing.append("reply-to")
+        if missing:
+            sec.add(
+                f"DKIM signature for {main['d']} does not cover {', '.join(missing)}",
+                5,
+                "Those headers could be changed on a replayed copy without breaking the signature",
+            )
+    else:
+        sec.rows.append("No DKIM signature")
+
+    mailfrom = ""
+    for val in header_values(headers, "Authentication-Results"):
+        m = re.search(r"smtp\.mailfrom=\"?([^\s;\"]+)", val, re.I)
+        if m:
+            mailfrom = m.group(1).lower()
+            break
+    if mailfrom and from_dom:
+        mf_dom = _domain_of(mailfrom) or mailfrom
+        sec.rows.append(f"SPF domain {mf_dom} ({_alignment(mf_dom, from_dom)} with From)")
+
+    policy = _dmarc_from_auth(headers)
+    reg = registrable_domain(from_dom)
+    if not lite and reg:
+        for txt in (resolver or _dns_txt)(f"_dmarc.{reg}") or []:
+            if txt.lower().startswith("v=dmarc1"):
+                t = _tags(txt)
+                policy = {k: t[k].lower() for k in ("p", "sp", "pct") if k in t} or policy
+                break
+        for s in sigs:
+            if not (s["d"] and s["s"]):
+                continue
+            bits, kind = dkim_key_bits(s["s"], s["d"], resolver=resolver)
+            if kind == "revoked":
+                sec.rows.append(f"DKIM key {s['s']}._domainkey.{s['d']} is revoked (empty p=)")
+            elif bits:
+                sec.rows.append(f"DKIM key {s['s']}._domainkey.{s['d']}: {kind.upper()} {bits}-bit")
+                if kind == "rsa" and bits < 1024:
+                    sec.add(f"Weak DKIM key for {s['d']} ({bits}-bit RSA)", 5,
+                            "Keys under 1024 bits can be factored; the signature proves little")
+    if policy.get("p"):
+        line = f"DMARC policy for {reg or from_dom}: p={policy['p']}"
+        if policy.get("sp"):
+            line += f" sp={policy['sp']}"
+        if policy.get("pct"):
+            line += f" pct={policy['pct']}"
+        if policy["p"] == "none":
+            line += " (monitoring only, spoofed mail is not rejected)"
+        sec.rows.append(line)
+    elif not lite and reg:
+        sec.rows.append(f"No DMARC record published for {reg}")
+    return sec
+
+
 def load_own_domains() -> List[str]:
     """Important domains configured in GURI (datastore/important_domains.txt)."""
     try:
@@ -407,4 +641,5 @@ def run_all(
     return [
         identity_signals(headers, dmarc=dmarc, own_domains=own),
         esp_fingerprint(headers, hops),
+        signing_signals(headers, lite=lite),
     ]

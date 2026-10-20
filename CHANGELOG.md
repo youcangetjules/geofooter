@@ -20,6 +20,14 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.21] — 2026-10-20
+
+### Added
+
+- Signing / alignment row in the Full Scan report. Every DKIM signature is listed with its domain, selector and algorithm, so dual signing shows as "Signed by carto.com and sendgrid.info". Each DKIM and SPF domain is marked strict, relaxed or not aligned with From. A signature that leaves From or Subject unsigned (or Reply-To, when one is present) scores +5.
+- On full and deep scans AES looks up the DKIM key and the published DMARC record, cached for 24 hours. An RSA key under 1024 bits scores +5. `p=none` is reported as monitoring only. Compact scans use the policy Gmail writes into Authentication-Results and make no DNS calls.
+- `cryptography` added to `requirements.txt` for reading DKIM key sizes.
+
 ## [1.4.20] — 2026-10-20
 
 ### Added

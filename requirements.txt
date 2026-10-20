@@ -12,6 +12,7 @@ python-whois>=0.8.0
 requests>=2.31.0
 pycountry>=24.0.0
 ipwhois>=1.2.0
+cryptography>=42.0.0  # DKIM public-key size on full/deep scans
 
 # Optional dependencies
 psycopg2-binary>=2.9.0  # For PostgreSQL database support (optional, SQLite is default)

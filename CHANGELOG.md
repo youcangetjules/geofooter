@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.5] — 2026-10-20
+
+### Fixed
+
+- `cloud/pixel/deploy.sh` is now safe on a VM that already serves other sites. It installs only missing packages (so it never upgrades or restarts a running nginx), enables the site as `zz-aes-pixel` so it can't become the catch-all for other names, and removes nginx's default site only on a fresh install (BUG-020).
+
 ## [1.5.4] — 2026-10-20
 
 ### Changed

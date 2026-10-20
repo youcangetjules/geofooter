@@ -223,6 +223,7 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 - **Repro:** Found by reading the stage-1/2 files against `nginx -T` on the server. Nothing was deployed.
 - **Fixed in:** 1.5.3. The site files say to install as `sites-enabled/zz-aes-pixel` (included after `workflow-api`). The IPv6 listeners are gone, so the listens match `workflow-api` exactly, and a per-IP `limit_conn` of 10 is added to protect the shared worker connections (768).
 - **Update 2026-10-20:** 1.5.4 moves the pixel to a dedicated VM (`track.aliniant.net`), so it no longer shares nginx with TXOne at all.
+- **Update 2026-10-20:** the operator chose the existing VM after all. 1.5.4's `deploy.sh` had brought the problem back (it enabled the site as `aes-pixel`, and its `apt-get install nginx` could upgrade and restart a running nginx). Fixed in 1.5.5: the site is enabled as `zz-aes-pixel`, only missing packages are installed, and the default site is only removed on a fresh nginx.
 
 ### BUG-016 — Shodan shows "lookup failed (HTTPError)" although Settings says OK
 

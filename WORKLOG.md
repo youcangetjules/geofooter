@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.5.5: deploy.sh safe on the existing i-txone VM
+
+- `cloud/pixel/deploy.sh`: installs only missing commands (nginx, certbot, python3 and curl are all present on the VM, so nothing is installed), enables the site as `sites-enabled/zz-aes-pixel`, and removes `default` only when nginx was just installed. The nginx file comments are updated to match. BUG-020 update.
+- Why: the operator will host `track.aliniant.net` on the existing GCP VM (35.208.12.24), which becomes Aliniant.net's home after TXOne migrates off.
+- Follow-up: A record `track.aliniant.net -> 35.208.12.24` at 20i; then deploy with the operator's go-ahead.
+
 ### 2026-10-20 — 1.5.4: Pixel endpoint moves to a dedicated VM at track.aliniant.net
 
 - `DEFAULT_BASE_URL` in `VBA\MSCANPixel.bas` and `aes/pixel_tracking.py` is now `https://track.aliniant.net`. The nginx files are renamed to `cloud/pixel/nginx-track.aliniant.net*.conf` (TLS 1.2+). New `cloud/pixel/deploy.sh` sets up a fresh Ubuntu 24.04 VM: apt nginx/certbot (renewed by `certbot.timer`), `/opt/aes-pixel`, the env file written from a key on stdin, the systemd unit, the stage-1 site and certificate, then the stage-2 site and a `/healthz` check. `.gitattributes` gets `cloud/** eol=lf`.

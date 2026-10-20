@@ -3029,12 +3029,33 @@ class HTMLReportGenerator:
         routing_info = self._extract_routing_info(headers)
         per_hop_analysis = self._extract_hop_details(headers, lite=lite)
 
+        # Header intelligence runs before route risk: a trusted ESP tenant
+        # marks its shared-IP hops so they are not scored as a risky route.
+        intel_sections: List[Any] = []
+        if header_intel is not None and headers:
+            try:
+                intel_sections = header_intel.run_all(
+                    headers,
+                    dmarc=auth_info.dmarc,
+                    lite=lite,
+                    hops=per_hop_analysis,
+                )
+            except Exception as exc:
+                self.logger.warning("Header intelligence failed: %s", exc)
+                intel_sections = []
+            for section in intel_sections:
+                scored = [f for f in section.findings if int(f.get("points") or 0)]
+                security_assessment = SecurityAssessor().apply_extra_factors(
+                    security_assessment, section.title, scored
+                )
+
         # Route/ASN risk needs hop AbuseIPDB scores; apply after hop enrichment.
         # Same-domain mail stays on the organisation's own servers, so those
         # hops are not an outside route.
         if geo_result.geo_source != "internal-same-domain":
             security_assessment = SecurityAssessor().apply_route_path_risk(
-                security_assessment, per_hop_analysis
+                security_assessment,
+                [h for h in per_hop_analysis if not h.get("esp_trusted")],
             )
         if time_checks is not None and headers:
             m_date = re.search(r'^Date:\s*(.+)$', headers, re.IGNORECASE | re.MULTILINE)
@@ -3067,24 +3088,6 @@ class HTMLReportGenerator:
                     hop["prefix"] = prefix
                 if self._blank_reg(hop.get("asn")) and bgp.get("origins"):
                     hop["asn"] = f"AS{bgp['origins'][0]}"
-
-        intel_sections: List[Any] = []
-        if header_intel is not None and headers:
-            try:
-                intel_sections = header_intel.run_all(
-                    headers,
-                    dmarc=auth_info.dmarc,
-                    lite=lite,
-                    hops=per_hop_analysis,
-                )
-            except Exception as exc:
-                self.logger.warning("Header intelligence failed: %s", exc)
-                intel_sections = []
-            for section in intel_sections:
-                scored = [f for f in section.findings if int(f.get("points") or 0)]
-                security_assessment = SecurityAssessor().apply_extra_factors(
-                    security_assessment, section.title, scored
-                )
 
         broker_hit: Optional[Dict[str, Any]] = None
         if broker_match_sender is not None:

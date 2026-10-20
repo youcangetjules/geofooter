@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.20] — 2026-10-20
+
+### Added
+
+- Sending-platform fingerprint for SendGrid, Mailgun, Amazon SES, Postmark, Mailchimp/Mandrill and Salesforce, read from their X- headers, Feedback-ID, bounce address and hop names. The SendGrid HTTP API hop's base64 name is decoded to the account ID, so hop 1 reads "SendGrid API, account 21732389" instead of Unknown. The Full Scan report has a Sending platform row with the platform, account and campaign ID.
+- Tenant lists in `%LOCALAPPDATA%\GeoFooter\aes_esp_tenants.json` (`{"trusted": ["sendgrid:21732389"], "blocked": []}`). A blocked tenant scores +25. A trusted tenant's shared-IP hops are left out of route/ASN risk.
+
 ## [1.4.19] — 2026-10-20
 
 ### Added

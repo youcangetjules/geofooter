@@ -76,6 +76,39 @@ def test_own_org_name_on_outside_address():
     assert sec.findings and sec.findings[0]["points"] == 10
 
 
+def _carto_hops():
+    return [
+        {"fqdn": "MjE3MzIzODk", "by_host": "geopod-ismtpd-11", "asn_org": "Unknown", "asn": "Unknown"},
+        {"fqdn": "o1.ptr8966.carto.com", "by_host": "mx.google.com", "asn": "AS11377", "asn_org": "SendGrid, Inc"},
+    ]
+
+
+def test_sendgrid_account_from_api_hop():
+    hops = _carto_hops()
+    sec = hi.esp_fingerprint(CARTO, hops, tenants={"trusted": [], "blocked": []})
+    assert sec.data["esp"] == "sendgrid"
+    assert sec.data["tenant"] == "21732389"
+    assert "21732389" in hops[0]["decoded_location"]
+    assert hops[0]["asn_org"] == "SendGrid (HTTP API)"
+    assert sec.findings == []
+
+
+def test_blocked_tenant_scores():
+    sec = hi.esp_fingerprint(CARTO, _carto_hops(), tenants={"trusted": [], "blocked": ["sendgrid:21732389"]})
+    assert [f["points"] for f in sec.findings] == [25]
+
+
+def test_trusted_tenant_marks_esp_hops():
+    hops = _carto_hops()
+    hi.esp_fingerprint(CARTO, hops, tenants={"trusted": ["sendgrid:21732389"], "blocked": []})
+    assert hops[1].get("esp_trusted") is True
+
+
+def test_b64_digits_rejects_words():
+    assert hi._b64_digits("MjE3MzIzODk") == "21732389"
+    assert hi._b64_digits("mail") == ""
+
+
 def test_return_path_mismatch_scored_only_without_dmarc_pass():
     h = "Return-Path: <x@bounce.other.com>\nFrom: A <a@alpha.com>\n"
     assert hi.identity_signals(h, dmarc="pass").findings == []

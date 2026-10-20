@@ -223,6 +223,155 @@ def identity_signals(
     return sec
 
 
+# --------------------------------------------------------------------------- #
+# ESP / tenant fingerprinting
+# --------------------------------------------------------------------------- #
+
+ESP_ASNS: Dict[str, Tuple[str, ...]] = {
+    "sendgrid": ("AS11377",),
+    "mailgun": ("AS395085",),
+    "amazonses": ("AS16509", "AS14618"),
+    "postmark": ("AS395425",),
+    "mailchimp": ("AS10868", "AS27357"),
+    "salesforce": ("AS14340", "AS22606"),
+}
+ESP_NAMES = {
+    "sendgrid": "SendGrid",
+    "mailgun": "Mailgun",
+    "amazonses": "Amazon SES",
+    "postmark": "Postmark",
+    "mailchimp": "Mailchimp / Mandrill",
+    "salesforce": "Salesforce",
+}
+
+
+def _b64_digits(token: str) -> str:
+    """SendGrid writes the account ID as base64 digits (MjE3MzIzODk -> 21732389)."""
+    import base64
+    import binascii
+
+    tok = (token or "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9+/=]{4,24}", tok):
+        return ""
+    try:
+        raw = base64.b64decode(tok + "=" * (-len(tok) % 4), validate=True)
+        text = raw.decode("ascii")
+    except (binascii.Error, ValueError, UnicodeDecodeError):
+        return ""
+    return text if text.isdigit() else ""
+
+
+def _tenants_path():
+    import os
+    from pathlib import Path
+
+    return Path(os.environ.get("LOCALAPPDATA", "")) / "GeoFooter" / "aes_esp_tenants.json"
+
+
+def load_tenant_lists() -> Dict[str, List[str]]:
+    """``{"trusted": ["sendgrid:21732389"], "blocked": []}`` from LocalAppData."""
+    import json
+
+    out: Dict[str, List[str]] = {"trusted": [], "blocked": []}
+    try:
+        path = _tenants_path()
+        if path.is_file():
+            data = json.loads(path.read_text(encoding="utf-8"))
+            for key in out:
+                out[key] = [str(v).strip().lower() for v in data.get(key) or [] if str(v).strip()]
+    except Exception:
+        pass
+    return out
+
+
+def esp_fingerprint(
+    headers: str,
+    hops: Optional[List[Dict[str, Any]]] = None,
+    tenants: Optional[Dict[str, List[str]]] = None,
+) -> IntelSection:
+    sec = IntelSection("Sending platform")
+    flat = unfold(headers)
+    low = flat.lower()
+    hops = hops or []
+    esp = ""
+    tenant = ""
+    campaign = ""
+    details: List[str] = []
+
+    def hv(name: str) -> str:
+        return first_header(headers, name)
+
+    rp = hv("Return-Path").lower()
+    feedback = hv("Feedback-ID") or hv("X-Feedback-ID")
+
+    if (hv("X-SG-EID") or hv("X-SG-ID") or "sendgrid.net" in low
+            or re.search(r"\bby\s+\S*ismtpd\S*\s+\(sg\)", low)
+            or re.match(r"u\d{3}\.", hv("X-Entity-ID") or "")):
+        esp = "sendgrid"
+        m = re.search(r"bounces\+(\d+)-", rp)
+        if m:
+            tenant = m.group(1)
+        for hop in hops:
+            acct = _b64_digits(str(hop.get("fqdn") or ""))
+            if acct and "ismtpd" in str(hop.get("by_host") or "").lower():
+                tenant = tenant or acct
+                hop["decoded_location"] = f"SendGrid API, account {acct}"
+                if str(hop.get("asn_org") or "Unknown") in {
+                    "Unknown", "", "—", "NA", "N/A", "Insufficient header data", "Internal / local hop",
+                }:
+                    hop["asn_org"] = "SendGrid (HTTP API)"
+        if not tenant and feedback:
+            m = re.match(r"\s*(\d+):", feedback)
+            tenant = m.group(1) if m else ""
+    elif any(hv(h) for h in ("X-Mailgun-Sid", "X-Mailgun-Variables", "X-Mailgun-Sending-Ip")):
+        esp = "mailgun"
+        tenant = (hv("X-Mailgun-Sid") or "")[:40]
+        sip = hv("X-Mailgun-Sending-Ip")
+        if sip:
+            details.append(f"Mailgun sending IP {sip}")
+    elif hv("X-SES-Outgoing") or "amazonses.com" in low:
+        esp = "amazonses"
+        m = re.match(r"\s*([^:]+(?::[^:]+)?):amazonses", feedback or "", re.I)
+        tenant = m.group(1) if m else ""
+    elif hv("X-PM-Message-Id") or hv("X-PM-Tag") or "mtasv.net" in low:
+        esp = "postmark"
+        campaign = hv("X-PM-Tag")
+    elif hv("X-MC-User") or hv("X-Mandrill-User") or "mcsv.net" in low or "mandrillapp.com" in low:
+        esp = "mailchimp"
+        tenant = hv("X-MC-User") or hv("X-Mandrill-User")
+    elif hv("X-SFDC-LK") or hv("X-SFDC-User") or "salesforce.com" in rp:
+        esp = "salesforce"
+        tenant = hv("X-SFDC-LK")
+
+    if not esp:
+        return sec
+    if feedback and not campaign:
+        campaign = feedback
+    tenant = tenant.strip()
+    name = ESP_NAMES.get(esp, esp)
+    key = f"{esp}:{tenant}".lower() if tenant else ""
+    sec.data.update(esp=esp, tenant=tenant, key=key)
+    sec.rows.append(f"{name}" + (f", account {tenant}" if tenant else ""))
+    if campaign:
+        sec.rows.append(f"Campaign / feedback ID: {campaign[:120]}")
+    sec.rows.extend(details)
+
+    lists = tenants if tenants is not None else load_tenant_lists()
+    if key and key in lists.get("blocked", []):
+        sec.add(f"{name} account {tenant} is on your blocked tenant list", 25,
+                "Blocked sender account on a shared sending platform")
+    elif key and key in lists.get("trusted", []):
+        sec.rows.append("Trusted tenant: shared-IP route risk not scored for its hops")
+        asns = {a.upper() for a in ESP_ASNS.get(esp, ())}
+        for hop in hops:
+            org = str(hop.get("asn_org") or "").lower()
+            if str(hop.get("asn") or "").upper() in asns or name.split()[0].lower() in org:
+                hop["esp_trusted"] = True
+    elif key:
+        sec.rows.append(f"Tenant key {key} (add to aes_esp_tenants.json to trust or block)")
+    return sec
+
+
 def load_own_domains() -> List[str]:
     """Important domains configured in GURI (datastore/important_domains.txt)."""
     try:
@@ -255,4 +404,7 @@ def run_all(
     if not headers:
         return []
     own = list(own_domains) if own_domains is not None else load_own_domains()
-    return [identity_signals(headers, dmarc=dmarc, own_domains=own)]
+    return [
+        identity_signals(headers, dmarc=dmarc, own_domains=own),
+        esp_fingerprint(headers, hops),
+    ]

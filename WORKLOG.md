@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.4.20: ESP and tenant fingerprinting
+
+- `header_intel.esp_fingerprint` detects the platform and tenant. For SendGrid the account comes from `bounces+<id>-` in Return-Path, the base64 `from` token on the `ismtpd` hop, or the Feedback-ID. It annotates that hop (`decoded_location`, `asn_org`). Header intelligence now runs before `apply_route_path_risk`, so hops flagged `esp_trusted` are skipped. Tenant lists live in `aes_esp_tenants.json` (edited by hand for now; there is no UI).
+- Follow-up: rescan. No VBA import.
+
 ### 2026-10-20 — 1.4.19: Identity mismatch checks (BEC / display-name spoofing)
 
 - New `aes/header_intel.py`. Each check returns an `IntelSection` with report rows and `{label, points, note}` findings. `identity_signals` compares From display name and address with Reply-To, Return-Path and Sender, a brand list, and GURI's `important_domains.txt`. `_prepare_display_data` folds the findings into the score through `apply_extra_factors`, and `_build_full_details_html` renders each section as a row. Tests: `tests/test_header_intel.py`.

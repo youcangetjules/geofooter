@@ -20,6 +20,16 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.1] — 2026-10-20
+
+### Added
+
+- High-risk mitigated mail (score above 70) opens with a link, **"Not Dangerous you big scaredy cat, turn me back into a proper email"**, which restores the original HTML.
+
+### Fixed
+
+- The AES actions in that mail (Show links, Restore, Block, Trust, the full report) are now clickable. They were raw `aes://` lines in a plain-text body, which Outlook never turns into links. The body is now HTML written entirely by AES, with the sender's text escaped and none of their markup, images or links kept (BUG-019). Full No Trust still converts to plain text.
+
 ## [1.5.0] — 2026-10-20
 
 ### Added

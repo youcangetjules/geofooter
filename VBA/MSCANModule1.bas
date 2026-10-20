@@ -2252,9 +2252,11 @@ Private Function ApplyHighRiskTextOnlyMail(ByVal mail As Object, ByVal footerPat
              "----- Original message -----" & vbCrLf
 
     If TypeOf mail Is Outlook.MailItem Then
-        mail.BodyFormat = olFormatPlain
+        mail.BodyFormat = olFormatHTML
+        mail.HTMLBody = BuildMitigatedHtml(notice, restoreId, plainBody)
+    Else
+        mail.Body = notice & plainBody
     End If
-    mail.Body = notice & plainBody
     mail.Save
     MarkAesScanned mail
 
@@ -2272,6 +2274,113 @@ Private Function ApplyHighRiskTextOnlyMail(ByVal mail As Object, ByVal footerPat
 
 ErrHandler:
     MSCANModLogging.WriteLog "ApplyHighRiskTextOnlyMail error: #" & Err.Number & " - " & Err.Description
+End Function
+
+' The mitigated body is HTML that AES writes itself: the restore link on top,
+' the notice with its actions as working links, then the sender's text fully
+' escaped. Nothing of the sender's markup survives, and their URLs stay inert
+' text. Plain text cannot carry a labelled link, and Outlook does not linkify
+' aes:// in plain text at all.
+Private Function BuildMitigatedHtml(ByVal notice As String, ByVal restoreId As String, _
+                                    ByVal plainBody As String) As String
+    Const FONT As String = "font-family:Segoe UI,Arial,sans-serif; font-size:13px; color:#222;"
+    Dim h As String
+    h = "<html><head><meta http-equiv=""Content-Type"" content=""text/html; charset=utf-8""></head>" & _
+        "<body style=""" & FONT & """>"
+    If Len(restoreId) > 0 Then
+        h = h & "<table border=""0"" cellpadding=""0"" cellspacing=""0"" style=""border-collapse:collapse;"">" & _
+            "<tr><td bgcolor=""#e8f5f3"" style=""background:#e8f5f3; border:1px solid #0a5c4a; " & _
+            "padding:8px 14px; font-size:14px; line-height:18px; mso-line-height-rule:exactly;"">" & _
+            "<a href=""aes://restore-html?id=" & HtmlEsc(restoreId) & """ " & _
+            "style=""color:#0a5c4a; font-weight:bold; text-decoration:underline;"">" & _
+            "Not Dangerous you big scaredy cat, turn me back into a proper email</a>" & _
+            "</td></tr></table><p style=""margin:0; font-size:8px; line-height:8px;"">&nbsp;</p>"
+    End If
+    h = h & "<div style=""" & FONT & """>" & NoticeToHtml(notice) & "</div>"
+    h = h & "<div style=""font-family:Consolas,Courier New,monospace; font-size:12px; color:#333;"">" & _
+        TextToHtml(plainBody) & "</div></body></html>"
+    BuildMitigatedHtml = h
+End Function
+
+' Renders the notice line by line. "Label:" followed by a URL line becomes one
+' link with the label as its text; a URL at the end of a line becomes a link.
+Private Function NoticeToHtml(ByVal notice As String) As String
+    Dim lines() As String
+    Dim i As Long
+    Dim t As String
+    Dim pending As String
+    Dim out As String
+    Dim p As Long
+
+    lines = Split(Replace(notice, vbCrLf, vbLf), vbLf)
+    out = ""
+    pending = ""
+    For i = 0 To UBound(lines)
+        t = Trim$(lines(i))
+        If IsAesLinkText(t) Then
+            If Len(pending) > 0 Then
+                out = out & "&nbsp;&nbsp;" & HtmlLink(t, Left$(pending, Len(pending) - 1)) & "<br>"
+                pending = ""
+            Else
+                out = out & HtmlLink(t, t) & "<br>"
+            End If
+        ElseIf Right$(t, 1) = ":" And Len(t) < 60 Then
+            If Len(pending) > 0 Then out = out & HtmlEsc(pending) & "<br>"
+            pending = t
+        Else
+            If Len(pending) > 0 Then
+                out = out & HtmlEsc(pending) & "<br>"
+                pending = ""
+            End If
+            p = LinkStartInLine(t)
+            If p > 1 Then
+                out = out & HtmlEsc(Left$(t, p - 1)) & HtmlLink(Mid$(t, p), Mid$(t, p)) & "<br>"
+            Else
+                out = out & HtmlEsc(lines(i)) & "<br>"
+            End If
+        End If
+    Next i
+    If Len(pending) > 0 Then out = out & HtmlEsc(pending) & "<br>"
+    NoticeToHtml = out
+End Function
+
+Private Function IsAesLinkText(ByVal t As String) As Boolean
+    Dim low As String
+    low = LCase$(t)
+    IsAesLinkText = (InStr(1, t, " ") = 0) And _
+                    (Left$(low, 6) = "aes://" Or Left$(low, 8) = "file:///")
+End Function
+
+' Position of a trailing aes:// or file:/// URL (AES's own links only).
+Private Function LinkStartInLine(ByVal t As String) As Long
+    Dim p As Long
+    p = InStr(1, t, " aes://", vbTextCompare)
+    If p = 0 Then p = InStr(1, t, " file:///", vbTextCompare)
+    If p = 0 Then
+        LinkStartInLine = 0
+    ElseIf InStr(p + 1, t, " ") > 0 Then
+        LinkStartInLine = 0
+    Else
+        LinkStartInLine = p + 1
+    End If
+End Function
+
+Private Function HtmlLink(ByVal url As String, ByVal label As String) As String
+    HtmlLink = "<a href=""" & HtmlEsc(url) & """ style=""color:#0f6b7c;"">" & HtmlEsc(label) & "</a>"
+End Function
+
+Private Function TextToHtml(ByVal s As String) As String
+    s = HtmlEsc(s)
+    s = Replace(s, vbCrLf, vbLf)
+    s = Replace(s, vbCr, vbLf)
+    TextToHtml = Replace(s, vbLf, "<br>")
+End Function
+
+Private Function HtmlEsc(ByVal s As String) As String
+    s = Replace(s, "&", "&amp;")
+    s = Replace(s, "<", "&lt;")
+    s = Replace(s, ">", "&gt;")
+    HtmlEsc = Replace(s, """", "&quot;")
 End Function
 
 ' Write original HTML + a small JSON sidecar; return short id for aes://restore-html?id=

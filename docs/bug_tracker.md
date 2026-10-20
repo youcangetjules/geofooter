@@ -33,6 +33,15 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-019 — AES actions in text-only (mitigated) mail cannot be clicked
+
+- **Severity:** S3
+- **Area:** VBA
+- **Status:** fixed for high-risk mitigation (pending VBA re-import); still open for Full No Trust
+- **Reported:** 2026-10-20
+- **Summary:** High-risk mitigation (score > 70) and Full No Trust rewrote the mail as plain text, listing actions as raw `aes://…` lines. Outlook only auto-links standard schemes (`file://`, `https://`) in plain text, so "Restore original HTML format" and every other action was dead text (seen on a Substack mail, 20 Oct).
+- **Fixed in:** 1.5.1 for high-risk mitigation: the body is now AES-built HTML (restore link on top, actions as labelled links, sender text escaped). Full No Trust (`ApplyFullNoTrustTextMail`, `action_handler._apply_full_no_trust_text`) still writes plain text on purpose and keeps dead links.
+
 ### BUG-018 — Blocked tracking pixels show as a broken-image box
 
 - **Severity:** S4

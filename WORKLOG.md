@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.5.1: Scaredy-cat restore link on high-risk mitigated mail
+
+- `VBA\MSCANModule1.bas` `ApplyHighRiskTextOnlyMail`: writes `BuildMitigatedHtml` (restore link in a `bgcolor` cell at the top, `NoticeToHtml` turning "Label:" plus URL lines into labelled links, sender text via `TextToHtml`/`HtmlEsc`) as HTML instead of `olFormatPlain`. Mitigation is still detected by the "AES HIGH RISK MITIGATION" text in `Body` everywhere (`BodyIsLockedAsText`, `_mail_is_locked_text`), so nothing re-footers it. Restore is unchanged (loads the `mitigated_html` backup). Logic checked with a Python port on the notice from the Substack screenshot.
+- BUG-019 logged: aes:// in plain text is never clickable; Full No Trust is still affected.
+- Follow-up: re-import `MSCANModule1`. Already-mitigated mail keeps the old plain text; its restore id is still in the body.
+
 ### 2026-10-20 — 1.5.0: AES read-tracking pixel for outgoing Aliniant mail
 
 - New `VBA\MSCANPixel.bas`: `ApplyOwnPixel` (called from both `HandleItemSend` paths) adds a 1x1 `data-aes-pixel` img before `</body>` for `IsAliniantSend` HTML mail, using a CoCreateGuid hex id, and writes `%LOCALAPPDATA%\GeoFooter\pixels\<id>.json` (UTF-8 via ADODB). Earlier own pixels are stripped first. It never cancels a send; it is timed via `MSCANHealth` and controlled by `aes_pixel.ini` (default off). `CollectEmailBeacons` skips `IsOwnPixelTag`. Added to `IMPORT.txt` and `Import_VBA_to_Outlook.ps1`.

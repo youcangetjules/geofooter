@@ -185,6 +185,15 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Closed
 
+### BUG-016 — Shodan shows "lookup failed (HTTPError)" although Settings says OK
+
+- **Severity:** S4
+- **Area:** AES
+- **Status:** fixed
+- **Reported:** 2026-10-20
+- **Summary:** The Settings test calls `/api-info`, which succeeds on the free (oss) plan. Scans call `/shodan/host/{ip}`, which the free plan refuses with 403 "Requires membership or higher" for nearly every IP (it answers 8.8.8.8, not 54.240.4.6). `_shodan_ip` only handled 404, so the 403 surfaced as an error in the Reputation column.
+- **Fixed in:** 1.4.29 (`5997c5d`). 403 and 429 read as no data with a plain reason; the Settings test flags the free plan.
+
 ### BUG-015 — Embedded full analysis takes on the sender's background colour
 
 - **Severity:** S4

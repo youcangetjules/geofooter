@@ -186,8 +186,9 @@ def test_parse_tls_formats():
 def test_transport_scores_weak_and_plain_external_hops():
     hops = [
         {"hop_kind": "public", "protocol": "ESMTPS", "tls_version": "TLS 1.0", "tls": "TLS 1.0"},
-        {"hop_kind": "public", "protocol": "SMTP"},
-        {"hop_kind": "internal", "protocol": "SMTP"},
+        {"hop_kind": "public", "protocol": "SMTP", "fqdn": "mail.bad-host.example"},
+        {"hop_kind": "public", "protocol": "SMTP", "fqdn": None},
+        {"hop_kind": "internal", "protocol": "SMTP", "fqdn": "relay.local"},
         {"hop_kind": "public", "protocol": "ESMTPS", "tls_version": "TLS 1.3", "tls": "TLS 1.3"},
     ]
     assert sorted(f["points"] for f in hi.transport_signals(hops).findings) == [3, 5]

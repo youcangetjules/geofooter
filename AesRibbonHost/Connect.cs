@@ -1251,7 +1251,18 @@ namespace Aliniant.AesRibbonHost
                                      && onAction.IndexOf(onActionHint, StringComparison.OrdinalIgnoreCase) >= 0);
                     if (!match) continue;
 
-                    ctl.Execute();
+                    // Execute runs the VBA macro synchronously and can throw
+                    // back (busy / call rejected) after the macro has started.
+                    // Treating that as "not found" fell through to more
+                    // attempts and a false "button not found" popup.
+                    try
+                    {
+                        ctl.Execute();
+                    }
+                    catch (Exception ex)
+                    {
+                        HostLog.Write("TryExecuteOnBar: Execute raised after match tag=" + ctlTag + ": " + ex.Message);
+                    }
                     return true;
                 }
                 catch { }

@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.4.25: No false "button not found" popup from the ribbon host
+
+- ``AesRibbonHost.log`` at 15:59:32 had ``TryExecuteVbaButton: no matching button for tag=AES_SHORTSCAN`` in the same second ``VBA_Log`` logged ``ShortScanEmail: Processing 1 selected item(s)`` and a compact RESCAN, with the 9-button toolbar present. The same false popup is in the log on 24 Sep, 28 Sep and 16 Oct. ``TryExecuteOnBar`` wrapped ``ctl.Execute()`` in the same catch as the match test, so an exception thrown back after the macro started was treated as no match. ``Application.Run`` is not exposed on Outlook's interop, so every fallback missed and the popup showed. A matched control now returns true, and the Execute error is logged.
+- Follow-up: fully quit Outlook (tray too), run ``AesRibbonHost\install.ps1``, then reopen Outlook.
+
 ### 2026-10-20 — 1.4.24: Commit pending VBA hygiene fixes (startup, logging, status nudge)
 
 - ``MSCANAppBootstrap.ScheduleDeferredStartup``: removed the two ``DoEvents`` calls, so ``ItemLoad`` cannot run ``NudgeAsyncWork``/``ProcessQueue`` before ``InitializeQueueManager``/``BeginStartupQuietPeriod``.

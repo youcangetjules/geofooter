@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.25] — 2026-10-20
+
+### Fixed
+
+- Clicking Short Scan (or another AES button) on the ribbon no longer shows "AES button 'ShortScanEmail' was not found on the VBA toolbar" while the scan is actually running. The toolbar button's ``Execute`` can throw back after the VBA macro has started, and the ribbon host took that as "not found".
+
 ## [1.4.24] — 2026-10-20
 
 ### Fixed

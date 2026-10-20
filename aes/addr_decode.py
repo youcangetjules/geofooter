@@ -66,6 +66,7 @@ _PROVIDER_HOST_ASN: List[Tuple[str, Optional[str], str]] = [
     (".amazonses.com", "AS16509", "Amazon SES"),
     (".amazonaws.com", "AS16509", "Amazon"),
     (".sailthru.com", "AS18877", "Sailthru"),
+    (".sendgrid.net", "AS11377", "SendGrid"),
     (".mimecast.com", None, "Mimecast"),
 ]
 

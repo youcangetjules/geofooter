@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.4.18: Hop ASN no longer taken from the receiving server
+
+- `_fill_ip_registration` and `_apply_address_and_host_decoding` ran `provider_asn_for_host` over `by_host`. For `from o1.ptr8966.carto.com ([149.72.58.126]) by mx.google.com` that stamped AS15169 over SendGrid's AS11377. `by_host` is out of both loops, and the hostname map only replaces a blank ASN or the BGP transit ASN. Added `.sendgrid.net` → AS11377 in `aes/addr_decode.py`. Tests: `tests/test_hop_asn.py`.
+- Follow-up: rescan to refresh a report. No VBA import.
+
 ### 2026-10-20 — 1.4.17: Wait until Recipients is finished before offering to add it
 
 - `currentTextChanged` on the Create GURI Recipients combo was calling `_check_new_recipient`, so typing `c` opened "Would you like to add it?". The add prompt now runs on `editingFinished` (leave field or Enter). Subject suggestions still update while typing. Incomplete email fragments are ignored until they look like a full address.

@@ -7307,12 +7307,17 @@ Sender: {sender} | Domain: {domain} | Created: {created}</div>
                 hop["city"] = w["city"]
 
         # Hostname map (mta*.sailthru.com → AS18877) beats BGP transit ASN.
+        # Sender-side names only: by_host is the receiving server, so mapping
+        # it would stamp Google's ASN on a SendGrid IP delivered to Gmail.
         if addr_decode is not None and hop.get("hop_kind") == "public":
-            for name in (hop.get("fqdn"), hop.get("helo"), hop.get("by_host")):
+            for name in (hop.get("fqdn"), hop.get("helo")):
                 asn_h, org_h = addr_decode.provider_asn_for_host(name)
                 if not asn_h:
                     continue
+                current = str(hop.get("asn") or "").strip().upper()
                 bgp = str(hop.get("asn_bgp") or hop.get("asn") or "").strip().upper()
+                if not (self._blank_reg(current) or current == bgp):
+                    break
                 hop["asn"] = asn_h
                 if self._blank_reg(hop.get("asn_org")) and org_h:
                     hop["asn_org"] = org_h
@@ -7685,7 +7690,7 @@ Sender: {sender} | Domain: {domain} | Created: {created}</div>
         # Fill ASN/org from hostname when geo/RDAP left them blank — public hops only
         # (do not stamp Sailthru ASN onto RFC1918 internal relays).
         if hop.get("hop_kind") == "public":
-            for name in (hop.get("fqdn"), hop.get("by_host"), hop.get("helo")):
+            for name in (hop.get("fqdn"), hop.get("helo")):
                 asn_h, org_h = addr_decode.provider_asn_for_host(name)
                 if asn_h and hop.get("asn") in unknown_vals:
                     hop["asn"] = asn_h

@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.18] — 2026-10-20
+
+### Fixed
+
+- The Route Table no longer shows the receiving server's ASN on a hop. A SendGrid IP delivered to Gmail showed AS15169 (Google) because the `by` host was run through the hostname-to-ASN map. Only the sending host names are used now, and a registry ASN is replaced only when it is BGP transit. `*.sendgrid.net` maps to AS11377.
+
 ## [1.4.17] — 2026-10-20
 
 ### Fixed

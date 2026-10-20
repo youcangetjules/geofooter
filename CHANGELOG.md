@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.30] — 2026-10-20
+
+### Fixed
+
+- The AES action buttons at the bottom of a full scan no longer lose their bottom edge. The button cells now have a fixed 14px line height and extra padding, with an 8px spacer under the row, so Outlook has nothing to clip.
+
 ## [1.4.29] — 2026-10-20
 
 ### Fixed

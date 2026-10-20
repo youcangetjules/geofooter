@@ -33,6 +33,25 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-018 — Blocked tracking pixels show as a broken-image box
+
+- **Severity:** S4
+- **Area:** VBA
+- **Status:** open
+- **Reported:** 2026-10-20
+- **Summary:** `MSCANModSenderRules.DefangBeaconTag` points a blocked beacon's `src` at `file:///<install root>/assets/pages/aes_blocked_pixel.png`. The file exists, but Outlook will not load local `file://` images in mail, so each blocked pixel renders as a red ✕ box (seen below the AES action buttons on a full scan).
+- **Workaround:** none needed; nothing is fetched remotely.
+- **Follow-up:** Swap `src` for an inline `data:` 1x1 GIF, or set `width`/`height` 0 and `display:none` on the defanged tag.
+
+### BUG-017 — Bottom border of the AES action buttons cut off
+
+- **Severity:** S4
+- **Area:** AES
+- **Status:** fixed (applies to mail scanned after 1.4.30)
+- **Reported:** 2026-10-20
+- **Summary:** In full scans the action buttons are the last row of the footer. Their cells set a 10px label with no line height, so Outlook's Word renderer sized them from the inherited line height and clipped the bottom border.
+- **Fixed in:** 1.4.30. Fixed 14px line height (`mso-line-height-rule:exactly`), extra bottom padding, and an 8px spacer row under the buttons.
+
 ### BUG-014 — WHOIS lookups always fail: wrong `whois` package in the venv
 
 - **Severity:** S3

@@ -4302,6 +4302,25 @@ class HTMLReportGenerator:
         trusted = bool(block_state.get("trusted"))
         untrusted = bool(block_state.get("untrusted"))
 
+        # Outlook's Word renderer sizes a cell from the inherited line height,
+        # not the 10px label, and clips the bottom border of the last row.
+        # Pin the line height and leave room under the row.
+        def styled_cell(url: str, label: str, bg: str, border: str, color: str) -> str:
+            return (
+                "<td valign='middle' style='padding:2px 6px 4px 0; vertical-align:middle;'>"
+                "<table border='0' cellpadding='0' cellspacing='0' "
+                "style='border-collapse:separate;'>"
+                f"<tr><td bgcolor='{bg}' valign='middle' "
+                f"style='background:{bg}; border:1px solid {border}; "
+                f"border-radius:3px; padding:4px 10px 5px 10px; "
+                f"font-size:10px; line-height:14px; mso-line-height-rule:exactly;'>"
+                f"<a href='{html.escape(url, quote=True)}' "
+                f"style='color:{color}; font-family:Arial,sans-serif; "
+                f"font-size:10px; line-height:14px; font-weight:bold; text-decoration:none;'>"
+                f"{label}</a>"
+                "</td></tr></table></td>"
+            )
+
         def button_cell(url: str, label: str, active: bool, active_bg: str) -> str:
             if active:
                 bg, border, color = active_bg, active_bg, "#ffffff"
@@ -4315,19 +4334,7 @@ class HTMLReportGenerator:
                 safe_label = label + " &#10003;"
             elif active and "not trusted" in low_label:
                 safe_label = label + " &#10003;"
-            return (
-                "<td style='padding:2px 6px 2px 0; vertical-align:middle;'>"
-                "<table border='0' cellpadding='0' cellspacing='0' "
-                "style='border-collapse:separate;'>"
-                f"<tr><td bgcolor='{bg}' "
-                f"style='background:{bg}; border:1px solid {border}; "
-                f"border-radius:3px; padding:4px 10px;'>"
-                f"<a href='{html.escape(url, quote=True)}' "
-                f"style='color:{color}; font-family:Arial,sans-serif; "
-                f"font-size:10px; font-weight:bold; text-decoration:none;'>"
-                f"{safe_label}</a>"
-                "</td></tr></table></td>"
-            )
+            return styled_cell(url, safe_label, bg, border, color)
 
         cells: List[str] = []
         for label, url in specs:
@@ -4348,23 +4355,7 @@ class HTMLReportGenerator:
                 active, active_bg = untrusted, "#ef6c00"
             elif "queue data removal" in low:
                 # Distinct teal outline for Incogni-style queue action.
-                active, active_bg = False, "#0f6b7c"
-                bg = border = "#e8f5f3"
-                color = "#0a5c4a"
-                safe_label = label
-                cells.append(
-                    "<td style='padding:2px 6px 2px 0; vertical-align:middle;'>"
-                    "<table border='0' cellpadding='0' cellspacing='0' "
-                    "style='border-collapse:separate;'>"
-                    f"<tr><td bgcolor='{bg}' "
-                    f"style='background:{bg}; border:1px solid #0a5c4a; "
-                    f"border-radius:3px; padding:4px 10px;'>"
-                    f"<a href='{html.escape(url, quote=True)}' "
-                    f"style='color:{color}; font-family:Arial,sans-serif; "
-                    f"font-size:10px; font-weight:bold; text-decoration:none;'>"
-                    f"{safe_label}</a>"
-                    "</td></tr></table></td>"
-                )
+                cells.append(styled_cell(url, label, "#e8f5f3", "#0a5c4a", "#0a5c4a"))
                 continue
             cells.append(button_cell(url, label, active, active_bg))
 
@@ -4374,7 +4365,10 @@ class HTMLReportGenerator:
             "margin:0 0 4px 0;'>AES actions:</div>"
             "<table border='0' cellpadding='0' cellspacing='0' "
             "style='border-collapse:separate;'>"
-            f"<tr>{''.join(cells)}</tr></table></div>"
+            f"<tr>{''.join(cells)}</tr></table>"
+            "<table border='0' cellpadding='0' cellspacing='0' width='100%'>"
+            "<tr><td height='8' style='height:8px; font-size:1px; line-height:8px; "
+            "mso-line-height-rule:exactly;'>&nbsp;</td></tr></table></div>"
         )
 
     def _build_quick_actions_row_html(

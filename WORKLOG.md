@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.4.30: Action buttons no longer truncated
+
+- `aes/geolocate_headers.py` `_build_action_buttons_html`: one `styled_cell` helper for every button (the data-removal button had a copy), with `line-height:14px; mso-line-height-rule:exactly`, 5px bottom padding, 4px under each cell and an 8px spacer table under the row. BUG-017.
+- Logged BUG-018 (open): blocked beacons point at a `file:///` pixel that Outlook won't load, so they show a red ✕ box.
+- Follow-up: rescan older mail to refresh its footer.
+
 ### 2026-10-20 — 1.4.29: Shodan free-plan 403 reported plainly
 
 - `aes/threat_intel.py`: `_shodan_ip` maps 403 to verdict unknown with "free plan can't look up this IP (needs Membership)" and 429 to "rate limited", instead of raising into "lookup failed (HTTPError)". `probe_provider('shodan')` adds a free-plan note. Verified live: 54.240.4.6 gives 403 on the oss plan, 8.8.8.8 gives 200.

@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.5.7: aliniant.net holding page
+
+- New `cloud/site/aliniant.net/`: `index.html` (centred image, fits any screen), `aliniant-shire.jpg` (the operator's watercolour, 1024x977, 401 KB, no EXIF), `favicon.ico` (16/32/48 px from `assets/brand/abyitself.ico`, 4.7 KB), stage-1/2 nginx files, and `deploy.sh` (same rules as the pixel: installs only missing packages, enabled as `zz-aliniant-net`, `nginx -t` + graceful reload). Stage 2: www and HTTP redirect to `https://aliniant.net`, CSP `default-src 'none'`, nosniff, no-referrer, 20 r/s per IP, and everything except `/`, the image and the favicon returns 404.
+- Deployed on the VM: cert CN=aliniant.net (plus www), expires 2027-01-18, renewed by `certbot.timer`. In the before/after probe only aliniant.net and www.aliniant.net changed. Other `*.aliniant.net` names still fall through to workflow-api (the catch-all), as before.
+- The probe fetches `/p/0…02.gif` on track.aliniant.net, so the server's opens DB has two test rows from 127.0.0.1 that match no send (ignored by GURI).
+
 ### 2026-10-20 — 1.5.6: Pixel endpoint deployed at track.aliniant.net
 
 - DNS (20i/StackDNS, set by the operator): `aliniant.net` and `*.aliniant.net` A to 35.208.12.24, no AAAA, `v=spf1 -all`, `_dmarc` `p=reject`, no MX (the domain sends no mail).

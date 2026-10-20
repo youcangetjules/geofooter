@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.7] — 2026-10-20
+
+### Added
+
+- **aliniant.net holding page.** A single static page with the "Aliniant — the wise company with clever ideas" watercolour. `www.aliniant.net` and plain HTTP redirect to `https://aliniant.net/`. Source and setup script are in `cloud/site/aliniant.net/` (strict Content-Security-Policy, only the page, the image and the favicon are served, rate limited).
+
 ## [1.5.6] — 2026-10-20
 
 ### Changed

@@ -13,6 +13,14 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.5.6: Pixel endpoint deployed at track.aliniant.net
+
+- DNS (20i/StackDNS, set by the operator): `aliniant.net` and `*.aliniant.net` A to 35.208.12.24, no AAAA, `v=spf1 -all`, `_dmarc` `p=reject`, no MX (the domain sends no mail).
+- Ran `cloud/pixel/deploy.sh track.aliniant.net` on the VM, with the key piped from DPAPI via a Python subprocess (never echoed). Nothing was installed. The aes-pixel service is running (about 11 MB of 64 MB); certificate CN=track.aliniant.net expires 2027-01-18 and renews via the existing `certbot.timer`; the site is enabled as `zz-aes-pixel`.
+- Before/after probe on the VM (http/https, `/` and `/health`, for i-txone.com, www.i-txone.com, aliniant.net, an unknown name and the bare IP, plus the cert per SNI and the listening sockets). Only `track.aliniant.net` changed, plus the new loopback socket 127.0.0.1:8791.
+- End to end from this PC: the pixel returns a 43-byte GIF; `/opens` gives 401 without a key or with a wrong one; `poll()` stored the test open marked own (the test row was then deleted locally). `aes_pixel.ini` now has `enabled=1`.
+- Follow-up: re-import `MSCANPixel`, `MSCANEventHandlers` and `MSCANModule1` so outgoing mail carries the pixel. Deploy copy kept in `~/aes-pixel-deploy` on the VM for re-runs.
+
 ### 2026-10-20 — 1.5.5: deploy.sh safe on the existing i-txone VM
 
 - `cloud/pixel/deploy.sh`: installs only missing commands (nginx, certbot, python3 and curl are all present on the VM, so nothing is installed), enables the site as `sites-enabled/zz-aes-pixel`, and removes `default` only when nginx was just installed. The nginx file comments are updated to match. BUG-020 update.

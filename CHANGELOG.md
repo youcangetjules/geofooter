@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.6] — 2026-10-20
+
+### Changed
+
+- **Read tracking is live.** The pixel endpoint runs at `https://track.aliniant.net` and tracking is switched on. Outgoing Aliniant mail carries the pixel once `MSCANPixel`, `MSCANEventHandlers` and `MSCANModule1` are re-imported.
+
 ## [1.5.5] — 2026-10-20
 
 ### Fixed

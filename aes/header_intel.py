@@ -606,6 +606,129 @@ def signing_signals(
     return sec
 
 
+# --------------------------------------------------------------------------- #
+# Transport (TLS), sending client, bulk / automated mail
+# --------------------------------------------------------------------------- #
+
+_PLAIN_PROTOCOLS = {"SMTP", "ESMTP", "ESMTPA"}
+
+
+def _norm_tls(v: str) -> str:
+    v = (v or "").upper().replace("TLSV", "TLS").replace("_", ".")
+    m = re.match(r"(TLS|SSL)V?\s*(\d(?:\.\d)?)", v)
+    return f"{m.group(1)} {m.group(2)}" if m else ""
+
+
+def parse_tls(received: str) -> Tuple[str, str]:
+    """(version, cipher) from one Received line, e.g. ('TLS 1.3', 'TLS_AES_256_GCM_SHA384')."""
+    line = received or ""
+    version = ""
+    for pat in (
+        r"version=(TLS[\w.]+|SSL\w+)",
+        r"\busing\s+(TLSv?[\d.]+|SSLv\d)",
+        r"\((TLS1[._]\d|TLSv1(?:\.\d)?)\)",
+    ):
+        m = re.search(pat, line, re.I)
+        if m:
+            version = _norm_tls(m.group(1))
+            break
+    m = re.search(r"\bcipher[=\s]+([A-Z0-9][A-Z0-9_-]{6,})", line, re.I) or re.search(
+        r"\btls\s+(TLS_[A-Z0-9_]+|ECDHE[A-Z0-9_-]+)", line, re.I
+    )
+    return version, (m.group(1) if m else "")
+
+
+def transport_signals(hops: Optional[List[Dict[str, Any]]]) -> IntelSection:
+    sec = IntelSection("Transport")
+    weak, plain = [], []
+    for idx, hop in enumerate(hops or [], 1):
+        if hop.get("hop_kind") != "public":
+            continue
+        ver = str(hop.get("tls_version") or "")
+        proto = str(hop.get("protocol") or "").upper()
+        if ver in {"TLS 1.0", "TLS 1.1", "TLS 1", "SSL 3"} or ver.startswith("SSL"):
+            weak.append(f"hop {idx} {ver}")
+        elif proto in _PLAIN_PROTOCOLS and not ver and hop.get("fqdn"):
+            # "Received: by <host> with SMTP" with no "from" is a provider's
+            # internal handoff (Gmail writes these), not a hop across the internet.
+            plain.append(f"hop {idx}")
+        if hop.get("tls"):
+            sec.rows.append(f"Hop {idx}: {hop.get('tls')}")
+    if weak:
+        sec.add(f"Outdated TLS on an external hop ({', '.join(weak)})", 5,
+                "TLS 1.0/1.1 points at a poorly maintained or bespoke mail server")
+    if plain:
+        sec.add(f"Unencrypted SMTP on an external hop ({', '.join(plain)})", 3,
+                "Mail crossed the internet in plain text")
+    return sec
+
+
+_KIT_MAILERS = [
+    (re.compile(r"phpmailer\s*\[?v?\s*([0-5])\.", re.I), "old PHPMailer"),
+    (re.compile(r"swift\s*mailer\s*v?\s*([0-5])\.", re.I), "old SwiftMailer"),
+    (re.compile(r"^\s*php/\d", re.I), "raw PHP mail()"),
+    (re.compile(r"^\s*(python|perl|ruby|go-http-client|curl|powershell)\b", re.I), "script library"),
+    (re.compile(r"microsoft cdo for windows 2000", re.I), "legacy CDO script"),
+]
+_WIN_HOST = re.compile(r"^(WIN|DESKTOP|LAPTOP)-[A-Z0-9]{5,}", re.I)
+
+
+def client_signals(headers: str) -> IntelSection:
+    sec = IntelSection("Sending client")
+    mid = first_header(headers, "Message-ID").strip().strip("<>")
+    mid_host = mid.rsplit("@", 1)[1] if "@" in mid else ""
+    mailer = first_header(headers, "X-Mailer")
+    agent = first_header(headers, "User-Agent")
+    orig_ip = first_header(headers, "X-Originating-IP").strip("[] ")
+    if mid_host:
+        sec.rows.append(f"Message-ID host: {mid_host}")
+    if mailer:
+        sec.rows.append(f"X-Mailer: {mailer[:120]}")
+    if agent:
+        sec.rows.append(f"User-Agent: {agent[:120]}")
+    if orig_ip:
+        sec.rows.append(f"X-Originating-IP: {orig_ip}")
+    for value in (mailer, agent):
+        hit = next((label for rx, label in _KIT_MAILERS if value and rx.search(value)), "")
+        if hit:
+            sec.add(f"Sent with {hit} ({value[:60]})", 10,
+                    "Phishing kits rely on these mailers; legitimate senders rarely do")
+            break
+    if mid_host and _WIN_HOST.match(mid_host):
+        sec.add(f"Message-ID names a Windows machine ({mid_host})", 5,
+                "Mail generated on a desktop PC, typical of a script or RAT")
+    return sec
+
+
+def bulk_signals(headers: str, *, esp: str = "") -> IntelSection:
+    sec = IntelSection("Mail type")
+    lu = " ".join(header_values(headers, "List-Unsubscribe"))
+    one_click = bool(first_header(headers, "List-Unsubscribe-Post"))
+    precedence = first_header(headers, "Precedence").lower()
+    auto = first_header(headers, "Auto-Submitted").lower()
+    urls = re.findall(r"<\s*(https?://[^>\s]+)\s*>", lu)
+    mailtos = re.findall(r"<\s*(mailto:[^>\s]+)\s*>", lu)
+    if lu or precedence in {"bulk", "list"}:
+        kind = "Bulk / mailing list"
+    elif auto and auto != "no" or precedence == "junk":
+        kind = "Automated"
+    elif esp:
+        kind = f"Transactional (sent through {ESP_NAMES.get(esp, esp)}, no list headers)"
+    else:
+        kind = "Personal"
+    sec.rows.append(kind)
+    if lu:
+        sec.rows.append("List-Unsubscribe" + (" with one-click (RFC 8058)" if one_click else ""))
+        for u in urls[:3]:
+            sec.rows.append(f"Unsubscribe link: {u[:140]}")
+        for u in mailtos[:2]:
+            sec.rows.append(f"Unsubscribe address: {u[:140]}")
+    if auto and auto != "no":
+        sec.rows.append(f"Auto-Submitted: {auto}")
+    sec.data.update(kind=kind, unsubscribe_urls=urls)
+    return sec
+
+
 def load_own_domains() -> List[str]:
     """Important domains configured in GURI (datastore/important_domains.txt)."""
     try:
@@ -638,8 +761,12 @@ def run_all(
     if not headers:
         return []
     own = list(own_domains) if own_domains is not None else load_own_domains()
+    esp = esp_fingerprint(headers, hops)
     return [
         identity_signals(headers, dmarc=dmarc, own_domains=own),
-        esp_fingerprint(headers, hops),
+        esp,
         signing_signals(headers, lite=lite),
+        transport_signals(hops),
+        client_signals(headers),
+        bulk_signals(headers, esp=str(esp.data.get("esp") or "")),
     ]

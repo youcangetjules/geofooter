@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.4.22: Transport, sending client and bulk signals
+
+- `header_intel.parse_tls` covers the Google, Postfix, Microsoft and Exim formats. `_extract_hop_details` stores `tls`/`tls_version` on each hop, and the Route Table shows `with ESMTPS (TLS 1.3 …)`. `transport_signals` ignores `by … with SMTP` lines with no `from` (Gmail's internal handoffs). `client_signals` and `bulk_signals` were added, and `unsubscribe_urls` are appended to the link scanner's text input.
+- Follow-up: rescan. No VBA import.
+
 ### 2026-10-20 — 1.4.21: DKIM, alignment and DMARC policy depth
 
 - `header_intel.signing_signals` parses every `DKIM-Signature` (`d`, `s`, `a`, `h`), the alignment of `smtp.mailfrom` and `d=` with From, and the DMARC `p`/`sp`/`pct` from Authentication-Results. When not `lite` it also resolves `{s}._domainkey.{d}` and `_dmarc.{domain}` through `dns_auth_cache.json` (24h TTL). Key size comes from `cryptography.load_der_public_key`, with a small DER walker for bare PKCS#1 keys.

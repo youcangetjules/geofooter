@@ -3151,10 +3151,20 @@ class HTMLReportGenerator:
         # Link heuristics run whenever a body is present (deep risk fusion stays deep-only).
         html_body, text_body = self._load_deep_body_payload(metadata)
         body_available = bool(html_body or text_body)
-        if LinkScanner is not None and body_available:
+        # Phishers sometimes hide the payload in List-Unsubscribe, so those
+        # links are checked with the body links.
+        unsub_urls = [
+            u
+            for s in intel_sections
+            for u in (getattr(s, "data", {}) or {}).get("unsubscribe_urls") or []
+        ]
+        link_text = text_body
+        if unsub_urls:
+            link_text = "\n".join([text_body or ""] + unsub_urls)
+        if LinkScanner is not None and (body_available or unsub_urls):
             link_findings = LinkScanner().scan(
                 html_body=html_body,
-                text_body=text_body,
+                text_body=link_text,
                 sender_domain=sender_domain,
             )
 
@@ -6663,6 +6673,17 @@ Sender: {sender} | Domain: {domain} | Created: {created}</div>
                         f"<br><span style='color:{row_color}; font-size:9px; font-weight:{row_weight};'>"
                         f"({html.escape(str(loc))})</span>"
                     )
+                if hop.get('protocol') or hop.get('tls'):
+                    proto = " ".join(
+                        p for p in (
+                            f"with {hop['protocol']}" if hop.get('protocol') else "",
+                            f"({hop['tls']})" if hop.get('tls') else "",
+                        ) if p
+                    )
+                    host_disp += (
+                        f"<br><span style='color:{row_color}; font-size:9px; font-weight:{row_weight};'>"
+                        f"{html.escape(proto)}</span>"
+                    )
                 if hop_kind == 'internal':
                     host_disp += (
                         f"<br><span style='color:{row_color}; font-size:9px; font-weight:600;'>"
@@ -7836,6 +7857,11 @@ Sender: {sender} | Domain: {domain} | Created: {created}</div>
             m_with = re.search(r'\bwith\s+([^\s\(\];]+)', line, re.IGNORECASE)
             if m_with:
                 hop['protocol'] = m_with.group(1).strip()
+            if header_intel is not None:
+                tls_version, tls_cipher = header_intel.parse_tls(line)
+                if tls_version or tls_cipher:
+                    hop['tls'] = " ".join(p for p in (tls_version, tls_cipher) if p)
+                    hop['tls_version'] = tls_version
 
             if not hop['helo']:
                 m_helo2 = re.search(

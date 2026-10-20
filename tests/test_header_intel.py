@@ -171,6 +171,43 @@ def test_compact_scan_does_no_dns():
     assert calls == []
 
 
+def test_parse_tls_formats():
+    assert hi.parse_tls("(version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256)") == (
+        "TLS 1.3", "TLS_AES_256_GCM_SHA384")
+    assert hi.parse_tls("(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))") == (
+        "TLS 1.2", "ECDHE-RSA-AES256-GCM-SHA384")
+    assert hi.parse_tls(
+        "with Microsoft SMTP Server (version=TLS1_0, cipher=TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA)"
+    )[0] == "TLS 1.0"
+    assert hi.parse_tls("with esmtps (TLS1.3) tls TLS_AES_256_GCM_SHA384")[0] == "TLS 1.3"
+    assert hi.parse_tls("by mx with SMTP id 12") == ("", "")
+
+
+def test_transport_scores_weak_and_plain_external_hops():
+    hops = [
+        {"hop_kind": "public", "protocol": "ESMTPS", "tls_version": "TLS 1.0", "tls": "TLS 1.0"},
+        {"hop_kind": "public", "protocol": "SMTP"},
+        {"hop_kind": "internal", "protocol": "SMTP"},
+        {"hop_kind": "public", "protocol": "ESMTPS", "tls_version": "TLS 1.3", "tls": "TLS 1.3"},
+    ]
+    assert sorted(f["points"] for f in hi.transport_signals(hops).findings) == [3, 5]
+
+
+def test_client_kit_and_windows_host():
+    h = "Message-ID: <123@DESKTOP-7Q2K9LM>\nX-Mailer: PHPMailer 5.2.22 (https://github.com/PHPMailer/PHPMailer)\n"
+    assert sorted(f["points"] for f in hi.client_signals(h).findings) == [5, 10]
+    assert hi.client_signals("Message-ID: <a@mail.gmail.com>\nX-Mailer: Microsoft Outlook 16.0\n").findings == []
+
+
+def test_bulk_classification_and_unsubscribe_urls():
+    sec = hi.bulk_signals(CARTO)
+    assert sec.data["kind"] == "Bulk / mailing list"
+    assert sec.data["unsubscribe_urls"] == ["https://u21732389.ct.sendgrid.net/unsub?x=1"]
+    assert any("one-click" in r for r in sec.rows)
+    assert hi.bulk_signals("Auto-Submitted: auto-generated\n").data["kind"] == "Automated"
+    assert hi.bulk_signals("From: a@b.com\n").data["kind"] == "Personal"
+
+
 def test_return_path_mismatch_scored_only_without_dmarc_pass():
     h = "Return-Path: <x@bounce.other.com>\nFrom: A <a@alpha.com>\n"
     assert hi.identity_signals(h, dmarc="pass").findings == []

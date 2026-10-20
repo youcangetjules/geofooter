@@ -20,6 +20,14 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.22] — 2026-10-20
+
+### Added
+
+- TLS version and cipher are read from each Received line and shown under the hop in the Route Table. Outdated TLS (1.0/1.1, SSL) on an external hop scores +5, and plain SMTP on an external hop scores +3.
+- Sending client row in the Full Scan report: Message-ID host, X-Mailer, User-Agent and X-Originating-IP. Old PHPMailer or SwiftMailer, raw PHP `mail()`, or a script library scores +10. A Message-ID host that names a Windows PC (`DESKTOP-…`, `WIN-…`) scores +5.
+- Mail type row (bulk/list, automated, transactional through an ESP, or personal) with List-Unsubscribe and RFC 8058 one-click. Unsubscribe links go through the link checker with the body links.
+
 ## [1.4.21] — 2026-10-20
 
 ### Added

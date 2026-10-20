@@ -20,6 +20,14 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.24] — 2026-10-20
+
+### Fixed
+
+- Outlook startup no longer yields with ``DoEvents`` before the queue manager is ready. A queued ``ItemLoad`` could reach ``ProcessQueue`` before initialisation and the startup quiet period.
+- The AES log is size-checked every 200 lines, not on every line, which saves a FileSystemObject create and a file stat per line on the UI thread. A failed log write closes its file handle. A ``max_mib`` of 0 (from older settings, which disabled trimming) now means 16 MiB, values under 4 MiB are raised to 4, and ``max_mib`` is saved with the logging settings.
+- Restoring the persistent status no longer reschedules itself on every ``ItemLoad``, which launched a ``wscript`` for each message clicked.
+
 ## [1.4.23] — 2026-10-20
 
 ### Added

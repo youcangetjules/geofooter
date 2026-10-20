@@ -13,6 +13,14 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.4.24: Commit pending VBA hygiene fixes (startup, logging, status nudge)
+
+- ``MSCANAppBootstrap.ScheduleDeferredStartup``: removed the two ``DoEvents`` calls, so ``ItemLoad`` cannot run ``NudgeAsyncWork``/``ProcessQueue`` before ``InitializeQueueManager``/``BeginStartupQuietPeriod``.
+- ``MSCANModLogging``: ``MaybeTrimLog`` checks the size every 200 lines; the handle is closed on error; ``max_mib`` 0 becomes 16 and under 4 becomes 4 (an uncapped log had reached 59 MiB); ``SaveLoggingSettings`` writes ``max_mib``.
+- ``MSCANModStatus.RestorePersistentStatusIfDue``: no reschedule when not yet due.
+- These edits were made on 2026-09-30 and left uncommitted.
+- Follow-up: **re-import** ``MSCANAppBootstrap``, ``MSCANModLogging`` and ``MSCANModStatus`` into Outlook (``VBA\IMPORT.txt``), then restart Outlook.
+
 ### 2026-10-20 — 1.4.23: Conversation-hijack check
 
 - `header_intel.thread_signals` hashes In-Reply-To/References IDs the same way `record_sender_email` does (`sha1(lower('<id>'))[:16]`) and looks them up in sender-history `seen`. `run_all` receives the history read before this message is recorded. A rescan subtracts the message's own Message-ID, so the result does not change on the second pass. A dry run over 221 stored headers first flagged 4 (a Substack newsletter and three ReadNotify receipts). Requiring a reply subject and skipping List-Unsubscribe/Auto-Submitted brought that to 0.

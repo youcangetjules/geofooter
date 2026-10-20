@@ -36,9 +36,10 @@ Private Sub ScheduleDeferredStartup()
     ' DoEvents yield so the UI can paint, then attach watchers.
     gStartupScheduled = True
     MSCANModLogging.WriteLog "Application_Startup: Starting AES (Outlook has no OnTime; no " & DEFERRED_STARTUP_DELAY & " delay)."
-    DoEvents
+    ' No DoEvents here. The yield let a queued Application_ItemLoad dispatch
+    ' into NudgeAsyncWork -> ProcessQueue before InitializeQueueManager and
+    ' BeginStartupQuietPeriod had run.
     DeferredStartup
-    DoEvents
     DeferredToolbar
     Exit Sub
 

@@ -65,9 +65,9 @@ Public Sub RestorePersistentStatusIfDue()
     If gRestoreDue = 0 Then Exit Sub
 
     If Now < gRestoreDue Then
-        ' Early nudge - reschedule for the remaining time.
-        gRestoreNudgePending = False
-        ScheduleStatusRestoreNudge
+        ' Not due yet. Do NOT reschedule: this runs on every ItemLoad, so
+        ' rescheduling launched a wscript per message the user clicked. The
+        ' next nudge or the heartbeat will check again.
         Exit Sub
     End If
 

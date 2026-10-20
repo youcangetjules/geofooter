@@ -2,6 +2,12 @@ Attribute VB_Name = "MSCANModLogging"
 Option Explicit
 
 Private Const LOGGING_FILE_NAME As String = "aes_logging.json"
+Private Const TRIM_CHECK_EVERY_LINES As Long = 200
+' A cap this low is almost certainly a stale setting rather than a deliberate
+' "unlimited"; an uncapped log reached 59 MiB here.
+Private Const MIN_SENSIBLE_MAX_MIB As Long = 4
+
+Private mLinesSinceTrimCheck As Long
 
 Private mPath As String
 Private mLoggingLoaded As Boolean
@@ -85,7 +91,8 @@ Public Sub WriteLogLevel(ByVal level As String, ByVal msg As String)
     Open logPath For Append As #f
     Print #f, line
     Close #f
-    TrimLogIfNeeded
+    f = 0
+    MaybeTrimLog
 
     If mCaptureActive And Len(mCapturePath) > 0 Then
         On Error Resume Next
@@ -97,7 +104,23 @@ Public Sub WriteLogLevel(ByVal level As String, ByVal msg As String)
     End If
     Exit Sub
 EH:
+    ' VBA has 255 file numbers for the whole project and this is the hottest
+    ' path in the add-in, so a failed Print must not leak the handle.
+    If f <> 0 Then
+        On Error Resume Next
+        Close #f
+    End If
     Debug.Print "WriteLog failed: " & Err.Number & " - " & Err.Description
+End Sub
+
+' Checking the file size on every line meant an FSO create plus a stat per log
+' line, on the Outlook UI thread, and AES writes several lines per message.
+Private Sub MaybeTrimLog()
+    On Error Resume Next
+    mLinesSinceTrimCheck = mLinesSinceTrimCheck + 1
+    If mLinesSinceTrimCheck < TRIM_CHECK_EVERY_LINES Then Exit Sub
+    mLinesSinceTrimCheck = 0
+    TrimLogIfNeeded
 End Sub
 
 Private Sub EnsureLoggingSettingsLoaded()
@@ -159,6 +182,9 @@ Private Sub ApplyLoggingJson(ByVal raw As String)
     mLevelWarn = JsonLevelEnabled(raw, "warn", mLevelWarn)
     mLevelDebug = JsonLevelEnabled(raw, "debug", mLevelDebug)
     mMaxLogMiB = JsonNonNegativeLong(raw, "max_mib", mMaxLogMiB)
+    ' Older settings files wrote 0 here, which disabled trimming entirely.
+    If mMaxLogMiB > 0 And mMaxLogMiB < MIN_SENSIBLE_MAX_MIB Then mMaxLogMiB = MIN_SENSIBLE_MAX_MIB
+    If mMaxLogMiB <= 0 Then mMaxLogMiB = 16
 End Sub
 
 Private Function JsonNonNegativeLong(ByVal raw As String, ByVal key As String, ByVal defaultValue As Long) As Long
@@ -355,6 +381,9 @@ Public Sub SaveLoggingSettings( _
     Dim ts As Object
     Dim parent As String
 
+    EnsureLoggingSettingsLoaded
+    If mMaxLogMiB <= 0 Then mMaxLogMiB = 16
+
     path = GetLoggingSettingsPath()
     Set fso = CreateObject("Scripting.FileSystemObject")
     parent = fso.GetParentFolderName(path)
@@ -370,7 +399,8 @@ Public Sub SaveLoggingSettings( _
     ts.WriteLine "    ""audit"": " & IIf(auditOn, "true", "false") & ","
     ts.WriteLine "    ""warn"": " & IIf(warnOn, "true", "false") & ","
     ts.WriteLine "    ""debug"": " & IIf(debugOn, "true", "false")
-    ts.WriteLine "  }"
+    ts.WriteLine "  },"
+    ts.WriteLine "  ""max_mib"": " & CStr(mMaxLogMiB)
     ts.WriteLine "}"
     ts.Close
 

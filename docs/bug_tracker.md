@@ -185,6 +185,15 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Closed
 
+### BUG-015 — Embedded full analysis takes on the sender's background colour
+
+- **Severity:** S4
+- **Area:** AES
+- **Status:** fixed
+- **Reported:** 2026-10-20
+- **Summary:** On a mail with a coloured body (green on an eschools newsletter), the whole embedded "EMAIL SECURITY ANALYSIS" block showed green. The footer set `background:#ffffff` on a `div`, which Outlook's Word renderer ignores, so the sender's body colour showed through.
+- **Fixed in:** 1.4.28. The analysis sits in a white `bgcolor` table cell. Rescan older mails to refresh them.
+
 ### BUG-012 — Hop ASN shows the receiving server's network (AS15169 instead of AS11377)
 
 - **Severity:** S2

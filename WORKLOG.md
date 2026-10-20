@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.4.28: White background for the embedded full analysis
+
+- `aes/geolocate_headers.py`: the embedded full analysis is wrapped in a `bgcolor='#ffffff'` table cell inside the existing footer `div`. Outlook's Word renderer drops `div` backgrounds, so the sender's body colour (green on an eschools mail) showed through every row. Markers unchanged; `MailHasFullFooter` only checks presence.
+- Logged as BUG-015 (closed).
+- Follow-up: none; mails footered before 1.4.28 keep the old look until rescanned.
+
 ### 2026-10-20 — 1.4.27: Bug tracker kept current with every bug seen
 
 - `docs/bug_tracker.md`: added BUG-009 to BUG-014 (open/fixed-pending) and BUG-012 under Closed; dated update on BUG-005; "How to use" step 5 says every bug seen is logged straight away.

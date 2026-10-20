@@ -5766,9 +5766,15 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"<div style='margin:0; padding:0; background:#ffffff; font-family:{AES_STRIP_FONT}; "
             f"font-size:11px; color:#333;'>"
             f"{AES_FOOTER_GAP_HTML}{summary_block}\n"
+            # Outlook's Word renderer ignores div backgrounds, so without a
+            # white cell the sender's body colour shows through the analysis.
+            f"<table width='100%' cellpadding='0' cellspacing='0' border='0' bgcolor='#ffffff' "
+            f"style='width:100%; border-collapse:collapse; background:#ffffff;'>"
+            f"<tr><td bgcolor='#ffffff' style='background:#ffffff; padding:0;'>\n"
             f"<!-- AES Full Start -->\n"
             f"{full_details}\n"
             f"<!-- AES Full End -->\n"
+            f"</td></tr></table>\n"
             f"</div>\n"
             f"<a id='aes-footer-end' name='aes-footer-end'></a>\n"
             f"<!-- AES End -->"

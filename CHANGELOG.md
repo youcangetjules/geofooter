@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.28] — 2026-10-20
+
+### Fixed
+
+- The full security analysis embedded in the footer no longer takes on the sender's page colour (a green newsletter body turned the whole analysis green). Outlook ignores `div` backgrounds, so the analysis now sits in a white table cell.
+
 ## [1.4.27] — 2026-10-20
 
 ### Documentation

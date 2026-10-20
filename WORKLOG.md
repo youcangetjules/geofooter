@@ -13,6 +13,14 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.4.26: VBA audit for loops and Outlook interruptions
+
+- Audited every `Do` loop, `DoEvents`, `Sleep` and wait-on-exit shell call in `VBA\`. All loops are bounded and no DoEvents spins remain. No stray wscript processes were running. The catch-up heartbeat fires every 90 s and finishes inside a second, which is expected.
+- `MSCANSettings`: the Python settings dialog was run with `shell.Run(cmd, 1, True)`, which froze Outlook for as long as the dialog was open. It now runs through `aes_settings_launch.vbs` (waits on the dialog, writes `aes_settings_result.done`, reads an inbox item). `NudgeAsyncWork` calls `ApplyPendingSettingsResult`, which costs one `Dir$` while pending. The InputBox fallback is unchanged. The send-time classification dialog still waits on purpose.
+- `MSCANHealth.EndOp`: `GetTickCount` counts through Windows sleep, so ops interrupted by sleep logged 2-22 hour stalls. Readings over 300 s are logged as a probable sleep and excluded.
+- Real stalls remaining in the log: `CompleteAsyncFooter` 4.6 s (8 Oct) and `CommitMailHtml` 1.2-1.4 s while saving HTMLBody. These come from the Outlook save itself.
+- Follow-up: re-import `MSCANSettings`, `MSCANModule1` and `MSCANHealth` (plus the 1.4.24 modules if not yet done).
+
 ### 2026-10-20 — 1.4.25: No false "button not found" popup from the ribbon host
 
 - ``AesRibbonHost.log`` at 15:59:32 had ``TryExecuteVbaButton: no matching button for tag=AES_SHORTSCAN`` in the same second ``VBA_Log`` logged ``ShortScanEmail: Processing 1 selected item(s)`` and a compact RESCAN, with the 9-button toolbar present. The same false popup is in the log on 24 Sep, 28 Sep and 16 Oct. ``TryExecuteOnBar`` wrapped ``ctl.Execute()`` in the same catch as the match test, so an exception thrown back after the macro started was treated as no match. ``Application.Run`` is not exposed on Outlook's interop, so every fallback missed and the popup showed. A matched control now returns true, and the Execute error is logged.

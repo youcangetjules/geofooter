@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.26] — 2026-10-20
+
+### Fixed
+
+- Opening AES Settings no longer freezes Outlook until the dialog is closed. VBA starts the dialog through a small WScript launcher and applies the result on the next item load after the dialog closes. Clicking Settings again while it is open says so instead of opening a second copy.
+- A footer save or other Outlook-thread operation that straddles a PC sleep is no longer logged as a UI stall of several hours (seen as 79,700,593 ms and 70,033,485 ms). Readings over five minutes are logged once as a probable sleep and left out of the stall counters.
+
 ## [1.4.25] — 2026-10-20
 
 ### Fixed

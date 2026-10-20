@@ -14,6 +14,11 @@ Private mAccountStates As Object     ' Scripting.Dictionary: storeId -> enabled 
 Private mAccountResponses As Object  ' Scripting.Dictionary: storeId -> scan responses (Boolean)
 Private mAccountInCc As Object       ' Scripting.Dictionary: storeId -> scan In Cc (Boolean)
 
+' A dialog left open longer than this is assumed lost (crashed or killed).
+Private Const SETTINGS_PENDING_MAX_MIN As Long = 120
+Private mSettingsPending As Boolean
+Private mSettingsLaunchedAt As Date
+
 Public Sub EnsureSettingsLoaded()
     If mSettingsLoaded Then Exit Sub
     Set mAccountStates = CreateObject("Scripting.Dictionary")
@@ -199,16 +204,27 @@ Public Sub ShowSettingsDialog()
     On Error GoTo EH
 
     EnsureSettingsLoaded
+    If SettingsDialogIsOpen() Then
+        MSCANModStatus.ShowStatus "AES Settings is already open."
+        Exit Sub
+    End If
     SyncAccountsFromOutlook
 
-    Dim cancelled As Boolean
-    cancelled = True
-
-    If TryShowPythonSettingsDialog(cancelled) Then
-        ' Python dialog handled UI; cancelled already set
-    Else
-        cancelled = ShowInputBoxSettingsDialog()
+    If LaunchPythonSettingsDialog() Then
+        MSCANModStatus.ShowStatus "AES Settings opened. Outlook stays usable while it is open."
+        Exit Sub
     End If
+
+    FinishSettingsDialog ShowInputBoxSettingsDialog()
+    Exit Sub
+
+EH:
+    MsgBox "AES settings error: " & Err.Description, vbExclamation, "AES Settings"
+End Sub
+
+' Runs once the user has closed the settings dialog (Python or InputBox).
+Private Sub FinishSettingsDialog(ByVal cancelled As Boolean)
+    On Error GoTo EH
 
     If cancelled Then
         mSettingsLoaded = False
@@ -238,16 +254,88 @@ Public Sub ShowSettingsDialog()
     Exit Sub
 
 EH:
-    MsgBox "AES settings error: " & Err.Description, vbExclamation, "AES Settings"
+    MSCANModLogging.WriteLog "MSCANSettings.FinishSettingsDialog error: #" & Err.Number & " - " & Err.Description
 End Sub
 
-' Returns True if Python dialog ran (success or cancel). False = use InputBox fallback.
-' cancelled=True means user cancelled / no save.
-Private Function TryShowPythonSettingsDialog(ByRef cancelled As Boolean) As Boolean
+Private Function SettingsResultPath() As String
+    SettingsResultPath = Environ$("LOCALAPPDATA") & "\GeoFooter\aes_settings_result.json"
+End Function
+
+Private Function SettingsDonePath() As String
+    SettingsDonePath = Environ$("LOCALAPPDATA") & "\GeoFooter\aes_settings_result.done"
+End Function
+
+Private Function SettingsDialogIsOpen() As Boolean
+    On Error Resume Next
+    SettingsDialogIsOpen = False
+    If Not mSettingsPending Then Exit Function
+    If Len(Dir$(SettingsDonePath())) > 0 Then Exit Function
+    If DateDiff("n", mSettingsLaunchedAt, Now) > SETTINGS_PENDING_MAX_MIN Then
+        mSettingsPending = False
+        Exit Function
+    End If
+    SettingsDialogIsOpen = True
+End Function
+
+' Called from NudgeAsyncWork on every ItemLoad. Costs one Dir$ while the
+' dialog is open and nothing otherwise. The launcher script writes the .done
+' marker once the dialog process exits, then reads an inbox item so ItemLoad
+' fires and this applies the result.
+Public Sub ApplyPendingSettingsResult()
+    On Error GoTo EH
+    If Not mSettingsPending Then Exit Sub
+
+    Dim donePath As String
+    donePath = SettingsDonePath()
+    If Len(Dir$(donePath)) = 0 Then
+        If DateDiff("n", mSettingsLaunchedAt, Now) > SETTINGS_PENDING_MAX_MIN Then
+            mSettingsPending = False
+            MSCANModLogging.WriteLog "MSCANSettings: settings dialog never reported back; dropping pending result."
+        End If
+        Exit Sub
+    End If
+
+    mSettingsPending = False
+    On Error Resume Next
+    Kill donePath
+    Err.Clear
     On Error GoTo EH
 
-    TryShowPythonSettingsDialog = False
+    Dim cancelled As Boolean
     cancelled = True
+    Dim outPath As String
+    outPath = SettingsResultPath()
+    If Len(Dir$(outPath)) = 0 Then
+        MSCANModLogging.WriteLog "MSCANSettings: settings dialog closed without a result; treating as cancel."
+    Else
+        Dim raw As String
+        raw = ReadAllTextFile(outPath)
+        If Len(raw) = 0 Then
+            MSCANModLogging.WriteLog "MSCANSettings: result JSON empty; treating as cancel."
+        ElseIf JsonBoolTrue(raw, "cancelled") Then
+            cancelled = True
+        ElseIf ApplySettingsFromResultJson(raw) Then
+            cancelled = False
+        Else
+            MSCANModLogging.WriteLog "MSCANSettings: could not parse result JSON; treating as cancel."
+        End If
+    End If
+
+    FinishSettingsDialog cancelled
+    Exit Sub
+
+EH:
+    mSettingsPending = False
+    MSCANModLogging.WriteLog "MSCANSettings.ApplyPendingSettingsResult error: #" & Err.Number & " - " & Err.Description
+End Sub
+
+' Starts the Python settings dialog without waiting on it. A small WScript
+' launcher waits for the dialog instead, so Outlook keeps running while the
+' user edits settings. Returns False when the InputBox fallback should run.
+Private Function LaunchPythonSettingsDialog() As Boolean
+    On Error GoTo EH
+
+    LaunchPythonSettingsDialog = False
 
     Dim pythonExe As String
     Dim scriptPath As String
@@ -262,7 +350,7 @@ Private Function TryShowPythonSettingsDialog(ByRef cancelled As Boolean) As Bool
     End If
 
     accountsPath = Environ$("LOCALAPPDATA") & "\GeoFooter\aes_settings_accounts.json"
-    outPath = Environ$("LOCALAPPDATA") & "\GeoFooter\aes_settings_result.json"
+    outPath = SettingsResultPath()
     Dim routePath As String
     routePath = GetRouteRiskFilePath()
     If Len(routePath) = 0 Then routePath = Environ$("LOCALAPPDATA") & "\GeoFooter\" & ROUTE_RISK_FILE_NAME
@@ -275,8 +363,11 @@ Private Function TryShowPythonSettingsDialog(ByRef cancelled As Boolean) As Bool
         Exit Function
     End If
 
+    Dim donePath As String
+    donePath = SettingsDonePath()
     On Error Resume Next
     Kill outPath
+    Kill donePath
     Err.Clear
     On Error GoTo EH
 
@@ -287,50 +378,47 @@ Private Function TryShowPythonSettingsDialog(ByRef cancelled As Boolean) As Bool
           " --route " & ShellQuote(routePath) & _
           " --logging " & ShellQuote(loggingPath)
 
-    Dim shell As Object
-    Dim exitCode As Long
-    Set shell = CreateObject("WScript.Shell")
-    exitCode = shell.Run(cmd, 1, True)
-
-    If exitCode <> 0 Then
-        MSCANModLogging.WriteLog "MSCANSettings: Python dialog exit " & exitCode & "; InputBox fallback."
-        Exit Function
-    End If
+    Dim vbsPath As String
+    vbsPath = Environ$("LOCALAPPDATA") & "\GeoFooter\aes_settings_launch.vbs"
 
     Dim fso As Object
+    Dim ts As Object
     Set fso = CreateObject("Scripting.FileSystemObject")
-    If Not fso.FileExists(outPath) Then
-        MSCANModLogging.WriteLog "MSCANSettings: result JSON missing; InputBox fallback."
-        Exit Function
-    End If
+    Set ts = fso.CreateTextFile(vbsPath, True, False)
+    ts.WriteLine "On Error Resume Next"
+    ts.WriteLine "Dim sh, fso, ol, items, itm, n, dummy"
+    ts.WriteLine "Set sh = CreateObject(""WScript.Shell"")"
+    ts.WriteLine "sh.Run """ & Replace(cmd, """", """""") & """, 1, True"
+    ts.WriteLine "Set fso = CreateObject(""Scripting.FileSystemObject"")"
+    ts.WriteLine "fso.CreateTextFile(""" & Replace(donePath, """", """""") & """, True).Close"
+    ts.WriteLine "Err.Clear"
+    ts.WriteLine "Set ol = GetObject(, ""Outlook.Application"")"
+    ts.WriteLine "If ol Is Nothing Then WScript.Quit 0"
+    ts.WriteLine "Set items = ol.GetNamespace(""MAPI"").GetDefaultFolder(6).Items"
+    ts.WriteLine "If items Is Nothing Then WScript.Quit 0"
+    ts.WriteLine "Set itm = items.GetFirst"
+    ts.WriteLine "For n = 1 To 3"
+    ts.WriteLine "  Err.Clear"
+    ts.WriteLine "  If Not itm Is Nothing Then dummy = itm.EntryID"
+    ts.WriteLine "  Set itm = items.GetNext"
+    ts.WriteLine "  If itm Is Nothing Then Set itm = items.GetFirst"
+    ts.WriteLine "  WScript.Sleep 500"
+    ts.WriteLine "Next"
+    ts.Close
 
-    Dim raw As String
-    raw = ReadAllTextFile(outPath)
-    If Len(raw) = 0 Then
-        MSCANModLogging.WriteLog "MSCANSettings: result JSON empty; InputBox fallback."
-        Exit Function
-    End If
+    Dim shell As Object
+    Set shell = CreateObject("WScript.Shell")
+    shell.Run "wscript.exe //Nologo //B " & Chr$(34) & vbsPath & Chr$(34), 0, False
 
-    TryShowPythonSettingsDialog = True
-
-    If JsonBoolTrue(raw, "cancelled") Then
-        cancelled = True
-        Exit Function
-    End If
-
-    If Not ApplySettingsFromResultJson(raw) Then
-        cancelled = True
-        MSCANModLogging.WriteLog "MSCANSettings: could not parse result JSON; treating as cancel."
-        Exit Function
-    End If
-
-    cancelled = False
+    mSettingsPending = True
+    mSettingsLaunchedAt = Now
+    MSCANModLogging.WriteLog "MSCANSettings: settings dialog launched without blocking Outlook."
+    LaunchPythonSettingsDialog = True
     Exit Function
 
 EH:
-    MSCANModLogging.WriteLog "MSCANSettings.TryShowPythonSettingsDialog error: #" & Err.Number & " - " & Err.Description
-    TryShowPythonSettingsDialog = False
-    cancelled = True
+    MSCANModLogging.WriteLog "MSCANSettings.LaunchPythonSettingsDialog error: #" & Err.Number & " - " & Err.Description
+    LaunchPythonSettingsDialog = False
 End Function
 
 ' Returns True if user cancelled (no save).

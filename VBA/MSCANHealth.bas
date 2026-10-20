@@ -22,6 +22,8 @@ Option Explicit
 ' An operation holding the Outlook UI thread this long is long enough for the
 ' user to see a stall while typing.
 Private Const STALL_WARN_MS As Long = 1200
+' No single Outlook-thread operation legitimately runs this long.
+Private Const SUSPEND_CUTOFF_MS As Long = 300000
 ' Consecutive failed commits that mean the item is never going to settle.
 Private Const CONFLICT_STORM As Long = 3
 ' A backlog this deep will churn the reading pane for several minutes.
@@ -95,6 +97,13 @@ Public Sub EndOp(ByVal opName As String, ByVal startTick As Long)
     On Error Resume Next
     Dim elapsed As Long
     elapsed = ElapsedMs(startTick)
+    ' GetTickCount keeps running while Windows sleeps, so an operation that
+    ' straddled a sleep reads as hours. Log it once and keep it out of the stats.
+    If elapsed > SUSPEND_CUTOFF_MS Then
+        MSCANModLogging.WriteLog "HEALTH | " & opName & " spanned " & CStr(elapsed \ 1000) & _
+            "s, most likely a system sleep; not counted as a UI stall"
+        Exit Sub
+    End If
     m_UiBusyMs = m_UiBusyMs + elapsed
 
     If elapsed < STALL_WARN_MS Then Exit Sub

@@ -230,6 +230,7 @@ Public Sub NudgeAsyncWork()
         m_NudgeWiredLogged = True
         MSCANModLogging.WriteLog "NudgeAsyncWork: ItemLoad wiring active."
     End If
+    MSCANSettings.ApplyPendingSettingsResult
     ' Writing a message owns the UI thread. Footer apply and queue work read and
     ' rewrite HTMLBody, which stalls the editor and drops keystrokes. Leave the
     ' work pending - the catch-up heartbeat picks it up once the window closes.

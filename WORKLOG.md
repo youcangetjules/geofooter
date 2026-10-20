@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.4.19: Identity mismatch checks (BEC / display-name spoofing)
+
+- New `aes/header_intel.py`. Each check returns an `IntelSection` with report rows and `{label, points, note}` findings. `identity_signals` compares From display name and address with Reply-To, Return-Path and Sender, a brand list, and GURI's `important_domains.txt`. `_prepare_display_data` folds the findings into the score through `apply_extra_factors`, and `_build_full_details_html` renders each section as a row. Tests: `tests/test_header_intel.py`.
+- Seen during the smoke test, not changed here: `WHOIS lookup failed ... module 'whois' has no attribute 'whois'` (the `python-whois` import is shadowed).
+- Follow-up: rescan to see the Identity row. No VBA import.
+
 ### 2026-10-20 — 1.4.18: Hop ASN no longer taken from the receiving server
 
 - `_fill_ip_registration` and `_apply_address_and_host_decoding` ran `provider_asn_for_host` over `by_host`. For `from o1.ptr8966.carto.com ([149.72.58.126]) by mx.google.com` that stamped AS15169 over SendGrid's AS11377. `by_host` is out of both loops, and the hostname map only replaces a blank ASN or the BGP transit ASN. Added `.sendgrid.net` → AS11377 in `aes/addr_decode.py`. Tests: `tests/test_hop_asn.py`.

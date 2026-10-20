@@ -65,6 +65,11 @@ except ImportError:
     route_checks = None  # type: ignore[assignment]
 
 try:
+    import aes.header_intel as header_intel
+except ImportError:
+    header_intel = None  # type: ignore[assignment]
+
+try:
     import aes.threat_intel as threat_intel
 except ImportError:
     threat_intel = None  # type: ignore[assignment]
@@ -3063,6 +3068,24 @@ class HTMLReportGenerator:
                 if self._blank_reg(hop.get("asn")) and bgp.get("origins"):
                     hop["asn"] = f"AS{bgp['origins'][0]}"
 
+        intel_sections: List[Any] = []
+        if header_intel is not None and headers:
+            try:
+                intel_sections = header_intel.run_all(
+                    headers,
+                    dmarc=auth_info.dmarc,
+                    lite=lite,
+                    hops=per_hop_analysis,
+                )
+            except Exception as exc:
+                self.logger.warning("Header intelligence failed: %s", exc)
+                intel_sections = []
+            for section in intel_sections:
+                scored = [f for f in section.findings if int(f.get("points") or 0)]
+                security_assessment = SecurityAssessor().apply_extra_factors(
+                    security_assessment, section.title, scored
+                )
+
         broker_hit: Optional[Dict[str, Any]] = None
         if broker_match_sender is not None:
             try:
@@ -3349,6 +3372,11 @@ class HTMLReportGenerator:
             "asn": self._format_asn(geo_result.asn),
             "whois": whois_display,
             "cert_history": cert_display,
+            "header_intel": [
+                {"title": s.title, "rows": list(s.rows), "findings": list(s.findings)}
+                for s in intel_sections
+                if s.rows or s.findings
+            ],
             "sender_local_time": sender_local_html,
             "action_buttons_html": action_buttons_html,
             "block_state": block_state,
@@ -6527,6 +6555,17 @@ Sender: {sender} | Domain: {domain} | Created: {created}</div>
             ("CompAuth", f"<span style='color: {data['auth']['compauth'][1]}; font-family:Arial;'>{data['auth']['compauth'][0]}</span><span style='color: {data['auth']['compauth'][1]};'>{data['auth']['compauth'][2]}</span> <span style='color: #888888;'>{data['auth']['compauth_display']}</span>"),
             ("ARC", f"<span style='color: {data['auth']['arc'][1]}; font-family:Arial;'>{data['auth']['arc'][0]}</span><span style='color: {data['auth']['arc'][1]};'>{data['auth']['arc'][2]}</span>"),
         ]
+        for section in data.get("header_intel") or []:
+            lines = [html.escape(str(r)) for r in section.get("rows") or []]
+            for f in section.get("findings") or []:
+                pts = int(f.get("points") or 0)
+                tag = f" (+{pts})" if pts else ""
+                lines.append(
+                    f"<span style='color:#c62828; font-weight:bold;'>&#9888; "
+                    f"{html.escape(str(f.get('label') or ''))}{tag}</span>"
+                )
+            if lines:
+                fields.append((html.escape(str(section.get("title") or "")), "<br>".join(lines)))
         # Use tighter vertical spacing for all rows from Sender to ARC
         row_style = "padding:2px 4px 2px 0; line-height:1.1; vertical-align:middle;"
         rows = ""

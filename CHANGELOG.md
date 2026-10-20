@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.4.19] — 2026-10-20
+
+### Added
+
+- Identity checks on every scan, compact included. Reply-To on another domain scores +10, or +15 when it is free webmail behind a corporate From. A display name that shows another address or domain scores +15. A brand name (PayPal, Microsoft, DocuSign and others) or your own organisation's name on an unrelated sending domain scores +10. A Return-Path on another domain scores +5, but only when DMARC did not pass. The Full Scan report has an Identity row listing From, Reply-To, Return-Path and Sender.
+
 ## [1.4.18] — 2026-10-20
 
 ### Fixed

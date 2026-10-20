@@ -7,11 +7,11 @@
 <meta name="description" content="You've reached www.aliniant.net. Aliniant engineering tools are coming here soon.">
 <link rel="icon" href="favicon.ico">
 <style>
-  html { background: #f6efe1; }
+  html, body { background: #2c2c2c; }
   body {
     margin: 0;
     padding: 24px 12px 40px;
-    color: #6b3414;
+    color: #e8dcc8;
     font-family: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
     text-align: center;
   }
@@ -30,7 +30,7 @@
     width: 100%;
     height: auto;
     border-radius: 6px;
-    box-shadow: 0 6px 24px rgba(107, 52, 20, 0.18);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
   }
   .trail {
     flex: 0 0 56px;
@@ -39,7 +39,7 @@
     justify-content: space-around;
     align-items: center;
   }
-  .step { --sway: 9px; width: 40px; height: 40px; opacity: 0.5; }
+  .step { --sway: 9px; width: 40px; height: 40px; opacity: 0.55; }
   .trail.up .step:nth-child(odd)  { transform: translateX(calc(-1 * var(--sway))) rotate(-12deg); }
   .trail.up .step:nth-child(even) { transform: translateX(var(--sway)) rotate(12deg); }
   .trail.down .step:nth-child(odd)  { transform: translateX(var(--sway)) rotate(168deg); }
@@ -56,9 +56,9 @@
     font-size: clamp(1.05rem, 2.6vw, 1.25rem);
     line-height: 1.6;
   }
-  a { color: #b4521c; text-decoration-thickness: 1px; text-underline-offset: 3px; }
-  a:hover { color: #8b3a14; }
-  .paw { display: block; margin: 26px auto 0; width: 64px; height: 64px; opacity: 0.85; }
+  a { color: #f0a060; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  a:hover { color: #ffc48a; }
+  .paw { display: block; margin: 26px auto 0; width: 64px; height: 64px; opacity: 0.9; }
   @media (max-width: 640px) {
     .stage { gap: 6px; }
     .trail { flex-basis: 24px; }
@@ -70,7 +70,7 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
     <symbol id="paw" viewBox="0 0 120 120">
-      <g fill="#8b3a14" transform="rotate(-8 60 60)">
+      <g fill="#d4a574" transform="rotate(-8 60 60)">
         <path d="M60 70 C45 70 36 80 38 92 C40 104 51 106 60 100 C69 106 80 104 82 92 C84 80 75 70 60 70 Z"/>
         <g transform="translate(60 46)">
           <ellipse rx="8.5" ry="12.5"/>
@@ -98,8 +98,8 @@
       <svg class="step"><use href="#paw"/></svg>
       <svg class="step"><use href="#paw"/></svg>
     </div>
-    <img class="scene" src="aliniant-shire.jpg" width="1024" height="977"
-         alt="A watercolour of a sunny Shire-like village. A banner reads: Aliniant — the wise company with clever ideas.">
+    <img class="scene" src="aliniant-shire.jpg" width="1024" height="939"
+         alt="A solarpunk Shire village at dusk, with co-working hobbit-holes, dragons and engineers, and a neon city beyond. A banner reads: Aliniant — the wise company with clever ideas.">
     <div class="trail down" aria-hidden="true">
       <svg class="step"><use href="#paw"/></svg>
       <svg class="step"><use href="#paw"/></svg>

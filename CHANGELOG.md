@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.10] — 2026-10-20
+
+### Changed
+
+- **aliniant.net holding page** uses the new solarpunk Shire image, with dark-grey side panels and cream text so the paw trails stay readable.
+
 ## [1.5.9] — 2026-10-20
 
 ### Changed

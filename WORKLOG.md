@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-20 — 1.5.10: New holding-page image and dark-grey panels
+
+- Replaced `cloud/site/aliniant.net/aliniant-shire.jpg` with the operator's solarpunk Shire image (1024x939, 350 KB). `index.html`: page background `#2c2c2c`, cream text, warmer paw fill and link colour so they read on dark grey; image dimensions and alt text updated.
+- Published with `deploy.sh` (one graceful reload). Page and image return 200; i-txone.com `/health` and track.aliniant.net `/healthz` unchanged.
+
 ### 2026-10-20 — 1.5.9: Holding page wording and dragon paw prints
 
 - `cloud/site/aliniant.net/index.html`: heading "You've reached www.aliniant.net", a line linking www.aliniant.com, and a dragon's paw signature. The paw is an inline SVG `<symbol>` (pad plus three toes with curved claws), reused by `<use href="#paw">` in two alternating trails beside the image (`.trail.up` / `.trail.down`, sway via the `--sway` CSS variable, 22 px on screens under 640 px). Asset paths are relative so the file previews locally. Nothing external, so it still fits the CSP (`default-src 'none'`).

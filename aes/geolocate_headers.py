@@ -5751,7 +5751,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         )
         # The mark spans all five rows. Word gives any extra rowspan height to
         # row 1, so the mark cell must be no taller than the rows
-        # (AES_STRIP_MARK_PAD). Nesting the rows in a side cell instead made
+        # (AES_STRIP_MARK_PAD_TOP). Nesting the rows in a side cell instead made
         # Word add ~6px after the nested table and centre it, pushing row 1 down.
         summary_block = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "

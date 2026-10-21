@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.43] — 2026-10-21
+
+### Changed
+
+- Footer bottom row (quick actions / copyright) has 2px more space under the content. Rescan to refresh footers.
+
 ## [1.5.42] — 2026-10-21
 
 ### Fixed

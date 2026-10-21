@@ -5670,7 +5670,8 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         # A 1px cell. Outlook drops a div border, so the line has to be the
         # cell background. Inset 16px, same width between every row.
         # Every row is AES_STRIP_ROW_H: 16px text + 2px, or 18px chips + 1px.
-        row_pad = "1px 16px"
+        # Bottom row: +2px under the content so the strip has a little air.
+        row_pad = "1px 16px 3px 16px"
         mark = _footer_mark_html()
         aes_letters = bool(mark)
         # With the A/E/S column, each rule starts at that column's left edge so
@@ -5724,7 +5725,9 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             )
             letter_a = _footer_aes_letter_cell("A")
             letter_e = _footer_aes_letter_cell("E")
-            letter_s = _footer_aes_letter_cell("S")
+            letter_s = _footer_aes_letter_cell("S").replace(
+                "padding:0;", "padding:1px 0 3px 0;", 1
+            )
         try:
             from geofooter.version import VERSION as _aes_ver
         except Exception:
@@ -5781,14 +5784,14 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"<tr>"
             f"{letter_s}"
             f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:0; vertical-align:middle;'>"
-            f"{left_copy}</td>"
+            f"style='background:{AES_STRIP_BG}; padding:1px 0 3px 0; "
+            f"vertical-align:middle;'>{left_copy}</td>"
             f"<td align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
             f"style='background:{AES_STRIP_BG}; padding:{row_pad}; text-align:center; "
             f"vertical-align:middle;'>{quick_actions}</td>"
             f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:0; vertical-align:middle;'>"
-            f"{right_copy}</td>"
+            f"style='background:{AES_STRIP_BG}; padding:1px 0 3px 0; "
+            f"vertical-align:middle;'>{right_copy}</td>"
             f"</tr>"
             f"</table>"
         )

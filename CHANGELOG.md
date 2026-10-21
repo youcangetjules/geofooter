@@ -20,6 +20,11 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.29] — 2026-10-21
+
+### Changed
+
+- Footer **A / E / S** letters are much larger (32px / ~24pt, HTML `size=6`) so Outlook's Word renderer actually shows the bump.
 ## [1.5.28] — 2026-10-21
 
 ### Fixed

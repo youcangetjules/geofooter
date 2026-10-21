@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.29: Much larger footer A/E/S letters
+
+- `aes/geolocate_headers.py`: `AES_STRIP_AES_SIZE`/`COL` 22 → 32. Letter cell also sets HTML `font size=6`, `pt` sizes, and size on the `<b>` — Outlook often ignored the earlier px-only CSS. Summary-row centring picks up the wider column via `logo_col`.
+- Follow-up: rescan a message; an old footer will still show the small letters.
+
 ### 2026-10-21 — 1.5.28: Read trusted inside isinstance branch
 
 - `aes/geolocate_headers.py`: `block_state: Dict[str, Any] = {}` first; `trusted = bool(raw_block_state.get(...))` only after `isinstance`. Removes the `block_state.get` site that kept flagging. Pyright clean on that span; module imports.

@@ -592,11 +592,13 @@ AES_STRIP_RULE = "#606d79"
 AES_STRIP_DOT = "#3ecf8e"
 AES_STRIP_FONT = "Segoe UI, Arial, sans-serif"
 # Stacked A/E/S at the left end of the strip rules, a little lighter than the
-# strip background.
+# strip background. Size is large enough to read beside the 75px mark; Outlook
+# often ignores CSS px, so the cell also sets HTML size= and pt.
 AES_STRIP_AES_COLOR = "#5a6671"
 AES_STRIP_AES_FONT = "Montserrat, 'Segoe UI', Arial, sans-serif"
-AES_STRIP_AES_SIZE = 22
-AES_STRIP_AES_COL = 22
+AES_STRIP_AES_SIZE = 32
+AES_STRIP_AES_COL = 32
+AES_STRIP_AES_HTML_SIZE = 6  # HTML <font size> 1–7 (~24pt)
 # Outlook drops padding on a div. This row is the gap above the strip.
 AES_FOOTER_GAP_HTML = (
     "<table border='0' cellpadding='0' cellspacing='0' width='100%' "
@@ -631,16 +633,19 @@ def _footer_aes_letter_cell(letter: str) -> str:
     painted the letters black.
     """
     size = AES_STRIP_AES_SIZE
+    size_pt = max(1, round(size * 0.75))
     return (
         f"<td width='{AES_STRIP_AES_COL}' align='left' valign='middle' "
         f"bgcolor='{AES_STRIP_BG}' "
         f"style='width:{AES_STRIP_AES_COL}px; padding:0; "
         f"background:{AES_STRIP_BG}; text-align:left; vertical-align:middle; "
-        f"color:{AES_STRIP_AES_COLOR};'>"
-        f"<font color='{AES_STRIP_AES_COLOR}' face='Montserrat, Segoe UI, Arial, sans-serif' "
+        f"color:{AES_STRIP_AES_COLOR}; font-size:{size}px; font-size:{size_pt}pt;'>"
+        f"<font color='{AES_STRIP_AES_COLOR}' size='{AES_STRIP_AES_HTML_SIZE}' "
+        f"face='Montserrat, Segoe UI, Arial, sans-serif' "
         f"style='color:{AES_STRIP_AES_COLOR}; font-family:{AES_STRIP_AES_FONT}; "
-        f"font-size:{size}px; font-weight:700; line-height:{size}px; "
-        f"mso-line-height-rule:exactly;'><b>{letter}</b></font></td>"
+        f"font-size:{size}px; font-size:{size_pt}pt; font-weight:700; "
+        f"line-height:{size}px; mso-line-height-rule:exactly;'>"
+        f"<b style='font-size:{size}px; font-size:{size_pt}pt;'>{letter}</b></font></td>"
     )
 
 

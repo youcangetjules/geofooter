@@ -3929,8 +3929,8 @@ class HTMLReportGenerator:
             probe = Image.new("RGB", (10, 10), bg)
             probe_draw = ImageDraw.Draw(probe)
             bbox = probe_draw.textbbox((0, 0), line, font=font)
-            text_w = max(1, bbox[2] - bbox[0])
-            text_h = max(1, bbox[3] - bbox[1])
+            text_w = max(1, math.ceil(bbox[2] - bbox[0]))
+            text_h = max(1, math.ceil(bbox[3] - bbox[1]))
 
             content_h = max(22, text_h + pad_top + pad_bottom)
             square = content_h  # risk square = full height of bordered strip

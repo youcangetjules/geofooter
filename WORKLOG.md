@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.19: Integer banner size in _render_status_banner_png
+
+- `aes/geolocate_headers.py`: `text_w` and `text_h` use `math.ceil` on the `textbbox` floats, so `Image.new` gets an int size (fixes the type error). Lint clean; test render was 720x28.
+
 ### 2026-10-21 — 1.5.18: Fix possibly-unbound FuturesTimeout in WHOIS lookup
 
 - `aes/geolocate_headers.py` `get_whois_info`: moved the `ThreadPoolExecutor` / `TimeoutError as FuturesTimeout` imports out of the `try` that catches `FuturesTimeout`. The linter flagged the name as possibly unbound. Lint clean; module imports.

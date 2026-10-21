@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.19] — 2026-10-21
+
+### Fixed
+
+- Status banner PNG: the text box from Pillow is rounded up to whole pixels, so the image size passed to `Image.new` is always integers.
+
 ## [1.5.18] — 2026-10-21
 
 ### Fixed

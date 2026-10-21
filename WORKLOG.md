@@ -13,6 +13,13 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.52: Centre footer rows on the strip; centre AURA lettering
+
+- `aes/geolocate_headers.py`: new `strip_row` helper. Each row is one content cell holding a two-cell table: a centre cell padded on the left by the right-hand width less the logo column, and a fixed-width right cell. Rows 1 and 2 share one side width (quip or AURA chip, whichever is wider); row 3 uses the copyright width. Rule rows drop `colspan='3'`. BUG-033.
+- AURA chip: image is the full 76x16 interior (PNG rebuilt, cid `aesaurachip3`), inline not `display:block`, 1px font and normal line height in the chip cell. Word had baseline-aligned the 14px image (gap below), then with an exact 16px line clipped its top.
+- Checked in a Word render: row text centres within 2 render px of the strip centre; AURA letters 13/14 px left/right and 3/4 px top/bottom; strip 69.3px tall (was 70.7px).
+- Follow-up: rescan (Python only).
+
 ### 2026-10-21 — 1.5.51: AURA chip single border, bigger lettering
 
 - `scripts/build_footer_strip_images.py` `build_aura_chip`: image is the 76x14 interior (was 78x16 with its own frame, so the chip showed two borders). Letters sized to ~80% of the height and spread across ~80% of the width; gradient spans the lettering. `assets/icons/aes_aura_chip.png` rebuilt.

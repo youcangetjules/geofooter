@@ -98,11 +98,13 @@ def build_mark() -> Path:
 def build_aura_chip() -> Path:
     """Inside of the 78x16 AURA chip: rainbow-gradient AURA, no frame.
 
-    The HTML cell draws the 1px border, so the image is the 76x14 interior.
+    The HTML cell draws the 1px border. The image is the full 76x16 interior
+    with the lettering centred in it: Word places a shorter inline image at the
+    top or on the baseline, never in the middle.
     """
     from aes.geolocate_headers import AES_CHIP_BG
 
-    w, h = 76 * SCALE, 14 * SCALE
+    w, h = 76 * SCALE, 16 * SCALE
     bg = _rgb(AES_CHIP_BG)
     stops = (
         (0.00, (228, 3, 3)),
@@ -123,9 +125,9 @@ def build_aura_chip() -> Path:
                 return tuple(int(c0[j] + (c1[j] - c0[j]) * u) for j in range(3))  # type: ignore[return-value]
         return stops[-1][1]
 
-    # Cap height ~80% of the interior; letters spread across ~80% of the width.
+    # Cap height ~11px of the 16px interior; letters spread across ~80% of the width.
     text = "AURA"
-    target_h = round(h * 0.8)
+    target_h = round(11 * SCALE)
     size = target_h
     font = _bold_font(size)
     probe = ImageDraw.Draw(Image.new("L", (1, 1)))
@@ -168,7 +170,7 @@ def main() -> None:
         w, h = Image.open(path).size
         print(path, f"{w // SCALE}x{h // SCALE} display")
     aura = build_aura_chip()
-    print(aura, "76x14 display")
+    print(aura, "76x16 display")
 
 
 if __name__ == "__main__":

@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.52] — 2026-10-21
+
+### Fixed
+
+- Footer rows centre on the whole strip. Rows used to share one column grid, and Outlook spread the spare width into the right-hand column, which pushed the top and second rows left. Each row now has its own fixed-width right cell (BUG-033).
+- AURA lettering is centred in its chip. The image is now the full 76x16 interior; Word had placed the shorter image on the text baseline, leaving a gap below. Rescan to refresh footers.
+
 ## [1.5.51] — 2026-10-21
 
 ### Changed

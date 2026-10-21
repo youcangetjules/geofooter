@@ -740,24 +740,34 @@ def _footer_aura_chip_html() -> str:
     else:
         # Bump the cid when the PNG changes: VBA skips re-attaching a cid that
         # is already on the mail, so a rescan would keep the old image.
+        # The image is the full 76x16 interior with the lettering centred in
+        # the PNG. Word top-aligns or baseline-aligns a shorter inline image,
+        # so a 14px image never sat in the middle of the chip.
         inner = (
-            f"<!-- AES-Inline-Img: aesaurachip2|{path} -->"
-            f"<img src='cid:aesaurachip2' width='76' height='14' alt='AURA' "
-            f"style='display:block; border:0; outline:none; width:76px; height:14px;' />"
+            f"<!-- AES-Inline-Img: aesaurachip3|{path} -->"
+            # Inline, not display:block: Word pins a block image to the left
+            # of the cell and ignores align='center'.
+            f"<img src='cid:aesaurachip3' width='76' height='16' alt='AURA' "
+            f"style='border:0; outline:none; width:76px; height:16px;' />"
         )
     border = AES_CHIP_FG
     bg = AES_CHIP_BG
+    if path.is_file():
+        # 1px font and no exact line height: the line grows to the 16px image.
+        # At 10px the descent left a gap under it; with an exact 16px line
+        # Word pushed the image up and clipped its top and the chip's top border.
+        line = "font-size:1px; line-height:normal;"
+    else:
+        line = "font-size:10px; line-height:16px; mso-line-height-rule:exactly;"
     return (
         "<table border='0' cellpadding='0' cellspacing='0' width='78' align='right' "
         "style='border-collapse:collapse; width:78px;'>"
         f"<tr><td bgcolor='{bg}' align='center' valign='middle' width='78' height='16' "
         f"style='background:{bg}; border:1px solid {border}; "
-        f"width:78px; height:16px; line-height:16px; mso-line-height-rule:exactly; "
-        f"text-align:center; padding:0; font-size:10px;'>"
+        f"width:78px; height:16px; {line} text-align:center; padding:0;'>"
         f"<a href='aes://open-aura' title='Open Aura' "
-        f"style='color:{border}; font-family:{AES_STRIP_FONT}; font-size:10px; "
-        f"font-weight:bold; letter-spacing:0; line-height:16px; "
-        f"mso-line-height-rule:exactly; text-decoration:none;'>{inner}</a>"
+        f"style='color:{border}; font-family:{AES_STRIP_FONT}; {line} "
+        f"font-weight:bold; letter-spacing:0; text-decoration:none;'>{inner}</a>"
         "</td></tr></table>"
     )
 
@@ -5760,14 +5770,13 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         # cell background. Inset 16px, same width between every row.
         # Every row is AES_STRIP_ROW_H: 16px text + 2px, or 18px chips + 1px.
         # Bottom row: +2px under the content so the strip has a little air.
-        row_pad = "1px 16px 3px 16px"
         mark = _footer_mark_html()
         aes_letters = bool(mark)
-        # Rules live only in the summary columns. The A/E/S column is a rowspan
+        # Rules live only in the content column. The A/E/S column is a rowspan
         # cell, so there is no letter/rule seam for Outlook to paint white (BUG-031).
         rule_pad = "0 16px 0 0" if aes_letters else "0 16px"
         rule_row = (
-            f"<tr><td colspan='3' bgcolor='{AES_STRIP_BG}' "
+            f"<tr><td bgcolor='{AES_STRIP_BG}' "
             f"style='padding:{rule_pad}; background:{AES_STRIP_BG}; "
             f"font-size:1px; line-height:1px;'>"
             f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
@@ -5783,16 +5792,11 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         # logo is only as wide as the quip minus that left block, so the middle
         # text stays centred on the full strip.
         quip_px = _footer_text_px(quip, 11, italic=True)
-        right_w = quip_px + 16
-        # Same outer width as the bottom-row chips (78) plus the 16px end pad.
-        aura_w = 78 + 16
+        # Rows 1 and 2 share one right-hand width (quip or AURA chip, whichever
+        # is wider) so both centre on the same line.
+        side_w = max(quip_px + 16, 78 + 16)
+        right_w = aura_w = side_w
         logo_col = (AES_STRIP_MARK_CELL_W + AES_STRIP_AES_COL) if mark else 0
-        fill_px = max(0, right_w - logo_col)
-        mid_fill = max(0, aura_w - logo_col)
-        # Rows 1 and 2 balance the side blocks with td padding: Outlook does not
-        # hold an empty spacer table at its width, which pushed row 1 left.
-        top_pad = f"2px 16px 2px {16 + fill_px}px"
-        mid_pad = f"2px 16px 2px {16 + mid_fill}px"
         right_top = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='{right_w}' "
             f"align='right' style='width:{right_w}px; border-collapse:collapse;'><tr>"
@@ -5839,7 +5843,6 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"white-space:nowrap; line-height:16px; mso-line-height-rule:exactly; "
             f"vertical-align:middle;"
         )
-        left_copy = _footer_spacer_cell(copy_w)
         right_copy = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='{copy_w}' "
             f"align='right' style='width:{copy_w}px; border-collapse:collapse;'><tr>"
@@ -5849,6 +5852,37 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"<td width='16' style='width:16px; font-size:1px;'>&nbsp;</td>"
             f"</tr></table>"
         )
+        def strip_row(
+            centre_html: str, centre_style: str, right_html: str, side: int,
+            v_pad: str,
+        ) -> str:
+            """One strip row centred on the whole footer, not on its own cell.
+
+            Rows used to share one column grid, and Outlook spread the strip's
+            spare width into the right-hand column, pushing the centre text
+            left. Each row is now its own two-cell table: a fixed-width right
+            cell, and a centre cell padded on the left by that width less the
+            logo column.
+            """
+            top, bottom = v_pad.split()
+            left_pad = 16 + max(0, side - logo_col)
+            return (
+                f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
+                f"style='background:{AES_STRIP_BG}; border-left:2px solid {AES_STRIP_BG}; "
+                f"padding:0; vertical-align:middle;'>"
+                f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
+                f"bgcolor='{AES_STRIP_BG}' style='width:100%; background:{AES_STRIP_BG}; "
+                f"border-collapse:collapse;'><tr>"
+                f"<td align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
+                f"style='background:{AES_STRIP_BG}; "
+                f"padding:{top} 16px {bottom} {left_pad}px; text-align:center; "
+                f"vertical-align:middle; {centre_style}'>{centre_html}</td>"
+                f"<td width='{side}' align='right' valign='middle' bgcolor='{AES_STRIP_BG}' "
+                f"style='width:{side}px; background:{AES_STRIP_BG}; "
+                f"padding:{top} 0 {bottom} 0; vertical-align:middle;'>{right_html}</td>"
+                f"</tr></table></td>"
+            )
+
         # The mark spans all five rows. Word gives any extra rowspan height to
         # row 1, so the mark cell must be no taller than the rows
         # (AES_STRIP_MARK_PAD_TOP). Nesting the rows in a side cell instead made
@@ -5860,40 +5894,31 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"<tr>"
             f"{logo_cell}"
             f"{letters_cell}"
-            f"<td colspan='2' align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; border-left:2px solid {AES_STRIP_BG}; "
-            f"padding:{top_pad}; text-align:center; "
-            f"color:{AES_STRIP_TEXT}; font-family:{AES_STRIP_FONT}; font-size:12px; "
-            f"font-weight:bold; letter-spacing:0.3px; line-height:16px; "
-            f"mso-line-height-rule:exactly; vertical-align:middle;'>{summary_line1}</td>"
-            f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:2px 0; vertical-align:middle;'>"
-            f"{right_top}</td>"
-            f"</tr>"
+            + strip_row(
+                summary_line1,
+                f"color:{AES_STRIP_TEXT}; font-family:{AES_STRIP_FONT}; font-size:12px; "
+                f"font-weight:bold; letter-spacing:0.3px; line-height:16px; "
+                f"mso-line-height-rule:exactly;",
+                right_top,
+                side_w,
+                "2px 2px",
+            )
+            + f"</tr>"
             f"{rule_row}"
             f"<tr>"
-            f"<td colspan='2' align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='padding:{mid_pad}; text-align:center; background:{AES_STRIP_BG}; "
-            f"border-left:2px solid {AES_STRIP_BG}; "
-            f"color:{AES_STRIP_MUTED}; font-family:{AES_STRIP_FONT}; font-size:12px; "
-            f"font-weight:normal; line-height:16px; mso-line-height-rule:exactly; "
-            f"vertical-align:middle;'>{summary_line2}</td>"
-            f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:2px 0; vertical-align:middle;'>"
-            f"{right_aura}</td>"
-            f"</tr>"
+            + strip_row(
+                summary_line2,
+                f"color:{AES_STRIP_MUTED}; font-family:{AES_STRIP_FONT}; font-size:12px; "
+                f"font-weight:normal; line-height:16px; mso-line-height-rule:exactly;",
+                right_aura,
+                side_w,
+                "2px 2px",
+            )
+            + f"</tr>"
             f"{rule_row}"
             f"<tr>"
-            f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:1px 0 3px 0; "
-            f"vertical-align:middle;'>{left_copy}</td>"
-            f"<td align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:{row_pad}; text-align:center; "
-            f"vertical-align:middle;'>{quick_actions}</td>"
-            f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:1px 0 3px 0; "
-            f"vertical-align:middle;'>{right_copy}</td>"
-            f"</tr>"
+            + strip_row(quick_actions, "", right_copy, copy_w, "1px 3px")
+            + f"</tr>"
             f"</table>"
         )
 

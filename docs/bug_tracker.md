@@ -33,6 +33,17 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-033 — Footer top and second rows centred left of the strip middle
+
+- **Severity:** S4
+- **Area:** AES
+- **Status:** fixed (pending rescan)
+- **Reported:** 2026-10-21
+- **Summary:** In Outlook the top summary line and the sender line sat well left of the strip centre (about a third of the way across on a wide reading pane). All rows shared one column grid, and Word spread the table's spare width into the right-hand column (quip / AURA / copyright). The left padding that balanced the right side assumed that column's natural width, so the centre text drifted left. Row 2 was worse because its padding assumed the narrower AURA chip while the column was as wide as the quip.
+- **Repro:** Rescan a message and view it in a wide reading pane.
+- **Workaround:** None.
+- **Fixed in:** 1.5.52. Each row is its own two-cell table with a fixed-width right cell; the centre cell is padded on the left by that width less the logo column.
+
 ### BUG-032 — Footer top-row title sits higher than underlined metrics
 
 - **Severity:** S4

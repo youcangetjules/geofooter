@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.36: Centre 14px A/E/S letters in footer rows
+
+- `aes/geolocate_headers.py` `_footer_aes_letter_cell`: no padding, no `font-size:1px`/exact line height; `AES_STRIP_LETTER_H` 14 (`AES_STRIP_AES_INSET` removed). Letter PNGs rebuilt at 28px (2x) via `scripts/build_footer_strip_images.py`. A Word-engine render (private `DispatchEx` Word, PDF export) showed the padded cell made rows 24–27px vs 21–24px without letters, leaving the gap under each letter. After: rows unchanged from the letterless strip, letters 14px with ~4px above/below. BUG-025 update.
+- Follow-up: rescan (Python only; needs the 1.5.35 `MSCANModule1` import).
+
 ### 2026-10-21 — 1.5.35: Fix garbage Content-ID on footer letter images
 
 - `VBA/MSCANModule1.bas` `EmbedAesInlineImages`: `SetProperty PR_ATTACH_CONTENT_ID, CStr(cid)`. A plain String variable went ByRef over late binding and the stored Content-ID was the reference bytes. A read-only COM check showed `aesfootermark` correct but the letters as `\u8d9c\u4c86...`. ASCII/CRLF. BUG-025 update.

@@ -600,10 +600,11 @@ AES_STRIP_MARK_CELL_W = 12 + AES_STRIP_MARK_W + 4
 # Stacked A/E/S at the left end of the strip rules, a little lighter than the
 # strip background. They are images (scripts/build_footer_strip_images.py):
 # Word pads text rows to the font's line spacing, so text letters could not sit
-# 4px from the row edges.
+# 4px from the row edges. The letter cell has no padding: in Word, padding plus
+# the image made each row 3-5px taller. Word draws the rows about 22px, so a
+# 14px letter centred in the row leaves about 4px above and below.
 AES_STRIP_AES_COLOR = "#5a6671"
-AES_STRIP_AES_INSET = 4
-AES_STRIP_LETTER_H = AES_STRIP_ROW_H - 2 * AES_STRIP_AES_INSET  # 12
+AES_STRIP_LETTER_H = 14
 AES_STRIP_AES_COL = 16
 # Outlook drops padding on a div. This row is the gap above the strip.
 AES_FOOTER_GAP_HTML = (
@@ -636,17 +637,15 @@ def _footer_mark_html() -> str:
 def _footer_aes_letter_cell(letter: str) -> str:
     """One of A / E / S on a content row, flush with the left end of the rules.
 
-    The letter image is the row height less 4px above and below; VBA attaches
-    it from the AES-Inline-Img marker. Empty cell if the image is missing.
+    The letter image is centred in the row the text sets; VBA attaches it from
+    the AES-Inline-Img marker. Empty cell if the image is missing.
     """
-    inset = AES_STRIP_AES_INSET
     cell_open = (
         f"<td width='{AES_STRIP_AES_COL}' align='left' valign='middle' "
         f"bgcolor='{AES_STRIP_BG}' "
-        f"style='width:{AES_STRIP_AES_COL}px; padding:{inset}px 0; "
+        f"style='width:{AES_STRIP_AES_COL}px; padding:0; "
         f"background:{AES_STRIP_BG}; text-align:left; vertical-align:middle; "
-        f"font-size:1px; line-height:{AES_STRIP_LETTER_H}px; "
-        f"mso-line-height-rule:exactly;'>"
+        f"font-size:1px;'>"
     )
     try:
         from geofooter.paths import get_install_root

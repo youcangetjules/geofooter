@@ -20,6 +20,11 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.36] — 2026-10-21
+
+### Fixed
+
+- Footer A/E/S letters sat high in each row with a gap below, and made the rows taller. The letter cells no longer have padding or a fixed line height; the letters are 14px and centred, about 4px from the top and bottom of each row in Outlook. Rescan to refresh footers (BUG-025).
 ## [1.5.35] — 2026-10-21
 
 ### Fixed

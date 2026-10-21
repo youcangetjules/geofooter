@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.18] — 2026-10-21
+
+### Fixed
+
+- WHOIS lookup: the `concurrent.futures` import now sits before the `try`, so the `except FuturesTimeout` clause can never reference an unbound name.
+
 ## [1.5.17] — 2026-10-21
 
 ### Changed

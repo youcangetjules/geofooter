@@ -1889,10 +1889,10 @@ class WhoisService:
         # Prefer registrable domain for lookups (e.g. mail.example.co.uk -> example.co.uk).
         lookup_domain = self._registrable_domain(domain) or domain
 
-        try:
-            from concurrent.futures import ThreadPoolExecutor
-            from concurrent.futures import TimeoutError as FuturesTimeout
+        from concurrent.futures import ThreadPoolExecutor
+        from concurrent.futures import TimeoutError as FuturesTimeout
 
+        try:
             pool = ThreadPoolExecutor(max_workers=1)
             try:
                 w = pool.submit(whois.whois, lookup_domain).result(timeout=8)

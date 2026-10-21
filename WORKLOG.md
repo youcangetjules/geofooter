@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.50: AURA chip on row 2; seamless A/E/S column
+
+- `aes/geolocate_headers.py`: mid-row far-right AURA chip (78×16, rainbow glyph PNG). `aes/action_handler.py`: `aes://open-aura` launches `guri/gui.py --raise --aura`. A/E/S move to one `rowspan=5` column so rule rows never seam under E (BUG-031). `assets/icons/aes_aura_chip.png` + `scripts/build_footer_strip_images.py`.
+- Follow-up: rescan (Python only; VBA already attaches `AES-Inline-Img`).
+
 ### 2026-10-21 — 1.5.49: Keep strip rules out of the A/E/S column
 
 - `aes/geolocate_headers.py`: drop letter-cell `border-bottom` (Outlook painted it white through the E). Rule rows use a solid strip-coloured letter cell and draw the hairline only across the summary columns (BUG-031).

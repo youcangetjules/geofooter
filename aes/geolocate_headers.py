@@ -638,23 +638,8 @@ def _footer_mark_html() -> str:
     )
 
 
-def _footer_aes_letter_cell(letter: str) -> str:
-    """One of A / E / S on a content row, flush with the left end of the rules.
-
-    The letter image is centred in the row the text sets; VBA attaches it from
-    the AES-Inline-Img marker. Empty cell if the image is missing.
-    """
-    # border-right matches the strip: Outlook leaves a 1–2px white hairline
-    # between this cell and the summary cell on the A and E rows. Do not use
-    # border-bottom here — Outlook Word often paints cell bottom borders white
-    # and that drew a hairline through the E (BUG-031).
-    cell_open = (
-        f"<td width='{AES_STRIP_AES_COL}' align='left' valign='middle' "
-        f"bgcolor='{AES_STRIP_BG}' "
-        f"style='width:{AES_STRIP_AES_COL}px; padding:0; "
-        f"background:{AES_STRIP_BG}; border-right:2px solid {AES_STRIP_BG}; "
-        f"text-align:left; vertical-align:middle; font-size:1px;'>"
-    )
+def _footer_aes_letter_img(letter: str) -> str:
+    """Inline A / E / S letter image (cid marker for VBA). Empty string if missing."""
     try:
         from geofooter.paths import get_install_root
         from PIL import Image
@@ -664,15 +649,59 @@ def _footer_aes_letter_cell(letter: str) -> str:
         with Image.open(path) as im:
             px_w, px_h = im.size
     except Exception:
-        return f"{cell_open}&nbsp;</td>"
+        return ""
     h = AES_STRIP_LETTER_H
     w = max(1, round(px_w * h / px_h))
     cid = name.replace("_", "")
     return (
-        f"{cell_open}<!-- AES-Inline-Img: {cid}|{path} -->"
+        f"<!-- AES-Inline-Img: {cid}|{path} -->"
         f"<img src='cid:{cid}' width='{w}' height='{h}' alt='{letter}' "
         f"style='display:block; border:0; outline:none; width:{w}px; height:{h}px;' />"
-        f"</td>"
+    )
+
+
+def _footer_aes_letters_column() -> str:
+    """A/E/S in one rowspan cell so strip rules never seam through the letters.
+
+    Per-row letter cells left a white hairline under the E where Outlook met the
+    rule row (BUG-031). One continuous column with strip-coloured rule spacers
+    keeps that join slate.
+    """
+    # border-right still paints out the vertical hairline beside A/E (BUG-029).
+    row_h = AES_STRIP_ROW_H
+    parts: List[str] = []
+    for i, letter in enumerate("AES"):
+        img = _footer_aes_letter_img(letter) or "&nbsp;"
+        # Bottom row is 2px taller under the chips (1+16+3); match that air.
+        h = row_h + (2 if letter == "S" else 0)
+        parts.append(
+            f"<tr><td width='{AES_STRIP_AES_COL}' height='{h}' align='left' "
+            f"valign='middle' bgcolor='{AES_STRIP_BG}' "
+            f"style='width:{AES_STRIP_AES_COL}px; height:{h}px; padding:0; "
+            f"background:{AES_STRIP_BG}; text-align:left; vertical-align:middle; "
+            f"font-size:1px; line-height:{h}px; mso-line-height-rule:exactly;'>"
+            f"{img}</td></tr>"
+        )
+        if i < 2:
+            parts.append(
+                f"<tr><td width='{AES_STRIP_AES_COL}' height='1' bgcolor='{AES_STRIP_BG}' "
+                f"style='width:{AES_STRIP_AES_COL}px; height:1px; padding:0; "
+                f"background:{AES_STRIP_BG}; font-size:1px; line-height:1px; "
+                f"mso-line-height-rule:exactly;'>&nbsp;</td></tr>"
+            )
+    nested = (
+        f"<table border='0' cellpadding='0' cellspacing='0' width='{AES_STRIP_AES_COL}' "
+        f"bgcolor='{AES_STRIP_BG}' style='width:{AES_STRIP_AES_COL}px; "
+        f"border-collapse:collapse; background:{AES_STRIP_BG};'>"
+        f"{''.join(parts)}</table>"
+    )
+    return (
+        f"<td rowspan='5' width='{AES_STRIP_AES_COL}' align='left' valign='top' "
+        f"bgcolor='{AES_STRIP_BG}' "
+        f"style='width:{AES_STRIP_AES_COL}px; padding:0; "
+        f"background:{AES_STRIP_BG}; border-right:2px solid {AES_STRIP_BG}; "
+        f"text-align:left; vertical-align:top; font-size:1px;'>"
+        f"{nested}</td>"
     )
 
 
@@ -686,6 +715,48 @@ def _footer_spacer_cell(width_px: int) -> str:
         f"style='width:{w}px; height:16px; background:{AES_STRIP_BG}; "
         f"font-size:1px; line-height:16px; mso-line-height-rule:exactly;'>"
         f"&nbsp;</td></tr></table>"
+    )
+
+
+def _footer_aura_chip_html() -> str:
+    """Row-2 AURA chip: same 78x16 frame as Quick Actions; rainbow glyph image."""
+    try:
+        from geofooter.paths import get_install_root
+
+        path = get_install_root() / "assets" / "icons" / "aes_aura_chip.png"
+    except Exception:
+        path = Path()
+    if not path.is_file():
+        # Fallback: stepped rainbow letters if the chip PNG is missing.
+        rainbow = (
+            ("A", "#e40303"),
+            ("U", "#ff8c00"),
+            ("R", "#ffed00"),
+            ("A", "#008026"),
+        )
+        inner = "".join(
+            f"<span style='color:{c};'>{letter}</span>" for letter, c in rainbow
+        )
+    else:
+        inner = (
+            f"<!-- AES-Inline-Img: aesaurachip|{path} -->"
+            f"<img src='cid:aesaurachip' width='76' height='14' alt='AURA' "
+            f"style='display:block; border:0; outline:none; width:76px; height:14px;' />"
+        )
+    border = AES_CHIP_FG
+    bg = AES_CHIP_BG
+    return (
+        "<table border='0' cellpadding='0' cellspacing='0' width='78' align='right' "
+        "style='border-collapse:collapse; width:78px;'>"
+        f"<tr><td bgcolor='{bg}' align='center' valign='middle' width='78' height='16' "
+        f"style='background:{bg}; border:1px solid {border}; "
+        f"width:78px; height:16px; line-height:16px; mso-line-height-rule:exactly; "
+        f"text-align:center; padding:0; font-size:10px;'>"
+        f"<a href='aes://open-aura' title='Open Aura' "
+        f"style='color:{border}; font-family:{AES_STRIP_FONT}; font-size:10px; "
+        f"font-weight:bold; letter-spacing:0; line-height:16px; "
+        f"mso-line-height-rule:exactly; text-decoration:none;'>{inner}</a>"
+        "</td></tr></table>"
     )
 
 
@@ -5690,48 +5761,36 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         row_pad = "1px 16px 3px 16px"
         mark = _footer_mark_html()
         aes_letters = bool(mark)
-        # Rule line sits in the summary columns only. Running it through the
-        # A/E/S column left a white hairline across the E in Outlook (BUG-031);
-        # a solid strip-coloured letter cell keeps that column continuous.
-        rule_line = (
+        # Rules live only in the summary columns. The A/E/S column is a rowspan
+        # cell, so there is no letter/rule seam for Outlook to paint white (BUG-031).
+        rule_pad = "0 16px 0 0" if aes_letters else "0 16px"
+        rule_row = (
+            f"<tr><td colspan='3' bgcolor='{AES_STRIP_BG}' "
+            f"style='padding:{rule_pad}; background:{AES_STRIP_BG}; "
+            f"font-size:1px; line-height:1px;'>"
             f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
             f"bgcolor='{AES_STRIP_BG}' style='border-collapse:collapse; "
             f"background:{AES_STRIP_BG};'>"
             f"<tr><td height='1' bgcolor='{AES_STRIP_RULE}' "
             f"style='height:1px; font-size:1px; line-height:1px; "
             f"background:{AES_STRIP_RULE}; mso-line-height-rule:exactly;'>"
-            f"&nbsp;</td></tr></table>"
+            f"&nbsp;</td></tr></table></td></tr>"
         )
-        if aes_letters:
-            rule_row = (
-                f"<tr>"
-                f"<td width='{AES_STRIP_AES_COL}' height='1' bgcolor='{AES_STRIP_BG}' "
-                f"style='width:{AES_STRIP_AES_COL}px; height:1px; padding:0; "
-                f"background:{AES_STRIP_BG}; font-size:1px; line-height:1px; "
-                f"mso-line-height-rule:exactly;'>&nbsp;</td>"
-                f"<td colspan='3' bgcolor='{AES_STRIP_BG}' "
-                f"style='padding:0 16px 0 0; background:{AES_STRIP_BG}; "
-                f"font-size:1px; line-height:1px;'>{rule_line}</td>"
-                f"</tr>"
-            )
-        else:
-            rule_row = (
-                f"<tr><td colspan='3' bgcolor='{AES_STRIP_BG}' "
-                f"style='padding:0 16px; background:{AES_STRIP_BG}; "
-                f"font-size:1px; line-height:1px;'>{rule_line}</td></tr>"
-            )
         quip = html.escape(footer_quip(str(risk or ""), int(score or 0)))
         # The logo (+ optional A/E/S column) spans every row. The pad beside the
         # logo is only as wide as the quip minus that left block, so the middle
         # text stays centred on the full strip.
         quip_px = _footer_text_px(quip, 11, italic=True)
         right_w = quip_px + 16
+        # Same outer width as the bottom-row chips (78) plus the 16px end pad.
+        aura_w = 78 + 16
         logo_col = (AES_STRIP_MARK_CELL_W + AES_STRIP_AES_COL) if mark else 0
         fill_px = max(0, right_w - logo_col)
+        mid_fill = max(0, aura_w - logo_col)
         # Rows 1 and 2 balance the side blocks with td padding: Outlook does not
         # hold an empty spacer table at its width, which pushed row 1 left.
         top_pad = f"2px 16px 2px {16 + fill_px}px"
-        mid_pad = f"2px {16 + logo_col}px 2px 16px"
+        mid_pad = f"2px 16px 2px {16 + mid_fill}px"
         right_top = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='{right_w}' "
             f"align='right' style='width:{right_w}px; border-collapse:collapse;'><tr>"
@@ -5743,8 +5802,17 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"<td width='16' style='width:16px; font-size:1px; line-height:1px;'>&nbsp;</td>"
             f"</tr></table>"
         )
+        right_aura = (
+            f"<table border='0' cellpadding='0' cellspacing='0' width='{aura_w}' "
+            f"align='right' style='width:{aura_w}px; border-collapse:collapse;'><tr>"
+            f"<td align='right' valign='middle' "
+            f"style='text-align:right; vertical-align:middle; padding:0;'>"
+            f"{_footer_aura_chip_html()}</td>"
+            f"<td width='16' style='width:16px; font-size:1px; line-height:1px;'>&nbsp;</td>"
+            f"</tr></table>"
+        )
         logo_cell = ""
-        letter_a = letter_e = letter_s = ""
+        letters_cell = ""
         if mark:
             logo_cell = (
                 f"<td rowspan='5' width='{AES_STRIP_MARK_CELL_W}' valign='middle' "
@@ -5754,11 +5822,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
                 f"vertical-align:middle;'>"
                 f"{mark}</td>"
             )
-            letter_a = _footer_aes_letter_cell("A")
-            letter_e = _footer_aes_letter_cell("E")
-            letter_s = _footer_aes_letter_cell("S").replace(
-                "padding:0;", "padding:1px 0 3px 0;", 1
-            )
+            letters_cell = _footer_aes_letters_column()
         try:
             from geofooter.version import VERSION as _aes_ver
         except Exception:
@@ -5793,7 +5857,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"border-collapse:collapse;'>"
             f"<tr>"
             f"{logo_cell}"
-            f"{letter_a}"
+            f"{letters_cell}"
             f"<td colspan='2' align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
             f"style='background:{AES_STRIP_BG}; border-left:2px solid {AES_STRIP_BG}; "
             f"padding:{top_pad}; text-align:center; "
@@ -5806,16 +5870,18 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"</tr>"
             f"{rule_row}"
             f"<tr>"
-            f"{letter_e}"
-            f"<td colspan='3' align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
+            f"<td colspan='2' align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
             f"style='padding:{mid_pad}; text-align:center; background:{AES_STRIP_BG}; "
             f"border-left:2px solid {AES_STRIP_BG}; "
             f"color:{AES_STRIP_MUTED}; font-family:{AES_STRIP_FONT}; font-size:12px; "
             f"font-weight:normal; line-height:16px; mso-line-height-rule:exactly; "
-            f"vertical-align:middle;'>{summary_line2}</td></tr>"
+            f"vertical-align:middle;'>{summary_line2}</td>"
+            f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
+            f"style='background:{AES_STRIP_BG}; padding:2px 0; vertical-align:middle;'>"
+            f"{right_aura}</td>"
+            f"</tr>"
             f"{rule_row}"
             f"<tr>"
-            f"{letter_s}"
             f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
             f"style='background:{AES_STRIP_BG}; padding:1px 0 3px 0; "
             f"vertical-align:middle;'>{left_copy}</td>"

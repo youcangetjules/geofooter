@@ -20,6 +20,16 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.50] — 2026-10-21
+
+### Added
+
+- Footer second row far-right **AURA** chip (same 78×16 frame as Quick Actions). Rainbow-gradient lettering via `assets/icons/aes_aura_chip.png`. Click opens GURI on the Aura tab (`aes://open-aura`).
+
+### Fixed
+
+- A/E/S letters are one `rowspan` column with slate rule spacers, so Outlook no longer paints a white seam under the E (BUG-031). Rescan to refresh footers.
+
 ## [1.5.49] — 2026-10-21
 
 ### Fixed

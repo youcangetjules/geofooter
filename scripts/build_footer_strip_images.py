@@ -95,12 +95,62 @@ def build_mark() -> Path:
     return path
 
 
+def build_aura_chip() -> Path:
+    """78x16 Quick-Action-sized chip with rainbow-gradient AURA lettering."""
+    from aes.geolocate_headers import AES_CHIP_BG, AES_CHIP_FG
+
+    w, h = 78 * SCALE, 16 * SCALE
+    bg, border = _rgb(AES_CHIP_BG), _rgb(AES_CHIP_FG)
+    stops = (
+        (0.00, (228, 3, 3)),
+        (0.20, (255, 140, 0)),
+        (0.40, (255, 237, 0)),
+        (0.60, (0, 128, 38)),
+        (0.80, (36, 64, 142)),
+        (1.00, (115, 41, 130)),
+    )
+
+    def color_at(t: float) -> tuple[int, int, int]:
+        t = max(0.0, min(1.0, t))
+        for i in range(len(stops) - 1):
+            t0, c0 = stops[i]
+            t1, c1 = stops[i + 1]
+            if t0 <= t <= t1:
+                u = 0.0 if t1 == t0 else (t - t0) / (t1 - t0)
+                return tuple(int(c0[j] + (c1[j] - c0[j]) * u) for j in range(3))  # type: ignore[return-value]
+        return stops[-1][1]
+
+    font = _bold_font(22)
+    mask = Image.new("L", (w, h), 0)
+    draw = ImageDraw.Draw(mask)
+    text = "AURA"
+    bbox = draw.textbbox((0, 0), text, font=font)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    x = (w - tw) // 2 - bbox[0]
+    y = (h - th) // 2 - bbox[1] - 1
+    draw.text((x, y), text, font=font, fill=255)
+    grad = Image.new("RGB", (w, h), bg)
+    px = grad.load()
+    for ix in range(w):
+        c = color_at(ix / max(1, w - 1))
+        for iy in range(h):
+            px[ix, iy] = c
+    out = Image.new("RGB", (w, h), bg)
+    out.paste(grad, (0, 0), mask)
+    ImageDraw.Draw(out).rectangle([0, 0, w - 1, h - 1], outline=border)
+    path = ICONS / "aes_aura_chip.png"
+    out.save(path, optimize=True)
+    return path
+
+
 def main() -> None:
     print(build_mark())
     for letter in "AES":
         path = build_letter(letter)
         w, h = Image.open(path).size
         print(path, f"{w // SCALE}x{h // SCALE} display")
+    aura = build_aura_chip()
+    print(aura, "78x16 display")
 
 
 if __name__ == "__main__":

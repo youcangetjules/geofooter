@@ -10,6 +10,7 @@ Handles aes:// links clicked in AES footers / reports, e.g.
     aes://restore-html?id=r20260923120000...
     aes://open-report?path=C:/GeoFooter/output/links/links_report_….html
     aes://set-link-risk?report=links_report_…&id=…&level=low|medium|high|clear
+    aes://open-aura
 
 Rules are stored in %LOCALAPPDATA%\\GeoFooter\\aes_sender_rules.json and are
 consumed by the Outlook VBA engine on the next scan of mail from that sender.
@@ -502,6 +503,47 @@ def handle_open_report(params: dict, logger: logging.Logger) -> int:
         return 1
 
 
+def handle_open_aura(params: dict, logger: logging.Logger) -> int:
+    """Open GURI on the Aura tab (same as the Outlook Aura ribbon button)."""
+    del params  # no query args yet
+    try:
+        from geofooter.paths import get_install_root
+
+        root = get_install_root()
+    except Exception:
+        root = Path(__file__).resolve().parents[1]
+    script = root / "guri" / "gui.py"
+    if not script.is_file():
+        logger.error("open-aura: gui.py missing under %s", root)
+        show_message(
+            "Aura",
+            "Could not open Aura.\n\nSet Install root in GURI (Database tab).",
+            error=True,
+        )
+        return 1
+    import subprocess
+
+    py = Path(sys.executable)
+    pythonw = py.with_name("pythonw.exe")
+    exe = pythonw if pythonw.is_file() else py
+    creation = 0
+    if sys.platform == "win32":
+        creation = int(getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000))
+    try:
+        subprocess.Popen(
+            [str(exe), str(script), "--raise", "--aura"],
+            cwd=str(root),
+            creationflags=creation,
+            close_fds=True,
+        )
+        logger.info("open-aura: launched %s --raise --aura", script)
+        return 0
+    except Exception as exc:
+        logger.exception("open-aura: launch failed")
+        show_message("Aura", f"Could not open Aura:\n{exc}", error=True)
+        return 1
+
+
 def handle_url(url: str, logger: logging.Logger) -> int:
     parsed = urllib.parse.urlparse(url)
     if parsed.scheme.lower() != "aes":
@@ -521,6 +563,9 @@ def handle_url(url: str, logger: logging.Logger) -> int:
 
     if action == "open-report":
         return handle_open_report(params, logger)
+
+    if action == "open-aura":
+        return handle_open_aura(params, logger)
 
     if action == "set-link-risk":
         return handle_set_link_risk(params, logger)

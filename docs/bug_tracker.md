@@ -50,11 +50,12 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 - **Area:** AES
 - **Status:** fixed (pending rescan)
 - **Reported:** 2026-10-21
-- **Summary:** A thin white horizontal sliver sat under / through the E in the A/E/S column. Measured as `#ffffff`. The strip rule row used `colspan` across the letter column, and Outlook showed body white at that join.
+- **Summary:** A thin white horizontal sliver sat under / through the E in the A/E/S column. Measured as `#ffffff`. Per-row letter cells met the rule row and Outlook showed body white at that join.
 - **Repro:** Rescan a message and look at the E letter.
 - **Workaround:** None.
-- **Fixed in:** 1.5.49. Rule rows keep a solid strip-coloured letter cell and draw the hairline only in the summary columns. 1.5.48's letter-cell `border-bottom` made it worse — Outlook Word painted that border white across the E.
+- **Fixed in:** 1.5.50. A/E/S live in one `rowspan=5` column with slate 1px spacers where the rules are; summary rules never share a cell edge with a letter. 1.5.48 `border-bottom` made it worse (Outlook painted white). 1.5.49 moved the rule out of the letter column but the 1px filler cell still flashed white.
 - **Update 2026-10-21 (17:31):** user confirmed top-row text alignment (BUG-032) is good; white-through-E still present after 1.5.48.
+- **Update 2026-10-21 (17:35):** 1.5.49 did not clear it; white stub still under E.
 
 ### BUG-030 — Rapid rescans flatten mail to text via dirty attachment churn
 

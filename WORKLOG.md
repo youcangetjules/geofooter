@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.39: Equalise BB chip; show version on copyright
+
+- `aes/geolocate_headers.py` quick-action `chip()`: dark border on every chip, width 78, no letter-spacing (blocked BB had been 79px vs 77px for white). Copyright uses `geofooter.version.VERSION`. BUG-027 fixed; BUG-028 logged (top row still ~5px tall).
+- Follow-up: rescan; then shrink the top row (BUG-028).
+
 ### 2026-10-21 — 1.5.38: Move footer orange A 5px down
 
 - `aes/geolocate_headers.py` `_build_html` logo cell padding `3px 4px 3px 12px` to `8px 4px 0 12px`. Outlook top-aligns the rowspan cell (screenshot: 3px above the mark, 8px below in a 67px strip), so the mark now sits 8px from the top; 56 + 8 fits inside the strip, so its height is unchanged in Outlook.

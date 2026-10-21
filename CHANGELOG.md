@@ -20,6 +20,15 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.39] — 2026-10-21
+
+### Fixed
+
+- Footer BB (blocked beacons) chip matched the fill colour for its border, so it looked wider than SL/BA/TS/NT. All chips now share one dark border and a fixed 78px cell with no letter-spacing (BUG-027).
+
+### Changed
+
+- Footer copyright reads `© 2026 Aliniant Labs` plus the suite version. Rescan to refresh footers.
 ## [1.5.38] — 2026-10-21
 
 ### Changed

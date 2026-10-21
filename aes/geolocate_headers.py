@@ -4471,21 +4471,22 @@ class HTMLReportGenerator:
         trust_bg, trust_fg = AES_CHIP_TRUSTED_BG, AES_CHIP_TRUSTED_FG
 
         def chip(url: str, code: str, bg: str, fg: str) -> str:
-            border = bg if bg != "#ffffff" else fg
+            # Same dark border on every chip. A border that matched the fill
+            # (blocked BB) made that chip look ~2px wider than the white ones.
+            # No letter-spacing: Outlook was also widening "BB" past the fixed
+            # width. Outer table is 78 so a 1px border still fits inside.
             href = html.escape(url, quote=True)
-            # One cell. The fill and the line are the same box, 16px tall.
-            # A VML shape was painting past that line; Outlook also adds the
-            # border outside the stated width, so the cell is 2px narrower.
+            border = AES_CHIP_FG
             return (
                 "<table border='0' cellpadding='0' cellspacing='0' width='78' align='center' "
-                "style='border-collapse:collapse;'>"
-                f"<tr><td bgcolor='{bg}' align='center' valign='middle' width='76' height='16' "
+                "style='border-collapse:collapse; width:78px;'>"
+                f"<tr><td bgcolor='{bg}' align='center' valign='middle' width='78' height='16' "
                 f"style='background:{bg}; border:1px solid {border}; "
-                f"width:76px; height:16px; line-height:16px; mso-line-height-rule:exactly; "
+                f"width:78px; height:16px; line-height:16px; mso-line-height-rule:exactly; "
                 f"text-align:center; padding:0; font-size:10px;'>"
                 f"<a href='{href}' "
                 f"style='color:{fg}; font-family:{AES_STRIP_FONT}; font-size:10px; "
-                f"font-weight:bold; letter-spacing:1px; line-height:16px; "
+                f"font-weight:bold; letter-spacing:0; line-height:16px; "
                 f"mso-line-height-rule:exactly; text-decoration:none;'>{code}</a>"
                 "</td></tr></table>"
             )
@@ -5716,8 +5717,13 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             letter_a = _footer_aes_letter_cell("A")
             letter_e = _footer_aes_letter_cell("E")
             letter_s = _footer_aes_letter_cell("S")
-        copy_plain = "© 2026 Aliniant Labs"
-        copy_html = "&#169; 2026 Aliniant Labs"
+        try:
+            from geofooter.version import VERSION as _aes_ver
+        except Exception:
+            _aes_ver = ""
+        _ver_bit = f" {_aes_ver}" if _aes_ver else ""
+        copy_plain = f"© 2026 Aliniant Labs{_ver_bit}"
+        copy_html = f"&#169; 2026 Aliniant Labs{_ver_bit}"
         copy_px = _footer_text_px(copy_plain, 11, italic=False)
         copy_w = copy_px + 16
         copy_font = (

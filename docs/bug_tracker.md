@@ -33,6 +33,27 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-028 — Footer top summary row is about 5px taller than the other rows
+
+- **Severity:** S4
+- **Area:** AES
+- **Status:** open
+- **Reported:** 2026-10-21
+- **Summary:** After the compact strip work, the top summary row (title + risk chips + quip) still reads about 5px taller than the middle and bottom rows.
+- **Repro:** Rescan a message and compare the three strip rows in Outlook.
+- **Workaround:** None.
+
+### BUG-027 — Blocked BB quick-action chip rendered wider than SL/BA/TS/NT
+
+- **Severity:** S4
+- **Area:** AES
+- **Status:** fixed (pending rescan)
+- **Reported:** 2026-10-21
+- **Summary:** With beacons blocked, the red BB chip looked wider than the white chips. Screenshot measure: white chips 77px, BB 79px. The blocked chip used a border the same colour as its fill, so the fill read full-width while white chips had a dark inset border; letter-spacing also let Outlook widen "BB".
+- **Repro:** Block beacons on a message and compare BB with BA/TS in the footer.
+- **Workaround:** None.
+- **Fixed in:** 1.5.39. Every chip uses the same dark border, fixed 78px cell, and no letter-spacing. Copyright line also shows the suite version.
+
 ### BUG-026 — Footer-mark follow-up job flattened a mail to plain text
 
 - **Severity:** S2

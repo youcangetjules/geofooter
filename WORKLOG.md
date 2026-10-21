@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.53: Vertically centre the footer quip
+
+- `aes/geolocate_headers.py`: quip wrapped in `<span style='mso-text-raise:2px'>`. The 11px quip shared the 12px title's baseline, so it sat low (Word render: cap-to-baseline midpoint 20 vs row centre 16.5 render px; now 17). Moving padding under the quip cell made the row 3px taller instead, so that was reverted.
+- Follow-up: rescan (Python only).
+
 ### 2026-10-21 — 1.5.52: Centre footer rows on the strip; centre AURA lettering
 
 - `aes/geolocate_headers.py`: new `strip_row` helper. Each row is one content cell holding a two-cell table: a centre cell padded on the left by the right-hand width less the logo column, and a fixed-width right cell. Rows 1 and 2 share one side width (quip or AURA chip, whichever is wider); row 3 uses the copyright width. Rule rows drop `colspan='3'`. BUG-033.

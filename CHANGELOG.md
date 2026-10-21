@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.53] — 2026-10-21
+
+### Changed
+
+- Footer quip (top row, right) is raised 2px so it sits in the middle of the row instead of on the rule below. Rescan to refresh footers.
+
 ## [1.5.52] — 2026-10-21
 
 ### Fixed

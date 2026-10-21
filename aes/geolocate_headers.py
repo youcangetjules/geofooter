@@ -5804,7 +5804,10 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"style='white-space:nowrap; text-align:right; color:{risk_color}; "
             f"font-family:{AES_STRIP_FONT}; font-size:11px; font-style:italic; "
             f"font-weight:normal; line-height:16px; mso-line-height-rule:exactly;'>"
-            f"{quip}</td>"
+            # The 11px quip shares the 12px title's baseline, so it read as
+            # sitting low in the row. Word raises it within the exact 16px line;
+            # padding instead made the row taller.
+            f"<span style='mso-text-raise:2px;'>{quip}</span></td>"
             f"<td width='16' style='width:16px; font-size:1px; line-height:1px;'>&nbsp;</td>"
             f"</tr></table>"
         )

@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.13] — 2026-10-21
+
+### Fixed
+
+- **GURI no longer jumps to the front** while you are in Outlook or another app. Focus is only taken when you open it from the tray, the ribbon (`--raise` / Aura), or on first launch. A bare second start of `gui.py` leaves the running window alone (BUG-022).
+
 ## [1.5.12] — 2026-10-20
 
 ### Changed

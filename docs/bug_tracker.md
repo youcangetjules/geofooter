@@ -33,6 +33,16 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-022 — GURI window jumps to the front while other apps are in use
+
+- **Severity:** S3
+- **Area:** GURI
+- **Status:** fixed (restart GURI to pick up)
+- **Reported:** 2026-10-21
+- **Summary:** The main window stole focus from Outlook and other apps. A second start of `guri\gui.py` without `--raise` always sent `RAISE` over the single-instance socket, and `expand_to_screen` / `_force_window_foreground` called `ShowWindow(SW_SHOW)`, `BringWindowToTop` and `SetForegroundWindow` even when the window was already visible.
+- **Repro:** Leave GURI open in the background, work in Outlook; a launcher, script or second `gui.py` start without `--raise` pulls GURI forward.
+- **Fixed in:** 1.5.13. Focus is taken only for tray Open, ribbon `--raise` / Aura, or the first process start. Bare second starts send `PING` and leave focus alone. `ShowWindow(SW_SHOW)` is no longer called on an already-visible window.
+
 ### BUG-019 — AES actions in text-only (mitigated) mail cannot be clicked
 
 - **Severity:** S3

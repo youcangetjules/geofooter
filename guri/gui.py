@@ -8702,7 +8702,7 @@ Current Page: {self.current_page + 1}
         except Exception:
             pass
         try:
-            self.expand_to_screen()
+            self.expand_to_screen(steal_focus=True)
         except Exception:
             pass
 
@@ -13300,10 +13300,15 @@ Preview:
         """Open from the tray after the menu has fully dismissed."""
         # Longer defer than a single event-loop tick — Windows still holds
         # foreground ownership for a beat after the tray menu closes.
-        QTimer.singleShot(150, self.expand_to_screen)
+        QTimer.singleShot(150, lambda: self.expand_to_screen(steal_focus=True))
 
-    def expand_to_screen(self) -> None:
-        """Show the window and bring it forward, at the size the user left it."""
+    def expand_to_screen(self, *, steal_focus: bool = False) -> None:
+        """Show the window at the size the user left it.
+
+        Focus is only taken when ``steal_focus`` is True (tray Open, ribbon
+        ``--raise`` / Aura, or first launch). Quiet calls only restore
+        visibility without jumping ahead of Outlook or other apps (BUG-022).
+        """
         if getattr(self, "_expanding_to_screen", False):
             return
         self._expanding_to_screen = True
@@ -13312,11 +13317,14 @@ Preview:
             if state & Qt.WindowState.WindowMinimized:
                 self.setWindowState(state & ~Qt.WindowState.WindowMinimized)
             if not self.isVisible():
+                # show() without activate — Windows still may focus a brand-new
+                # window on first create; steal_focus covers intentional raises.
                 self.show()
-            self.raise_()
-            self.activateWindow()
-            # Soft foreground nudge only — no AttachThreadInput (can deadlock).
-            QTimer.singleShot(0, self._force_window_foreground)
+            if steal_focus:
+                self.raise_()
+                self.activateWindow()
+                # Soft foreground nudge only — no AttachThreadInput (can deadlock).
+                QTimer.singleShot(0, self._force_window_foreground)
             # AES ribbon / second launch: refresh Welcome so it does not look stuck.
             QTimer.singleShot(200, self._request_ui_refresh_from_raise)
         finally:
@@ -13325,7 +13333,7 @@ Preview:
             )
 
     def _force_window_foreground(self) -> None:
-        """Bring the main window to the front (safe Windows tray restore)."""
+        """Bring the main window to the front (tray Open / explicit --raise only)."""
         try:
             self.raise_()
             self.activateWindow()
@@ -13340,8 +13348,10 @@ Preview:
                 return
 
             SW_RESTORE = 9
-            SW_SHOW = 5
-            user32.ShowWindow(hwnd, SW_RESTORE if user32.IsIconic(hwnd) else SW_SHOW)
+            # Only restore when minimized. ShowWindow(SW_SHOW) on an already-
+            # visible window steals focus from whatever the user is doing.
+            if user32.IsIconic(hwnd):
+                user32.ShowWindow(hwnd, SW_RESTORE)
             user32.BringWindowToTop(hwnd)
             if user32.SetForegroundWindow(hwnd):
                 return
@@ -13417,9 +13427,10 @@ Preview:
 def main():
     """Main function to run the GUI application.
 
-    AES / second launches pass ``--raise`` (or any second start): if GURI is
-    already running, bring it to the foreground and exit; otherwise start it.
-    ``--aura`` opens the Aura (data-broker removal) tab.
+    AES / ribbon pass ``--raise`` (or ``--aura``): if GURI is already running,
+    bring it to the foreground and exit; otherwise start it. A bare second
+    start without those flags only pings the running instance and leaves focus
+    alone (BUG-022). ``--aura`` opens the Aura (data-broker removal) tab.
     """
     try:
         from geofooter.paths import get_install_root, set_install_root, user_data_dir
@@ -13446,7 +13457,13 @@ def main():
         sock.connectToServer(instance_key)
         if not sock.waitForConnected(400):
             return False
-        msg = b"AURA\n" if want_aura else b"RAISE\n"
+        if want_aura:
+            msg = b"AURA\n"
+        elif want_raise:
+            msg = b"RAISE\n"
+        else:
+            # Already running — do not steal focus from Outlook / other apps.
+            msg = b"PING\n"
         sock.write(msg)
         sock.flush()
         sock.waitForBytesWritten(800)
@@ -13508,14 +13525,15 @@ def main():
                     conn.waitForReadyRead(250)
                 raw = bytes(conn.readAll()).decode("utf-8", "ignore")
             except Exception:
-                raw = "RAISE"
+                raw = "PING"
             upper = raw.upper()
             if "PUSH" in upper:
                 window.note_aes_push()
             elif "AURA" in upper or "BROKER" in upper:
                 window.show_aura_tab()
-            elif "RAISE" in upper or not raw.strip():
-                window.expand_to_screen()
+            elif "RAISE" in upper:
+                window.expand_to_screen(steal_focus=True)
+            # PING / empty: acknowledge the second start, leave focus alone.
 
         conn.readyRead.connect(_handle)
         # Peer often writes+disconnects before readyRead is wired; short defer.
@@ -13523,9 +13541,10 @@ def main():
 
     server.newConnection.connect(_on_instance_connection)
 
-    window.expand_to_screen()
+    # First process start: show the window and take focus once.
+    window.expand_to_screen(steal_focus=True)
     if want_raise:
-        QTimer.singleShot(0, window.expand_to_screen)
+        QTimer.singleShot(0, lambda: window.expand_to_screen(steal_focus=True))
     if want_aura:
         QTimer.singleShot(0, window.show_aura_tab)
 

@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.13: Stop GURI stealing focus (BUG-022)
+
+- `guri/gui.py` `expand_to_screen(steal_focus=...)`: `raise_` / `activateWindow` / `_force_window_foreground` only when `steal_focus=True` (tray Open, ribbon `--raise` / Aura, first start). Single-instance IPC: bare second starts send `PING` instead of always `RAISE`; failed reads default to `PING`. `_force_window_foreground` no longer calls `ShowWindow(SW_SHOW)` on an already-visible window.
+- Follow-up: restart GURI so the running process picks this up.
+
 ### 2026-10-20 — 1.5.12: Holding image fills the viewport height
 
 - `index.html`: `--scene-h: min(100vh - text band, width-limited height from 1024/939 aspect)`. The stage and image use that height; paw trails stretch with it. On phones the reserved text band is a little taller.

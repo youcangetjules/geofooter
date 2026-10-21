@@ -20,6 +20,11 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.22] — 2026-10-21
+
+### Fixed
+
+- RDAP registrant geo: assign `objects` from a single `data.get` then narrow with `isinstance`, so it is never typed as `None` before `.get`.
 ## [1.5.21] — 2026-10-21
 
 ### Fixed

@@ -7650,7 +7650,8 @@ Sender: {sender} | Domain: {domain} | Created: {created}</div>
     @staticmethod
     def _rdap_registrant_geo(data: Dict[str, Any]) -> Tuple[str, str, str]:
         """Pull registrant name + city/country from RDAP entity contacts."""
-        objects = data.get("objects") if isinstance(data.get("objects"), dict) else {}
+        raw_objects = data.get("objects")
+        objects: Dict[str, Any] = raw_objects if isinstance(raw_objects, dict) else {}
         entity_ids = list(data.get("entities") or [])
         # Prefer explicit registrant handles, then any object with role registrant.
         ordered: List[str] = []

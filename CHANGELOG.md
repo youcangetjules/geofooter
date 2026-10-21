@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.17] — 2026-10-21
+
+### Changed
+
+- Footer **A / E / S** letters are larger (22px, up from 17px). Colour and position are unchanged.
+
 ## [1.5.16] — 2026-10-21
 
 ### Fixed

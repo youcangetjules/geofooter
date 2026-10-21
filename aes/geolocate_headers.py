@@ -592,11 +592,11 @@ AES_STRIP_RULE = "#606d79"
 AES_STRIP_DOT = "#3ecf8e"
 AES_STRIP_FONT = "Segoe UI, Arial, sans-serif"
 # Stacked A/E/S at the left end of the strip rules, a little lighter than the
-# strip background. 17px is the 12px strip text plus 4pt.
+# strip background.
 AES_STRIP_AES_COLOR = "#5a6671"
 AES_STRIP_AES_FONT = "Montserrat, 'Segoe UI', Arial, sans-serif"
-AES_STRIP_AES_SIZE = 17
-AES_STRIP_AES_COL = 18
+AES_STRIP_AES_SIZE = 22
+AES_STRIP_AES_COL = 22
 # Outlook drops padding on a div. This row is the gap above the strip.
 AES_FOOTER_GAP_HTML = (
     "<table border='0' cellpadding='0' cellspacing='0' width='100%' "
@@ -639,7 +639,7 @@ def _footer_aes_letter_cell(letter: str) -> str:
         f"color:{AES_STRIP_AES_COLOR};'>"
         f"<font color='{AES_STRIP_AES_COLOR}' face='Montserrat, Segoe UI, Arial, sans-serif' "
         f"style='color:{AES_STRIP_AES_COLOR}; font-family:{AES_STRIP_AES_FONT}; "
-        f"font-size:{size}px; font-weight:700; line-height:{size + 3}px; "
+        f"font-size:{size}px; font-weight:700; line-height:{size}px; "
         f"mso-line-height-rule:exactly;'><b>{letter}</b></font></td>"
     )
 

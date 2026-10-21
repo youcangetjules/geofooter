@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.17: Larger footer A/E/S letters
+
+- `aes/geolocate_headers.py`: `AES_STRIP_AES_SIZE` goes from 17 to 22. The column (`AES_STRIP_AES_COL`) widens from 18 to 22 to fit, and the row centring picks that up through `logo_col`. Line-height now equals the font size, so the rows are no taller than the 26px text rows.
+- Follow-up: rescan a message to refresh its footer.
+
 ### 2026-10-21 — 1.5.16: Centre the footer summary rows
 
 - `aes/geolocate_headers.py`: row 1 drops its `left_top` spacer table and gets `padding-left: 16 + fill_px` on a `colspan=2` centre cell. Outlook was not holding the empty spacer at its width. Row 2 gets `padding-right: 16 + logo_col` so it balances the logo and A/E/S column. Row 3 (quick actions, BB centred) is unchanged. BUG-024.

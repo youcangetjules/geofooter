@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.32] — 2026-10-21
+
+### Changed
+
+- Footer strip is as short as its content allows: 62px, down from about 84px. The text is unchanged. Rows are 20px each, and the orange mark is scaled to fit them.
+- **A / E / S** are now crisp Montserrat Bold images, 4px from the top and bottom of each row. Outlook can no longer pad them or stretch the rows (BUG-025). Re-import MSCANModule1 so new footers attach them directly; until then, the scan's follow-up step attaches them.
 ## [1.5.31] — 2026-10-21
 
 ### Changed

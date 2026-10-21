@@ -591,16 +591,20 @@ AES_STRIP_MUTED = "#d5dee4"
 AES_STRIP_RULE = "#606d79"
 AES_STRIP_DOT = "#3ecf8e"
 AES_STRIP_FONT = "Segoe UI, Arial, sans-serif"
+# Strip rows are 20px: 16px text + 2px padding, or the 18px chips + 1px.
+# The mark (rowspan) must fit 3 rows + 2 rules, or it stretches the strip.
+AES_STRIP_ROW_H = 20
+AES_STRIP_MARK_H = 3 * AES_STRIP_ROW_H + 2 - 6  # 56, with 3px above and below
+AES_STRIP_MARK_W = 59  # brand A is 256x242
+AES_STRIP_MARK_CELL_W = 12 + AES_STRIP_MARK_W + 4
 # Stacked A/E/S at the left end of the strip rules, a little lighter than the
-# strip background. Sized to fill the summary row (5+16+5) with a 3px inset so
-# the strip height does not grow; Outlook gets pt + HTML size as well as px.
+# strip background. They are images (scripts/build_footer_strip_images.py):
+# Word pads text rows to the font's line spacing, so text letters could not sit
+# 4px from the row edges.
 AES_STRIP_AES_COLOR = "#5a6671"
-AES_STRIP_AES_FONT = "Montserrat, 'Segoe UI', Arial, sans-serif"
-AES_STRIP_ROW_H = 26  # matches summary cells: pad 5 + line 16 + pad 5
-AES_STRIP_AES_INSET = 3
-AES_STRIP_AES_SIZE = AES_STRIP_ROW_H - 2 * AES_STRIP_AES_INSET  # 20
-AES_STRIP_AES_COL = 20
-AES_STRIP_AES_HTML_SIZE = 5  # HTML <font size> 1–7 (~18pt); 6 was stretching rows
+AES_STRIP_AES_INSET = 4
+AES_STRIP_LETTER_H = AES_STRIP_ROW_H - 2 * AES_STRIP_AES_INSET  # 12
+AES_STRIP_AES_COL = 16
 # Outlook drops padding on a div. This row is the gap above the strip.
 AES_FOOTER_GAP_HTML = (
     "<table border='0' cellpadding='0' cellspacing='0' width='100%' "
@@ -621,38 +625,47 @@ def _footer_mark_html() -> str:
         return ""
     if not path.is_file():
         return ""
+    w, h = AES_STRIP_MARK_W, AES_STRIP_MARK_H
     return (
         f"<!-- AES-Mark-Img: {path} -->"
-        f"<img src='cid:aesfootermark' width='75' height='72' alt='' "
-        f"style='display:block; border:0; outline:none; width:75px; height:72px;' />"
+        f"<img src='cid:aesfootermark' width='{w}' height='{h}' alt='' "
+        f"style='display:block; border:0; outline:none; width:{w}px; height:{h}px;' />"
     )
 
 
 def _footer_aes_letter_cell(letter: str) -> str:
     """One of A / E / S on a content row, flush with the left end of the rules.
 
-    Fills the row height minus a 3px inset so the strip stays the same height as
-    the summary text rows. Colour is on a <font> tag too: Outlook drops span
-    colours here and painted the letters black.
+    The letter image is the row height less 4px above and below; VBA attaches
+    it from the AES-Inline-Img marker. Empty cell if the image is missing.
     """
-    size = AES_STRIP_AES_SIZE
-    size_pt = max(1, round(size * 0.75))
     inset = AES_STRIP_AES_INSET
-    row_h = AES_STRIP_ROW_H
-    return (
-        f"<td width='{AES_STRIP_AES_COL}' height='{row_h}' align='left' valign='middle' "
+    cell_open = (
+        f"<td width='{AES_STRIP_AES_COL}' align='left' valign='middle' "
         f"bgcolor='{AES_STRIP_BG}' "
-        f"style='width:{AES_STRIP_AES_COL}px; height:{row_h}px; padding:{inset}px 0; "
+        f"style='width:{AES_STRIP_AES_COL}px; padding:{inset}px 0; "
         f"background:{AES_STRIP_BG}; text-align:left; vertical-align:middle; "
-        f"color:{AES_STRIP_AES_COLOR}; font-size:{size}px; font-size:{size_pt}pt; "
-        f"line-height:{size}px; mso-line-height-rule:exactly;'>"
-        f"<font color='{AES_STRIP_AES_COLOR}' size='{AES_STRIP_AES_HTML_SIZE}' "
-        f"face='Montserrat, Segoe UI, Arial, sans-serif' "
-        f"style='color:{AES_STRIP_AES_COLOR}; font-family:{AES_STRIP_AES_FONT}; "
-        f"font-size:{size}px; font-size:{size_pt}pt; font-weight:700; "
-        f"line-height:{size}px; mso-line-height-rule:exactly;'>"
-        f"<b style='font-size:{size}px; font-size:{size_pt}pt; "
-        f"line-height:{size}px;'>{letter}</b></font></td>"
+        f"font-size:1px; line-height:{AES_STRIP_LETTER_H}px; "
+        f"mso-line-height-rule:exactly;'>"
+    )
+    try:
+        from geofooter.paths import get_install_root
+        from PIL import Image
+
+        name = f"aes_mark_letter_{letter.lower()}"
+        path = get_install_root() / "assets" / "icons" / f"{name}.png"
+        with Image.open(path) as im:
+            px_w, px_h = im.size
+    except Exception:
+        return f"{cell_open}&nbsp;</td>"
+    h = AES_STRIP_LETTER_H
+    w = max(1, round(px_w * h / px_h))
+    cid = name.replace("_", "")
+    return (
+        f"{cell_open}<!-- AES-Inline-Img: {cid}|{path} -->"
+        f"<img src='cid:{cid}' width='{w}' height='{h}' alt='{letter}' "
+        f"style='display:block; border:0; outline:none; width:{w}px; height:{h}px;' />"
+        f"</td>"
     )
 
 
@@ -5650,7 +5663,8 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         )
         # A 1px cell. Outlook drops a div border, so the line has to be the
         # cell background. Inset 16px, same width between every row.
-        row_pad = "5px 16px"
+        # Every row is AES_STRIP_ROW_H: 16px text + 2px, or 18px chips + 1px.
+        row_pad = "1px 16px"
         mark = _footer_mark_html()
         aes_letters = bool(mark)
         # With the A/E/S column, each rule starts at that column's left edge so
@@ -5674,12 +5688,12 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         # text stays centred on the full strip.
         quip_px = _footer_text_px(quip, 11, italic=True)
         right_w = quip_px + 16
-        logo_col = (91 + AES_STRIP_AES_COL) if mark else 0
+        logo_col = (AES_STRIP_MARK_CELL_W + AES_STRIP_AES_COL) if mark else 0
         fill_px = max(0, right_w - logo_col)
         # Rows 1 and 2 balance the side blocks with td padding: Outlook does not
         # hold an empty spacer table at its width, which pushed row 1 left.
-        top_pad = f"5px 16px 5px {16 + fill_px}px"
-        mid_pad = f"5px {16 + logo_col}px 5px 16px"
+        top_pad = f"2px 16px 2px {16 + fill_px}px"
+        mid_pad = f"2px {16 + logo_col}px 2px 16px"
         right_top = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='{right_w}' "
             f"align='right' style='width:{right_w}px; border-collapse:collapse;'><tr>"
@@ -5695,8 +5709,9 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         letter_a = letter_e = letter_s = ""
         if mark:
             logo_cell = (
-                f"<td rowspan='5' width='91' valign='middle' bgcolor='{AES_STRIP_BG}' "
-                f"style='width:91px; padding:6px 4px 6px 12px; background:{AES_STRIP_BG};'>"
+                f"<td rowspan='5' width='{AES_STRIP_MARK_CELL_W}' valign='middle' "
+                f"bgcolor='{AES_STRIP_BG}' style='width:{AES_STRIP_MARK_CELL_W}px; "
+                f"padding:3px 4px 3px 12px; background:{AES_STRIP_BG};'>"
                 f"{mark}</td>"
             )
             letter_a = _footer_aes_letter_cell("A")
@@ -5732,7 +5747,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"font-weight:bold; letter-spacing:0.3px; line-height:16px; "
             f"mso-line-height-rule:exactly; vertical-align:middle;'>{summary_line1}</td>"
             f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:4px 0;'>{right_top}</td>"
+            f"style='background:{AES_STRIP_BG}; padding:2px 0;'>{right_top}</td>"
             f"</tr>"
             f"{rule_row}"
             f"<tr>"
@@ -5740,17 +5755,18 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"<td colspan='3' align='center' bgcolor='{AES_STRIP_BG}' "
             f"style='padding:{mid_pad}; text-align:center; background:{AES_STRIP_BG}; "
             f"color:{AES_STRIP_MUTED}; font-family:{AES_STRIP_FONT}; font-size:12px; "
-            f"font-weight:normal; line-height:1.5;'>{summary_line2}</td></tr>"
+            f"font-weight:normal; line-height:16px; mso-line-height-rule:exactly;'>"
+            f"{summary_line2}</td></tr>"
             f"{rule_row}"
             f"<tr>"
             f"{letter_s}"
             f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:4px 0;'>{left_copy}</td>"
+            f"style='background:{AES_STRIP_BG}; padding:2px 0;'>{left_copy}</td>"
             f"<td align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
             f"style='background:{AES_STRIP_BG}; padding:{row_pad}; text-align:center;'>"
             f"{quick_actions}</td>"
             f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:4px 0;'>{right_copy}</td>"
+            f"style='background:{AES_STRIP_BG}; padding:2px 0;'>{right_copy}</td>"
             f"</tr>"
             f"</table>"
         )
@@ -8424,40 +8440,55 @@ def _embed_footer_mark_job(job_path: str) -> None:
         return
 
     cid_prop = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
+    attached: Set[str] = set()
     try:
         for i in range(1, int(item.Attachments.Count) + 1):
             att = item.Attachments.Item(i)
-            name = str(getattr(att, "FileName", "") or "").lower()
-            cid = ""
             try:
                 cid = str(att.PropertyAccessor.GetProperty(cid_prop) or "").strip("<>").lower()
             except Exception:
                 cid = ""
-            if cid == "aesfootermark" or name.startswith("aes_mark_footer"):
-                _mark_log(f"mark already attached ({name or cid})")
-                return
+            if cid:
+                attached.add(cid)
     except Exception:
         pass
 
-    # aes_mark_ not aes_status_: the banner refresh deletes aes_status_* files.
-    tmp = Path(tempfile.gettempdir()) / "aes_mark_footer.png"
-    shutil.copyfile(src, tmp)
+    # The mark plus every AES-Inline-Img letter the footer references. Files
+    # are aes_mark_*, not aes_status_*: the banner refresh deletes aes_status_*.
+    wanted: List[Tuple[str, Path]] = [("aesfootermark", src)]
     try:
-        att = item.Attachments.Add(str(tmp), 1, 0, "aes_mark_footer.png")
-        att.PropertyAccessor.SetProperty(cid_prop, "aesfootermark")
-        try:
-            att.PropertyAccessor.SetProperty(
-                "http://schemas.microsoft.com/mapi/proptag/0x370E001F", "image/png"
-            )
-            att.PropertyAccessor.SetProperty(
-                "http://schemas.microsoft.com/mapi/proptag/0x7FFE000B", True
-            )
-        except Exception:
-            pass
+        body = str(item.HTMLBody or "")
+    except Exception:
+        body = ""
+    # Word may drop the comment markers from the saved body; the cid refs stay.
+    for letter in sorted(set(re.findall(r"cid:aesmarkletter([a-z])", body, re.I))):
+        wanted.append(
+            (f"aesmarkletter{letter.lower()}", src.with_name(f"aes_mark_letter_{letter.lower()}.png"))
+        )
+    missing = [(cid, path) for cid, path in wanted if cid not in attached and path.is_file()]
+    if not missing:
+        _mark_log("mark and letters already attached")
+        return
+
+    try:
+        for cid, path in missing:
+            tmp = Path(tempfile.gettempdir()) / path.name
+            shutil.copyfile(path, tmp)
+            att = item.Attachments.Add(str(tmp), 1, 0, path.name)
+            att.PropertyAccessor.SetProperty(cid_prop, cid)
+            try:
+                att.PropertyAccessor.SetProperty(
+                    "http://schemas.microsoft.com/mapi/proptag/0x370E001F", "image/png"
+                )
+                att.PropertyAccessor.SetProperty(
+                    "http://schemas.microsoft.com/mapi/proptag/0x7FFE000B", True
+                )
+            except Exception:
+                pass
         html = str(item.HTMLBody or "")
         item.HTMLBody = html
         item.Save()
-        _mark_log(f"attached mark to {subject!r}")
+        _mark_log(f"attached {', '.join(c for c, _ in missing)} to {subject!r}")
     except Exception as exc:
         _mark_log(f"attach failed: {exc}")
         logging.getLogger("geolocate").warning("Footer mark attach failed", exc_info=True)

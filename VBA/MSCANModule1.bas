@@ -36,6 +36,9 @@ Private Const AES_BANNER_FILE_PREFIX As String = "aes_status_"
 Private Const AES_MARK_CID As String = "aesfootermark"
 Private Const AES_MARK_MARKER As String = "<!-- AES-Mark-Img: "
 Private Const AES_MARK_FILE_PREFIX As String = "aes_mark_"
+' Extra footer images (A/E/S letters): "<!-- AES-Inline-Img: cid|path -->".
+' Files must start with aes_mark_ so the mark cleanup also removes them.
+Private Const AES_INLINE_MARKER As String = "<!-- AES-Inline-Img: "
 ' Compact auto-scan still needs body for link/beacon counts, but reading huge
 ' HTMLBody on the UI thread freezes Outlook - cap the sidecar write.
 Private Const AES_COMPACT_BODY_CAP As Long = 400000
@@ -3300,6 +3303,9 @@ Private Function EmbedAesFooterMark(ByVal mail As Object, ByVal footerHtml As St
     Err.Clear
     On Error GoTo ErrHandler
 
+    stage = "inline images"
+    EmbedAesInlineImages mail, footerHtml
+
     EmbedAesFooterMark = Replace(footerHtml, "file:///" & Replace(pngPath, "\", "/"), "cid:" & AES_MARK_CID, 1, -1, vbTextCompare)
     Exit Function
 ErrHandler:
@@ -3308,6 +3314,50 @@ ErrHandler:
     If Not att Is Nothing Then att.Delete
     EmbedAesFooterMark = footerHtml
 End Function
+
+' Attach every AES-Inline-Img marker in the footer under its own Content-ID.
+' Runs after EmbedAesFooterMark has removed the previous aes_mark_* files.
+Private Sub EmbedAesInlineImages(ByVal mail As Object, ByVal footerHtml As String)
+    Const PR_ATTACH_CONTENT_ID As String = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
+    Const PR_ATTACH_MIME_TAG As String = "http://schemas.microsoft.com/mapi/proptag/0x370E001F"
+
+    Dim fso As Object
+    Dim att As Object
+    Dim s As Long
+    Dim e As Long
+    Dim bar As Long
+    Dim spec As String
+    Dim cid As String
+    Dim pngPath As String
+
+    On Error GoTo ErrHandler
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    s = InStr(1, footerHtml, AES_INLINE_MARKER, vbTextCompare)
+    Do While s > 0
+        s = s + Len(AES_INLINE_MARKER)
+        e = InStr(s, footerHtml, "-->")
+        If e = 0 Then Exit Do
+        spec = Trim$(Mid$(footerHtml, s, e - s))
+        bar = InStr(1, spec, "|")
+        If bar > 1 Then
+            cid = Left$(spec, bar - 1)
+            pngPath = Mid$(spec, bar + 1)
+            If fso.FileExists(pngPath) Then
+                Set att = mail.Attachments.Add(pngPath, olByValue, 0, fso.GetFileName(pngPath))
+                att.PropertyAccessor.SetProperty PR_ATTACH_CONTENT_ID, cid
+                On Error Resume Next
+                att.PropertyAccessor.SetProperty PR_ATTACH_MIME_TAG, "image/png"
+                Err.Clear
+                On Error GoTo ErrHandler
+                Set att = Nothing
+            End If
+        End If
+        s = InStr(e, footerHtml, AES_INLINE_MARKER, vbTextCompare)
+    Loop
+    Exit Sub
+ErrHandler:
+    MSCANModLogging.WriteLog "EmbedAesInlineImages failed for '" & cid & "': #" & Err.Number & " - " & Err.Description
+End Sub
 
 Private Function InjectAesTopBanner(ByVal bodyHtml As String, ByVal bannerHtml As String) As String
     On Error Resume Next

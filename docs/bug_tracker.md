@@ -33,6 +33,17 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-025 — Footer strip taller than its text; A/E/S could not sit close to the row edges
+
+- **Severity:** S4
+- **Area:** AES / VBA
+- **Status:** fixed (pending VBA re-import of `MSCANModule1` + rescan)
+- **Reported:** 2026-10-21
+- **Summary:** The text-based A/E/S letters picked up Outlook's minimum line spacing. Making them bigger made the rows taller, and they could never get within a few px of the row edges. The strip also had a minimum height of about 84px from the 72px mark plus 12px padding, even though the text needs far less.
+- **Repro:** Scan a message, then compare the footer strip height with its three text rows.
+- **Workaround:** None.
+- **Fixed in:** 1.5.32. The letters are now 12px images (`assets/icons/aes_mark_letter_*.png`, from `scripts/build_footer_strip_images.py`) with 4px padding in 20px rows. The rows have tighter padding (16px text plus 2px; chips 18px plus 1px), and the mark is 59x56, so the strip is 62px. VBA `EmbedAesInlineImages` attaches the letters from `AES-Inline-Img` markers. The Python follow-up job also attaches any that are missing, so they appear before the re-import.
+
 ### BUG-024 — Footer summary rows are not centred on the strip
 
 - **Severity:** S4

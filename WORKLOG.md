@@ -13,6 +13,14 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.32: Compact footer strip with image A/E/S
+
+- `aes/geolocate_headers.py`: rows locked to `AES_STRIP_ROW_H` 20px (text padding 2px, chip row 1px, side cells 2px; sender line `line-height:16px` exactly). Mark is 59x56 with 3px padding, so it fits 3 rows plus 2 rules (62px) and no longer sets the strip height. `_footer_aes_letter_cell` emits a 12px letter image with 4px padding and an `AES-Inline-Img: cid|path` marker. `_embed_footer_mark_job` attaches the mark and any missing `cid:aesmarkletter*` images.
+- `scripts/build_footer_strip_images.py`: renders `aes_mark_footer.png` (2x, from `assets/brand/abyitself.ico`) and `aes_mark_letter_{a,e,s}.png` (Montserrat Bold, cropped to ink, 2x).
+- `VBA/MSCANModule1.bas`: new `EmbedAesInlineImages`, called from `EmbedAesFooterMark` after the old `aes_mark_*` cleanup. ASCII/CRLF.
+- Checked in headless Edge: the strip is 62px. BUG-025.
+- Follow-up: re-import `MSCANModule1`; rescan a message.
+
 ### 2026-10-21 — 1.5.31: A/E/S fill the row without growing the strip
 
 - `aes/geolocate_headers.py`: drop the 32px / `size=6` stretch. Row height locked to 26px (same as summary `5+16+5`); letters are 20px with a 3px inset and `mso-line-height-rule:exactly`. HTML `size=5` kept so Outlook still paints them larger than body text.

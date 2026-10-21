@@ -20,6 +20,16 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.14] — 2026-10-21
+
+### Fixed
+
+- Footer strip banding from re-processing: same-colour ghost spacer text is gone, and the orange A mark tile has a solid slate background (BUG-023).
+
+### Added
+
+- **A / E / S** beside the footer mark, one letter per content row, in Montserrat Bold at a grey just off the strip background.
+
 ## [1.5.13] — 2026-10-21
 
 ### Fixed

@@ -33,6 +33,15 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-023 — Footer strip shows banding after re-processing; A/E/S mark letters
+
+- **Severity:** S3
+- **Area:** AES
+- **Status:** fixed (rescan to refresh footers)
+- **Reported:** 2026-10-21
+- **Summary:** After footer re-processing, the slate strip showed vertical smear / noise. Same-colour "ghost" balancing text (`left_top` / `left_copy`) was being painted by Outlook's Word renderer, and `aes_mark_footer.png` had non-solid background pixels. Operator also wanted A, E, S in Montserrat Bold beside the orange A, on the three content rows (just off the strip grey).
+- **Fixed in:** 1.5.14. Ghost text replaced with empty spacers; mark PNG background solidified to `#46525c`; A/E/S column added (`font-family: Montserrat`, weight 700, colour `#55616b`).
+
 ### BUG-022 — GURI window jumps to the front while other apps are in use
 
 - **Severity:** S3

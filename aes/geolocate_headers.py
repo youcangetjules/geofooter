@@ -591,6 +591,10 @@ AES_STRIP_MUTED = "#d5dee4"
 AES_STRIP_RULE = "#606d79"
 AES_STRIP_DOT = "#3ecf8e"
 AES_STRIP_FONT = "Segoe UI, Arial, sans-serif"
+# Stacked A/E/S beside the orange mark — just off the strip background.
+AES_STRIP_AES_COLOR = "#55616b"
+AES_STRIP_AES_FONT = "Montserrat, 'Segoe UI', Arial, sans-serif"
+AES_STRIP_AES_COL = 18
 # Outlook drops padding on a div. This row is the gap above the strip.
 AES_FOOTER_GAP_HTML = (
     "<table border='0' cellpadding='0' cellspacing='0' width='100%' "
@@ -615,6 +619,41 @@ def _footer_mark_html() -> str:
         f"<!-- AES-Mark-Img: {path} -->"
         f"<img src='cid:aesfootermark' width='75' height='72' alt='' "
         f"style='display:block; border:0; outline:none; width:75px; height:72px;' />"
+    )
+
+
+def _footer_aes_letter_cell(letter: str) -> str:
+    """One of A / E / S beside the mark, on a content row (Montserrat Bold)."""
+    return (
+        f"<td width='{AES_STRIP_AES_COL}' align='center' valign='middle' "
+        f"bgcolor='{AES_STRIP_BG}' "
+        f"style='width:{AES_STRIP_AES_COL}px; padding:0 2px 0 0; "
+        f"background:{AES_STRIP_BG}; text-align:center; vertical-align:middle;'>"
+        f"<span style='color:{AES_STRIP_AES_COLOR}; font-family:{AES_STRIP_AES_FONT}; "
+        f"font-size:12px; font-weight:700; line-height:16px; "
+        f"mso-line-height-rule:exactly;'>{letter}</span></td>"
+    )
+
+
+def _footer_aes_rule_cell() -> str:
+    """Empty cell under the A/E/S column on a 1px rule row."""
+    return (
+        f"<td width='{AES_STRIP_AES_COL}' bgcolor='{AES_STRIP_BG}' "
+        f"style='width:{AES_STRIP_AES_COL}px; padding:0; background:{AES_STRIP_BG}; "
+        f"font-size:1px; line-height:1px;'>&nbsp;</td>"
+    )
+
+
+def _footer_spacer_cell(width_px: int) -> str:
+    """Fixed-width empty pad. Same-colour ghost text caused strip banding."""
+    w = max(0, int(width_px))
+    return (
+        f"<table border='0' cellpadding='0' cellspacing='0' width='{w}' "
+        f"align='left' style='width:{w}px; border-collapse:collapse;'><tr>"
+        f"<td width='{w}' height='16' bgcolor='{AES_STRIP_BG}' "
+        f"style='width:{w}px; height:16px; background:{AES_STRIP_BG}; "
+        f"font-size:1px; line-height:16px; mso-line-height-rule:exactly;'>"
+        f"&nbsp;</td></tr></table>"
     )
 
 
@@ -5592,35 +5631,32 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         )
         # A 1px cell. Outlook drops a div border, so the line has to be the
         # cell background. Inset 16px, same width between every row.
-        rule_row = (
-            f"<tr><td colspan='3' bgcolor='{AES_STRIP_BG}' style='padding:0 16px; "
+        row_pad = "5px 16px"
+        mark = _footer_mark_html()
+        aes_letters = bool(mark)
+        rule_inner = (
+            f"<td colspan='3' bgcolor='{AES_STRIP_BG}' style='padding:0 16px; "
             f"background:{AES_STRIP_BG}; font-size:1px; line-height:1px;'>"
             f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
             f"style='border-collapse:collapse;'>"
             f"<tr><td height='1' bgcolor='{AES_STRIP_RULE}' "
             f"style='height:1px; font-size:1px; line-height:1px; "
             f"background:{AES_STRIP_RULE}; mso-line-height-rule:exactly;'>"
-            f"&nbsp;</td></tr></table></td></tr>"
+            f"&nbsp;</td></tr></table></td>"
         )
-        row_pad = "5px 16px"
-        mark = _footer_mark_html()
+        rule_row = (
+            f"<tr>{_footer_aes_rule_cell() if aes_letters else ''}{rule_inner}</tr>"
+        )
         quip = html.escape(footer_quip(str(risk or ""), int(score or 0)))
-        # The logo is its own column, spanning every row. The column beside it
-        # is only as wide as the quip minus that logo, so the middle text stays
-        # centred on the full strip.
+        # The logo (+ optional A/E/S column) spans every row. The pad beside the
+        # logo is only as wide as the quip minus that left block, so the middle
+        # text stays centred on the full strip.
         quip_px = _footer_text_px(quip, 11, italic=True)
         right_w = quip_px + 16
-        logo_col = 91 if mark else 0
+        logo_col = (91 + AES_STRIP_AES_COL) if mark else 0
         fill_px = max(0, right_w - logo_col)
-        fill = html.escape(_footer_prefix_for_px(quip, fill_px, italic=True))
-        left_top = (
-            f"<table border='0' cellpadding='0' cellspacing='0' width='{fill_px}' "
-            f"align='left' style='width:{fill_px}px; border-collapse:collapse;'><tr>"
-            f"<td valign='middle' style='font-family:{AES_STRIP_FONT}; font-size:11px; "
-            f"font-style:italic; line-height:16px; white-space:nowrap; color:{AES_STRIP_BG};'>"
-            f"<span style='color:{AES_STRIP_BG};'>{fill}</span></td>"
-            f"</tr></table>"
-        )
+        # Empty spacers — same-colour ghost text was banding the strip in Outlook.
+        left_top = _footer_spacer_cell(fill_px)
         right_top = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='{right_w}' "
             f"align='right' style='width:{right_w}px; border-collapse:collapse;'><tr>"
@@ -5633,12 +5669,16 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"</tr></table>"
         )
         logo_cell = ""
+        letter_a = letter_e = letter_s = ""
         if mark:
             logo_cell = (
                 f"<td rowspan='5' width='91' valign='middle' bgcolor='{AES_STRIP_BG}' "
                 f"style='width:91px; padding:6px 4px 6px 12px; background:{AES_STRIP_BG};'>"
                 f"{mark}</td>"
             )
+            letter_a = _footer_aes_letter_cell("A")
+            letter_e = _footer_aes_letter_cell("E")
+            letter_s = _footer_aes_letter_cell("S")
         copy_plain = "© 2026 Aliniant Labs"
         copy_html = "&#169; 2026 Aliniant Labs"
         copy_px = _footer_text_px(copy_plain, 11, italic=False)
@@ -5647,14 +5687,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"font-family:{AES_STRIP_FONT}; font-size:11px; font-weight:normal; "
             f"white-space:nowrap; line-height:16px; mso-line-height-rule:exactly;"
         )
-        left_copy = (
-            f"<table border='0' cellpadding='0' cellspacing='0' width='{copy_w}' "
-            f"align='left' style='width:{copy_w}px; border-collapse:collapse;'><tr>"
-            f"<td width='16' style='width:16px; font-size:1px;'>&nbsp;</td>"
-            f"<td nowrap style='{copy_font} color:{AES_STRIP_BG};'>"
-            f"<span style='color:{AES_STRIP_BG};'>{copy_html}</span></td>"
-            f"</tr></table>"
-        )
+        left_copy = _footer_spacer_cell(copy_w)
         right_copy = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='{copy_w}' "
             f"align='right' style='width:{copy_w}px; border-collapse:collapse;'><tr>"
@@ -5669,6 +5702,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"border-collapse:collapse;'>"
             f"<tr>"
             f"{logo_cell}"
+            f"{letter_a}"
             f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
             f"style='background:{AES_STRIP_BG}; padding:4px 0;'>{left_top}</td>"
             f"<td align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
@@ -5680,12 +5714,15 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"style='background:{AES_STRIP_BG}; padding:4px 0;'>{right_top}</td>"
             f"</tr>"
             f"{rule_row}"
-            f"<tr><td colspan='3' align='center' bgcolor='{AES_STRIP_BG}' "
+            f"<tr>"
+            f"{letter_e}"
+            f"<td colspan='3' align='center' bgcolor='{AES_STRIP_BG}' "
             f"style='padding:{row_pad}; text-align:center; background:{AES_STRIP_BG}; "
             f"color:{AES_STRIP_MUTED}; font-family:{AES_STRIP_FONT}; font-size:12px; "
             f"font-weight:normal; line-height:1.5;'>{summary_line2}</td></tr>"
             f"{rule_row}"
             f"<tr>"
+            f"{letter_s}"
             f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
             f"style='background:{AES_STRIP_BG}; padding:4px 0;'>{left_copy}</td>"
             f"<td align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "

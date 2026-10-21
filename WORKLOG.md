@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.14: Footer AES letters (Montserrat Bold) and strip banding fix
+
+- `aes/geolocate_headers.py`: A/E/S column beside the mark (`Montserrat`, weight 700, `#55616b`), aligned to the three content rows; rule rows get an empty letter cell. Left-side balance pads are empty spacers (no same-colour ghost text). `assets/icons/aes_mark_footer.png` background cleaned to solid `#46525c`. BUG-023.
+- Follow-up: rescan a message to refresh its footer. Montserrat is used when installed (this PC has the variable font); otherwise Segoe UI.
+
 ### 2026-10-21 — 1.5.13: Stop GURI stealing focus (BUG-022)
 
 - `guri/gui.py` `expand_to_screen(steal_focus=...)`: `raise_` / `activateWindow` / `_force_window_foreground` only when `steal_focus=True` (tray Open, ribbon `--raise` / Aura, first start). Single-instance IPC: bare second starts send `PING` instead of always `RAISE`; failed reads default to `PING`. `_force_window_foreground` no longer calls `ShowWindow(SW_SHOW)` on an already-visible window.

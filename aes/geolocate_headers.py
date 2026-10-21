@@ -4796,6 +4796,8 @@ class HTMLReportGenerator:
     ) -> List[Any]:
         """Look up hop IPs, domains, links and attachment hashes; annotate them in place."""
         ti = threat_intel
+        if ti is None:
+            return []
         big_providers = ("google", "microsoft", "amazon", "mimecast")
 
         def fget(item: Any, key: str) -> Any:

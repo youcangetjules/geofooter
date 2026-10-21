@@ -20,6 +20,11 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.20] — 2026-10-21
+
+### Fixed
+
+- Threat intel path: `_run_threat_intel` returns early when the module failed to import, so type checkers no longer treat `ThreatIntel` / `registrable_domain` as attributes of `None`.
 ## [1.5.19] — 2026-10-21
 
 ### Fixed

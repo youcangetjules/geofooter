@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.20: Guard None threat_intel in _run_threat_intel
+
+- `aes/geolocate_headers.py`: early `if ti is None: return []` so the optional import is narrowed before `registrable_domain` / `ThreatIntel` / `PROVIDERS` use. Lint clean; module imports.
+
 ### 2026-10-21 — 1.5.19: Integer banner size in _render_status_banner_png
 
 - `aes/geolocate_headers.py`: `text_w` and `text_h` use `math.ceil` on the `textbbox` floats, so `Image.new` gets an int size (fixes the type error). Lint clean; test render was 720x28.

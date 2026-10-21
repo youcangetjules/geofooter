@@ -8423,10 +8423,7 @@ def _embed_footer_mark_job(job_path: str) -> None:
                 html = str(getattr(cand, "HTMLBody", "") or "")
             except Exception:
                 continue
-            low = html.lower()
-            # Wait for this scan's footer: the previous footer also has the
-            # mark cid but no letters, and matching it skipped the attach.
-            if "cid:aesfootermark" not in low or "cid:aesmarkletter" not in low:
+            if "cid:aesfootermark" not in html.lower():
                 continue
             fallback = cand
             got = _norm_mail_subject(str(getattr(cand, "Subject", "") or ""))
@@ -8456,22 +8453,13 @@ def _embed_footer_mark_job(job_path: str) -> None:
     except Exception:
         pass
 
-    # The mark plus every AES-Inline-Img letter the footer references. Files
-    # are aes_mark_*, not aes_status_*: the banner refresh deletes aes_status_*.
-    wanted: List[Tuple[str, Path]] = [("aesfootermark", src)]
-    try:
-        body = str(item.HTMLBody or "")
-    except Exception:
-        body = ""
-    # Word may drop the comment markers from the saved body; the cid refs stay.
-    for letter in sorted(set(re.findall(r"cid:aesmarkletter([a-z])", body, re.I))):
-        wanted.append(
-            (f"aesmarkletter{letter.lower()}", src.with_name(f"aes_mark_letter_{letter.lower()}.png"))
-        )
-    missing = [(cid, path) for cid, path in wanted if cid not in attached and path.is_file()]
-    if not missing:
-        _mark_log("mark and letters already attached")
+    # Mark only. VBA attaches the A/E/S letters itself (EmbedAesInlineImages).
+    # Attaching them here meant rewriting HTMLBody and saving from a second
+    # process; that raced a rescan and flattened the mail to plain text (BUG-026).
+    if "aesfootermark" in attached:
+        _mark_log("mark already attached")
         return
+    missing: List[Tuple[str, Path]] = [("aesfootermark", src)]
 
     try:
         for cid, path in missing:

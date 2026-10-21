@@ -33,6 +33,17 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-026 — Footer-mark follow-up job flattened a mail to plain text
+
+- **Severity:** S2
+- **Area:** AES
+- **Status:** fixed (1.5.34; no VBA re-import needed for the fix itself)
+- **Reported:** 2026-10-21
+- **Summary:** In 1.5.32/1.5.33 the out-of-process `_embed_footer_mark_job` attached the A/E/S letter images, then rewrote `HTMLBody` and saved the mail. On "Agency Isn't Authorization" (julian.garrett@aliniant.com, a non-Exchange store) the job saved at 14:58:20. The user's second rescan then hit "the message has been changed" at 14:58:47, left unsaved AES changes, and the item ended up `BodyFormat=plain` with no footer. Before 1.5.32 the job always stopped at "mark already attached", so it never wrote to the mail.
+- **Repro:** On 1.5.33, before re-importing `MSCANModule1`: Short Scan a mail, then rescan it within about 30 seconds.
+- **Workaround:** None for the damaged item locally. Check the copy in webmail or on the server, or re-download it.
+- **Fixed in:** 1.5.34. The job attaches only the mark again, and only when VBA has not embedded it. Letters are left to VBA `EmbedAesInlineImages` in the same commit as the footer.
+
 ### BUG-025 — Footer strip taller than its text; A/E/S could not sit close to the row edges
 
 - **Severity:** S4
@@ -75,6 +86,7 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 - **Summary:** The main window stole focus from Outlook and other apps. A second start of `guri\gui.py` without `--raise` always sent `RAISE` over the single-instance socket, and `expand_to_screen` / `_force_window_foreground` called `ShowWindow(SW_SHOW)`, `BringWindowToTop` and `SetForegroundWindow` even when the window was already visible.
 - **Repro:** Leave GURI open in the background, work in Outlook; a launcher, script or second `gui.py` start without `--raise` pulls GURI forward.
 - **Fixed in:** 1.5.13. Focus is taken only for tray Open, ribbon `--raise` / Aura, or the first process start. Bare second starts send `PING` and leave focus alone. `ShowWindow(SW_SHOW)` is no longer called on an already-visible window.
+- **Update 2026-10-21:** still reported at 14:59. Both running `guri\gui.py` processes started at 09:26, before the 12:49 fix, so they are running the old code. A code check found no other focus-taking path: only the ribbon GURI/Aura buttons send `--raise`. GURI still needs a restart.
 
 ### BUG-019 — AES actions in text-only (mitigated) mail cannot be clicked
 

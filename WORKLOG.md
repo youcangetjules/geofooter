@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.34: Footer-mark job stops writing letters into mail
+
+- `aes/geolocate_headers.py` `_embed_footer_mark_job`: back to mark-only, and exits if `aesfootermark` is already attached. The 1.5.32/1.5.33 letter attach rewrote `HTMLBody` and called `Save()` from a second process. On 14:58 rescans that caused a "message has been changed" conflict and left "Agency Isn't Authorization" as plain text with no footer (confirmed with the mark log, the VBA log and a read-only COM check). BUG-026. BUG-022 update: GURI processes predate the focus fix; restart needed.
+- Follow-up: re-import `MSCANModule1` so VBA attaches the letters; restart GURI.
+
 ### 2026-10-21 — 1.5.33: Footer-mark job waits for the new footer
 
 - `aes/geolocate_headers.py` `_embed_footer_mark_job`: only accept a mail whose body has both `cid:aesfootermark` and `cid:aesmarkletter`. It had matched the previous footer, found nothing missing, and the letters stayed broken. Confirmed with a read-only COM check: the body had the letter cids but only the mark and banner were attached. BUG-025 update.

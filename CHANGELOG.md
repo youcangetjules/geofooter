@@ -20,6 +20,11 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.34] — 2026-10-21
+
+### Fixed
+
+- A rescan could leave a mail as plain text with no footer. The follow-up step that attached the A/E/S letter images rewrote and saved the mail from outside Outlook, and that collided with the rescan. It now only attaches the orange mark, and only when Outlook hasn't (BUG-026). The letters come from the VBA step once MSCANModule1 is re-imported.
 ## [1.5.33] — 2026-10-21
 
 ### Fixed

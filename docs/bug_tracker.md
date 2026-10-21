@@ -33,6 +33,16 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-034 — Two GURI GUI processes can run at once
+
+- **Severity:** S3
+- **Area:** GURI / Ribbon
+- **Status:** open
+- **Reported:** 2026-10-21
+- **Summary:** After Aura/ribbon opens, two full `guri\gui.py --raise` processes can stay alive (each with a short parent launcher under Outlook). Seen at 19:35: PIDs 9684 and 33548 (parents 41552 and 34340), both started 18:44. AesRibbonHost.log at 18:44:21 shows repeated `BringGuriWindowToFront: no GURI window found` then both instances remain. Single-instance `QLocalServer` should have collapsed them; it did not (race on cold start, or second start before the first listened). Extra GURI burns RAM (~150–175 MB each) and can contend with Outlook.
+- **Repro:** Cold-start GURI from the ribbon/Aura when no window is up yet; or click Aura/GURI twice while the first is still starting.
+- **Workaround:** End the older `pythonw` `guri\gui.py` in Task Manager; keep one. Prefer opening Aura from the footer after GURI is already up.
+
 ### BUG-033 — Footer top and second rows centred left of the strip middle
 
 - **Severity:** S4

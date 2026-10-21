@@ -644,14 +644,15 @@ def _footer_aes_letter_cell(letter: str) -> str:
     The letter image is centred in the row the text sets; VBA attaches it from
     the AES-Inline-Img marker. Empty cell if the image is missing.
     """
-    # Borders match the strip: Outlook leaves 1–2px white hairlines between this
-    # cell and the summary cell (right) and under the E above the rule (bottom).
+    # border-right matches the strip: Outlook leaves a 1–2px white hairline
+    # between this cell and the summary cell on the A and E rows. Do not use
+    # border-bottom here — Outlook Word often paints cell bottom borders white
+    # and that drew a hairline through the E (BUG-031).
     cell_open = (
         f"<td width='{AES_STRIP_AES_COL}' align='left' valign='middle' "
         f"bgcolor='{AES_STRIP_BG}' "
         f"style='width:{AES_STRIP_AES_COL}px; padding:0; "
         f"background:{AES_STRIP_BG}; border-right:2px solid {AES_STRIP_BG}; "
-        f"border-bottom:2px solid {AES_STRIP_BG}; "
         f"text-align:left; vertical-align:middle; font-size:1px;'>"
     )
     try:
@@ -5689,21 +5690,36 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         row_pad = "1px 16px 3px 16px"
         mark = _footer_mark_html()
         aes_letters = bool(mark)
-        # With the A/E/S column, each rule starts at that column's left edge so
-        # the letters sit flush with the start of the lines.
-        rule_span = 4 if aes_letters else 3
-        rule_pad = "0 16px 0 0" if aes_letters else "0 16px"
-        rule_row = (
-            f"<tr><td colspan='{rule_span}' bgcolor='{AES_STRIP_BG}' "
-            f"style='padding:{rule_pad}; "
-            f"background:{AES_STRIP_BG}; font-size:1px; line-height:1px;'>"
+        # Rule line sits in the summary columns only. Running it through the
+        # A/E/S column left a white hairline across the E in Outlook (BUG-031);
+        # a solid strip-coloured letter cell keeps that column continuous.
+        rule_line = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
-            f"style='border-collapse:collapse;'>"
+            f"bgcolor='{AES_STRIP_BG}' style='border-collapse:collapse; "
+            f"background:{AES_STRIP_BG};'>"
             f"<tr><td height='1' bgcolor='{AES_STRIP_RULE}' "
             f"style='height:1px; font-size:1px; line-height:1px; "
             f"background:{AES_STRIP_RULE}; mso-line-height-rule:exactly;'>"
-            f"&nbsp;</td></tr></table></td></tr>"
+            f"&nbsp;</td></tr></table>"
         )
+        if aes_letters:
+            rule_row = (
+                f"<tr>"
+                f"<td width='{AES_STRIP_AES_COL}' height='1' bgcolor='{AES_STRIP_BG}' "
+                f"style='width:{AES_STRIP_AES_COL}px; height:1px; padding:0; "
+                f"background:{AES_STRIP_BG}; font-size:1px; line-height:1px; "
+                f"mso-line-height-rule:exactly;'>&nbsp;</td>"
+                f"<td colspan='3' bgcolor='{AES_STRIP_BG}' "
+                f"style='padding:0 16px 0 0; background:{AES_STRIP_BG}; "
+                f"font-size:1px; line-height:1px;'>{rule_line}</td>"
+                f"</tr>"
+            )
+        else:
+            rule_row = (
+                f"<tr><td colspan='3' bgcolor='{AES_STRIP_BG}' "
+                f"style='padding:0 16px; background:{AES_STRIP_BG}; "
+                f"font-size:1px; line-height:1px;'>{rule_line}</td></tr>"
+            )
         quip = html.escape(footer_quip(str(risk or ""), int(score or 0)))
         # The logo (+ optional A/E/S column) spans every row. The pad beside the
         # logo is only as wide as the quip minus that left block, so the middle

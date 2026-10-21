@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.49: Keep strip rules out of the A/E/S column
+
+- `aes/geolocate_headers.py`: drop letter-cell `border-bottom` (Outlook painted it white through the E). Rule rows use a solid strip-coloured letter cell and draw the hairline only across the summary columns (BUG-031).
+- Follow-up: rescan (Python only).
+
 ### 2026-10-21 — 1.5.48: Align top-row text; paint out white under E
 
 - `aes/geolocate_headers.py`: metric underlines use 1px `border-bottom` (not `text-decoration`); plain title spans get a matching strip-coloured bottom edge; fragments `vertical-align:middle`. Letter cells get `border-bottom:2px solid` strip bg (BUG-031 under E; BUG-032 title vs metrics).

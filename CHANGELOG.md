@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.49] — 2026-10-21
+
+### Fixed
+
+- Footer strip rules stay out of the A/E/S column (solid slate cell there instead). Removes the white hairline through the E; 1.5.48's letter `border-bottom` had made Outlook paint it white (BUG-031). Rescan to refresh footers.
+
 ## [1.5.48] — 2026-10-21
 
 ### Fixed

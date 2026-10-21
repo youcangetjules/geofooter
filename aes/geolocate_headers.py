@@ -8352,8 +8352,8 @@ def _embed_footer_mark_job(job_path: str) -> None:
         _mark_log(f"Outlook unavailable: {exc}")
         return
 
-    def _com_get(obj, name):
-        value = getattr(obj, name)
+    def _com_get(obj: Any, name: str) -> Any:
+        value = getattr(obj, name, None)
         return value() if callable(value) else value
 
     def candidates():

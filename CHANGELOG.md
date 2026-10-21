@@ -20,6 +20,11 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.24] — 2026-10-21
+
+### Fixed
+
+- Footer mark embed job: `_com_get` is annotated to return `Any`, so Outlook COM attributes like `CurrentItem` type-check.
 ## [1.5.23] — 2026-10-21
 
 ### Fixed

@@ -4528,24 +4528,18 @@ class HTMLReportGenerator:
             ))
         if not planned:
             return ""
+        _ = banner_bg  # label colour is chosen by the footer builder
 
-        # Shrink-wrapped row so the chips sit together. A 20px spacer cell is
-        # what Outlook actually honours between them.
-        label_color = contrasting_text_color(banner_bg)
-        if label_color == "#ffffff":
-            label_color = AES_STRIP_MUTED
-        parts = [
-            f"<td valign='middle' style='font-family:{AES_STRIP_FONT}; font-size:9px; "
-            "font-weight:bold; letter-spacing:1.5px; white-space:nowrap; "
-            "vertical-align:middle; line-height:16px; mso-line-height-rule:exactly;'>"
-            f"<span style='color:{label_color};'>QUICK ACTIONS</span></td>"
-        ]
-        for code, url, bg, fg in planned:
-            parts.append(
-                "<td width='20' valign='middle' "
-                "style='width:20px; font-size:1px; line-height:1px; "
-                "vertical-align:middle;'>&nbsp;</td>"
-            )
+        # Chips only. The QUICK ACTIONS label sits in its own centred row above
+        # so it cannot pull the button group left of the strip centre.
+        parts: List[str] = []
+        for i, (code, url, bg, fg) in enumerate(planned):
+            if i:
+                parts.append(
+                    "<td width='20' valign='middle' "
+                    "style='width:20px; font-size:1px; line-height:1px; "
+                    "vertical-align:middle;'>&nbsp;</td>"
+                )
             parts.append(
                 "<td valign='middle' style='vertical-align:middle;'>"
                 f"{chip(url, code, bg, fg)}</td>"
@@ -5755,6 +5749,23 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"<td width='16' style='width:16px; font-size:1px;'>&nbsp;</td>"
             f"</tr></table>"
         )
+        qa_label_color = AES_STRIP_MUTED
+        # Label on its own centred line above the chips. Centring the row on
+        # (label + chips) as one unit used to pull the buttons left.
+        quick_block = (
+            f"<table border='0' cellpadding='0' cellspacing='0' align='center' "
+            f"bgcolor='{AES_STRIP_BG}' "
+            f"style='border-collapse:collapse; margin:0 auto; background:{AES_STRIP_BG};'>"
+            f"<tr><td align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
+            f"style='background:{AES_STRIP_BG}; text-align:center; padding:0 0 2px 0; "
+            f"font-family:{AES_STRIP_FONT}; font-size:9px; font-weight:bold; "
+            f"letter-spacing:1.5px; white-space:nowrap; line-height:12px; "
+            f"mso-line-height-rule:exactly; vertical-align:middle;'>"
+            f"<span style='color:{qa_label_color};'>QUICK ACTIONS</span></td></tr>"
+            f"<tr><td align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
+            f"style='background:{AES_STRIP_BG}; text-align:center; padding:0;'>"
+            f"{quick_actions}</td></tr></table>"
+        )
         # The mark spans all five rows. Word gives any extra rowspan height to
         # row 1, so the mark cell must be no taller than the rows
         # (AES_STRIP_MARK_PAD_TOP). Nesting the rows in a side cell instead made
@@ -5793,7 +5804,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"vertical-align:middle;'>{left_copy}</td>"
             f"<td align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
             f"style='background:{AES_STRIP_BG}; padding:{row_pad}; text-align:center; "
-            f"vertical-align:middle;'>{quick_actions}</td>"
+            f"vertical-align:middle;'>{quick_block}</td>"
             f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
             f"style='background:{AES_STRIP_BG}; padding:1px 0 3px 0; "
             f"vertical-align:middle;'>{right_copy}</td>"

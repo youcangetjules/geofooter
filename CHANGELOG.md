@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.45] — 2026-10-21
+
+### Changed
+
+- Footer bottom row centres on the action chips alone. `QUICK ACTIONS` is back as its own centred line above the chips, so the label no longer pulls the buttons left. Rescan to refresh footers.
+
 ## [1.5.44] — 2026-10-21
 
 ### Fixed

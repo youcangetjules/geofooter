@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.45: Centre footer rows; Quick Actions above chips
+
+- `_build_quick_actions_row_html` returns chips only. Footer builds a two-line centred block: `QUICK ACTIONS` then the chips, still balanced by the copyright-width spacer so the buttons sit on the strip centre.
+- Follow-up: rescan (Python only).
+
 ### 2026-10-21 — 1.5.44: Paint out white hairlines beside footer A/E letters
 
 - `aes/geolocate_headers.py`: letter cells `border-right:2px solid` strip bg; top/mid summary cells matching `border-left`; `strip_separators` nested table gets strip `bgcolor`. Screenshot measure: 2px `#ffffff` at the A/E cell join only (S row fine). BUG-029.

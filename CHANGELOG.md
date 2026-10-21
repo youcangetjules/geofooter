@@ -20,6 +20,11 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.28] — 2026-10-21
+
+### Fixed
+
+- Footer builder: initialise `block_state` as `{}` and read `trusted` only inside the `isinstance(..., dict)` branch, so nothing calls `.get` on a possibly-`None` value.
 ## [1.5.27] — 2026-10-21
 
 ### Fixed

@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.28: Read trusted inside isinstance branch
+
+- `aes/geolocate_headers.py`: `block_state: Dict[str, Any] = {}` first; `trusted = bool(raw_block_state.get(...))` only after `isinstance`. Removes the `block_state.get` site that kept flagging. Pyright clean on that span; module imports.
+
 ### 2026-10-21 — 1.5.27: if/else narrow for block_state
 
 - `aes/geolocate_headers.py`: replace the ternary assign with `if isinstance(...): block_state = raw else: block_state = {}`. Pyright no longer flags `block_state.get`. Module imports.

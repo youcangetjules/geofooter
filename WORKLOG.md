@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.31: A/E/S fill the row without growing the strip
+
+- `aes/geolocate_headers.py`: drop the 32px / `size=6` stretch. Row height locked to 26px (same as summary `5+16+5`); letters are 20px with a 3px inset and `mso-line-height-rule:exactly`. HTML `size=5` kept so Outlook still paints them larger than body text.
+- Follow-up: rescan a message.
+
 ### 2026-10-21 — 1.5.30: Guard None utcoffset before total_seconds
 
 - `aes/geolocate_headers.py` hop time parse: bind `offset = dt.utcoffset()` and only use `offset.total_seconds()` when it is not `None`. Pyright clean on that span; module imports.

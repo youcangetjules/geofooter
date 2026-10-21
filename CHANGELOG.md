@@ -20,6 +20,11 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.31] — 2026-10-21
+
+### Changed
+
+- Footer **A / E / S** letters fill each summary row with a 3px top/bottom inset (20px glyphs in a locked 26px row). The strip no longer grows from an oversized line-height.
 ## [1.5.30] — 2026-10-21
 
 ### Fixed

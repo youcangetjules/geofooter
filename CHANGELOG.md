@@ -20,6 +20,11 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.30] — 2026-10-21
+
+### Fixed
+
+- Hop timestamp parsing: only call `total_seconds` when `dt.utcoffset()` is not `None`.
 ## [1.5.29] — 2026-10-21
 
 ### Changed

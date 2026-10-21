@@ -8142,7 +8142,9 @@ Sender: {sender} | Domain: {domain} | Created: {created}</div>
                         dt = pytz.utc.localize(dt)
                     # RFC 5322: "-0000" means "offset unknown", distinct from +0000.
                     if re.search(r'[+-]\d{4}', raw_time) and '-0000' not in raw_time:
-                        hop['utc_offset_min'] = int(dt.utcoffset().total_seconds() // 60)
+                        offset = dt.utcoffset()
+                        if offset is not None:
+                            hop['utc_offset_min'] = int(offset.total_seconds() // 60)
                     hop['timestamp_utc'] = dt.astimezone(pytz.utc).isoformat()
                     hop['timestamp'] = dt.strftime('%Y-%m-%d %H:%M:%S')
                     if prev_time:

@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.30: Guard None utcoffset before total_seconds
+
+- `aes/geolocate_headers.py` hop time parse: bind `offset = dt.utcoffset()` and only use `offset.total_seconds()` when it is not `None`. Pyright clean on that span; module imports.
+
 ### 2026-10-21 — 1.5.29: Much larger footer A/E/S letters
 
 - `aes/geolocate_headers.py`: `AES_STRIP_AES_SIZE`/`COL` 22 → 32. Letter cell also sets HTML `font size=6`, `pt` sizes, and size on the `<b>` — Outlook often ignored the earlier px-only CSS. Summary-row centring picks up the wider column via `logo_col`.

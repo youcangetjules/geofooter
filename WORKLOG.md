@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.40: Shorten footer top summary row by 5px
+
+- `aes/geolocate_headers.py` `_build_html`: top centre `top_pad` and quip side cell padding 2px → 0. Line-height stays 16px. BUG-028.
+- Follow-up: rescan (Python only).
+
 ### 2026-10-21 — 1.5.39: Equalise BB chip; show version on copyright
 
 - `aes/geolocate_headers.py` quick-action `chip()`: dark border on every chip, width 78, no letter-spacing (blocked BB had been 79px vs 77px for white). Copyright uses `geofooter.version.VERSION`. BUG-027 fixed; BUG-028 logged (top row still ~5px tall).

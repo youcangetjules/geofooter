@@ -5692,7 +5692,9 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         fill_px = max(0, right_w - logo_col)
         # Rows 1 and 2 balance the side blocks with td padding: Outlook does not
         # hold an empty spacer table at its width, which pushed row 1 left.
-        top_pad = f"2px 16px 2px {16 + fill_px}px"
+        # Top row was ~5px taller than the others (BUG-028): 2px pad on the
+        # centre cell and on the quip side cell stacked with the 16px line.
+        top_pad = f"0 16px 0 {16 + fill_px}px"
         mid_pad = f"2px {16 + logo_col}px 2px 16px"
         right_top = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='{right_w}' "
@@ -5752,7 +5754,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"font-weight:bold; letter-spacing:0.3px; line-height:16px; "
             f"mso-line-height-rule:exactly; vertical-align:middle;'>{summary_line1}</td>"
             f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:2px 0;'>{right_top}</td>"
+            f"style='background:{AES_STRIP_BG}; padding:0;'>{right_top}</td>"
             f"</tr>"
             f"{rule_row}"
             f"<tr>"

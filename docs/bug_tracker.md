@@ -37,11 +37,12 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 - **Severity:** S4
 - **Area:** AES
-- **Status:** open
+- **Status:** fixed (pending rescan)
 - **Reported:** 2026-10-21
 - **Summary:** After the compact strip work, the top summary row (title + risk chips + quip) still reads about 5px taller than the middle and bottom rows.
 - **Repro:** Rescan a message and compare the three strip rows in Outlook.
 - **Workaround:** None.
+- **Fixed in:** 1.5.40. Top-row centre padding and quip side-cell padding go from 2px to 0 (line-height stays 16px).
 
 ### BUG-027 — Blocked BB quick-action chip rendered wider than SL/BA/TS/NT
 

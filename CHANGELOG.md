@@ -20,6 +20,11 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.40] — 2026-10-21
+
+### Fixed
+
+- Footer top summary row was about 5px taller than the others. Its vertical padding is now 0 (BUG-028). Rescan to refresh footers.
 ## [1.5.39] — 2026-10-21
 
 ### Fixed

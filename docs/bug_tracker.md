@@ -33,6 +33,17 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-029 — White hairlines to the right of footer A and E letters
+
+- **Severity:** S4
+- **Area:** AES
+- **Status:** fixed (pending rescan)
+- **Reported:** 2026-10-21
+- **Summary:** Outlook drew a 2px pure-white vertical sliver between the A/E letter cells and the summary cells. The S row was fine (its neighbour is a slate spacer table). Screenshot pixels at the join were `#ffffff`.
+- **Repro:** Rescan a message and look at the A/E/S column.
+- **Workaround:** None.
+- **Fixed in:** 1.5.44. Letter cells get a 2px slate `border-right`; summary cells get a matching `border-left`. The summary nested table also sets the strip background.
+
 ### BUG-028 — Footer top summary row is about 5px taller than the other rows
 
 - **Severity:** S4

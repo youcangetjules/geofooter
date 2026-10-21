@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.44] — 2026-10-21
+
+### Fixed
+
+- Footer showed thin white lines to the right of the A and E letters. Outlook was leaving a 2px gap between those letter cells and the summary cells; the join is now painted with the strip colour (BUG-029). Rescan to refresh footers.
+
 ## [1.5.43] — 2026-10-21
 
 ### Changed

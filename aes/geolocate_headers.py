@@ -644,12 +644,14 @@ def _footer_aes_letter_cell(letter: str) -> str:
     The letter image is centred in the row the text sets; VBA attaches it from
     the AES-Inline-Img marker. Empty cell if the image is missing.
     """
+    # border-right matches the strip: Outlook leaves a 1–2px white hairline
+    # between this cell and the summary cell on the A and E rows.
     cell_open = (
         f"<td width='{AES_STRIP_AES_COL}' align='left' valign='middle' "
         f"bgcolor='{AES_STRIP_BG}' "
         f"style='width:{AES_STRIP_AES_COL}px; padding:0; "
-        f"background:{AES_STRIP_BG}; text-align:left; vertical-align:middle; "
-        f"font-size:1px;'>"
+        f"background:{AES_STRIP_BG}; border-right:2px solid {AES_STRIP_BG}; "
+        f"text-align:left; vertical-align:middle; font-size:1px;'>"
     )
     try:
         from geofooter.paths import get_install_root
@@ -831,8 +833,9 @@ def strip_separators(
         parts = packed
     gap = f"</td>{spacer}{dot}{spacer}{cell}"
     return (
-        "<table border='0' cellpadding='0' cellspacing='0' align='center' "
-        "style='border-collapse:collapse; margin:0 auto;'>"
+        f"<table border='0' cellpadding='0' cellspacing='0' align='center' "
+        f"bgcolor='{AES_STRIP_BG}' "
+        f"style='border-collapse:collapse; margin:0 auto; background:{AES_STRIP_BG};'>"
         f"<tr>{cell}{gap.join(parts)}</td></tr></table>"
     )
 
@@ -5764,7 +5767,8 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"{logo_cell}"
             f"{letter_a}"
             f"<td colspan='2' align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:{top_pad}; text-align:center; "
+            f"style='background:{AES_STRIP_BG}; border-left:2px solid {AES_STRIP_BG}; "
+            f"padding:{top_pad}; text-align:center; "
             f"color:{AES_STRIP_TEXT}; font-family:{AES_STRIP_FONT}; font-size:12px; "
             f"font-weight:bold; letter-spacing:0.3px; line-height:16px; "
             f"mso-line-height-rule:exactly; vertical-align:middle;'>{summary_line1}</td>"
@@ -5777,6 +5781,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"{letter_e}"
             f"<td colspan='3' align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
             f"style='padding:{mid_pad}; text-align:center; background:{AES_STRIP_BG}; "
+            f"border-left:2px solid {AES_STRIP_BG}; "
             f"color:{AES_STRIP_MUTED}; font-family:{AES_STRIP_FONT}; font-size:12px; "
             f"font-weight:normal; line-height:16px; mso-line-height-rule:exactly; "
             f"vertical-align:middle;'>{summary_line2}</td></tr>"

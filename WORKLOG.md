@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.44: Paint out white hairlines beside footer A/E letters
+
+- `aes/geolocate_headers.py`: letter cells `border-right:2px solid` strip bg; top/mid summary cells matching `border-left`; `strip_separators` nested table gets strip `bgcolor`. Screenshot measure: 2px `#ffffff` at the A/E cell join only (S row fine). BUG-029.
+- Follow-up: rescan (Python only).
+
 ### 2026-10-21 — 1.5.43: Add 2px under footer bottom row
 
 - `aes/geolocate_headers.py` bottom-row padding `1px 16px` → `1px 16px 3px 16px` on the actions cell; matching `1px 0 3px 0` on the letter-S and copyright side cells so the whole row grows under the content.

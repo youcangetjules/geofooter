@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.47] — 2026-10-21
+
+### Changed
+
+- Footer `QUICK ACTIONS` label is beside the chips again (undoes the stacked label from 1.5.45). Rescan to refresh footers.
+
 ## [1.5.46] — 2026-10-21
 
 ### Fixed

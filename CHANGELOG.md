@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.48] — 2026-10-21
+
+### Fixed
+
+- Footer top summary row: title and underlined metrics now share one vertical centre (border-bottom underlines instead of `text-decoration`, matching edge on plain title). White hairline under the E letter painted out with a strip-coloured `border-bottom` (BUG-031, BUG-032). Rescan to refresh footers.
+
 ## [1.5.47] — 2026-10-21
 
 ### Changed

@@ -33,6 +33,28 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-032 — Footer top-row title sits higher than underlined metrics
+
+- **Severity:** S4
+- **Area:** AES
+- **Status:** fixed (pending rescan)
+- **Reported:** 2026-10-21
+- **Summary:** On the top summary strip, plain title text ("Aliniant AES Scan Result - Basic Scan") sat ~1–2px higher than the underlined Risk / Attachments / Beacons / Links / HRE runs. `text-decoration:underline` sits outside the line box, so neighbouring cells with `vertical-align:middle` did not share a baseline.
+- **Repro:** Rescan a message and compare the title with the metric links on the same row.
+- **Workaround:** None.
+- **Fixed in:** 1.5.48. Underlines use a 1px `border-bottom` on links; plain title spans get a matching 1px strip-coloured bottom edge. Fragments use `vertical-align:middle`.
+
+### BUG-031 — White hairline under footer letter E
+
+- **Severity:** S4
+- **Area:** AES
+- **Status:** fixed (pending rescan)
+- **Reported:** 2026-10-21
+- **Summary:** A thin white horizontal sliver sat under the E in the A/E/S column (above the rule between rows 1 and 2). Measured as `#ffffff` under `letter_e`. A and S were fine; the gap was Outlook showing body white between the letter cell and the rule row.
+- **Repro:** Rescan a message and look under the E letter.
+- **Workaround:** None.
+- **Fixed in:** 1.5.48. Letter cells get `border-bottom:2px solid` strip background (same trick as BUG-029's `border-right`).
+
 ### BUG-030 — Rapid rescans flatten mail to text via dirty attachment churn
 
 - **Severity:** S2

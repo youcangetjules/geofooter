@@ -644,13 +644,14 @@ def _footer_aes_letter_cell(letter: str) -> str:
     The letter image is centred in the row the text sets; VBA attaches it from
     the AES-Inline-Img marker. Empty cell if the image is missing.
     """
-    # border-right matches the strip: Outlook leaves a 1–2px white hairline
-    # between this cell and the summary cell on the A and E rows.
+    # Borders match the strip: Outlook leaves 1–2px white hairlines between this
+    # cell and the summary cell (right) and under the E above the rule (bottom).
     cell_open = (
         f"<td width='{AES_STRIP_AES_COL}' align='left' valign='middle' "
         f"bgcolor='{AES_STRIP_BG}' "
         f"style='width:{AES_STRIP_AES_COL}px; padding:0; "
         f"background:{AES_STRIP_BG}; border-right:2px solid {AES_STRIP_BG}; "
+        f"border-bottom:2px solid {AES_STRIP_BG}; "
         f"text-align:left; vertical-align:middle; font-size:1px;'>"
     )
     try:
@@ -697,7 +698,7 @@ def _footer_count_html(text: str, color: str) -> str:
         f"<font color='{color}' face='Segoe UI, Arial, sans-serif' "
         f"style='color:{color}; font-family:{AES_STRIP_FONT}; font-size:12px; "
         f"font-weight:bold; line-height:16px; mso-line-height-rule:exactly; "
-        f"vertical-align:baseline;'>{html.escape(text)}</font>"
+        f"vertical-align:middle;'>{html.escape(text)}</font>"
     )
 
 
@@ -787,12 +788,14 @@ def strip_separators(
         "style='width:6px; font-size:1px; line-height:1px; padding:0;'>&nbsp;</td>"
     )
     if line_height:
-        # Baseline, not middle. Middle drops a second coloured run
-        # ("1 NOK") a couple of pixels below the rest of the row.
+        # Middle + matching 1px bottom edge on plain and linked text. A text
+        # underline sits outside the line box, so linked metrics looked lower
+        # than the plain title in the next cell.
         extra = (
             f"line-height:{line_height}; mso-line-height-rule:exactly; "
-            f"vertical-align:baseline; font-size:{size}; "
+            f"vertical-align:middle; font-size:{size}; "
         )
+        plain_edge = f"border-bottom:1px solid {AES_STRIP_BG};"
 
         def _lock_fragment(fragment: str) -> str:
             def repl(match: re.Match) -> str:
@@ -815,7 +818,7 @@ def strip_separators(
                 return locked
             return (
                 f"<span style='font-family:{AES_STRIP_FONT}; font-size:{size}; "
-                f"font-weight:{weight}; {extra}'>{locked}</span>"
+                f"font-weight:{weight}; {extra}{plain_edge}'>{locked}</span>"
             )
 
         packed: List[str] = []
@@ -5035,14 +5038,23 @@ class HTMLReportGenerator:
         raise_px: int = 0,
     ) -> str:
         """Footer link styled as plain text (real href, no box)."""
-        deco = "underline" if underline else "none"
+        # Border-bottom, not text-decoration:underline: underlines sit outside
+        # the line box and make linked metrics look lower than plain title text
+        # in neighbouring table cells.
+        if underline:
+            line = (
+                f"text-decoration:none; border-bottom:1px solid {color}; "
+                "border-top:0; border-left:0; border-right:0;"
+            )
+        else:
+            line = "text-decoration:none; border:none;"
         raised = f"mso-text-raise:{int(raise_px)}px;" if raise_px else ""
         return (
             f'<a href="{html.escape(href, quote=True)}" target="_blank" '
-            f'style="color:{color};text-decoration:{deco};background:transparent;border:none;'
+            f'style="color:{color};{line}background:transparent;'
             f'padding:0;margin:0;font-weight:{font_weight};font-size:{font_size};'
             f"line-height:{font_size}; mso-line-height-rule:exactly; "
-            f"vertical-align:baseline; {raised}font-family:{AES_STRIP_FONT};\">"
+            f"vertical-align:middle; {raised}font-family:{AES_STRIP_FONT};\">"
             f"{inner_html}</a>"
         )
 

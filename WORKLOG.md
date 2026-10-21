@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.48: Align top-row text; paint out white under E
+
+- `aes/geolocate_headers.py`: metric underlines use 1px `border-bottom` (not `text-decoration`); plain title spans get a matching strip-coloured bottom edge; fragments `vertical-align:middle`. Letter cells get `border-bottom:2px solid` strip bg (BUG-031 under E; BUG-032 title vs metrics).
+- Follow-up: rescan (Python only).
+
 ### 2026-10-21 — 1.5.47: Undo stacked Quick Actions label
 
 - `aes/geolocate_headers.py`: restore `QUICK ACTIONS` inline with the chips (revert 1.5.45 two-line block). Keep 1.5.46 VBA attachment-skip fix.

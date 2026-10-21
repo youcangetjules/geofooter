@@ -20,6 +20,11 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.23] — 2026-10-21
+
+### Fixed
+
+- Hop address decode: after the `addr_decode is None` guard, bind a local `ad` and use it in the nested `_host_loc` helper so the type checker keeps the narrowing.
 ## [1.5.22] — 2026-10-21
 
 ### Fixed

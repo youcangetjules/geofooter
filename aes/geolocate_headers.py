@@ -7764,11 +7764,13 @@ Sender: {sender} | Domain: {domain} | Created: {created}</div>
         hop.setdefault('location_source', '')
         if addr_decode is None:
             return
+        # Local alias: nested defs do not keep the None-narrowing on the module.
+        ad = addr_decode
         unknown_vals = {None, '', 'Unknown', '—', 'Skipped (compact)', 'NA', 'N/A',
                         'Internal / local hop', 'Insufficient header data'}
 
         if ip_literal:
-            dec = addr_decode.decode_ip(ip_literal, provider_context=provider_ctx)
+            dec = ad.decode_ip(ip_literal, provider_context=provider_ctx)
             if dec:
                 lines = list(dec.get('lines') or [])
                 if geo_via_embedded and public_ip:
@@ -7793,8 +7795,8 @@ Sender: {sender} | Domain: {domain} | Created: {created}</div>
                     hop['asn'] = dec['asn_hint']
 
         def _host_loc(name: Any) -> Optional[Dict[str, Any]]:
-            if name and not addr_decode.ip_literal(str(name)):
-                return addr_decode.decode_host_location(str(name))
+            if name and not ad.ip_literal(str(name)):
+                return ad.decode_host_location(str(name))
             return None
 
         # The bracketed IP belongs to the "from" side; the by-host only tells us
@@ -7806,7 +7808,7 @@ Sender: {sender} | Domain: {domain} | Created: {created}</div>
         # (do not stamp Sailthru ASN onto RFC1918 internal relays).
         if hop.get("hop_kind") == "public":
             for name in (hop.get("fqdn"), hop.get("helo")):
-                asn_h, org_h = addr_decode.provider_asn_for_host(name)
+                asn_h, org_h = ad.provider_asn_for_host(name)
                 if asn_h and hop.get("asn") in unknown_vals:
                     hop["asn"] = asn_h
                 if org_h and hop.get("asn_org") in unknown_vals:

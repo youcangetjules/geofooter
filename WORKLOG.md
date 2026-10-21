@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.23: Keep addr_decode narrowing in nested _host_loc
+
+- `aes/geolocate_headers.py`: after `if addr_decode is None: return`, assign `ad = addr_decode` and use `ad` in `_host_loc` / decode calls. Nested defs do not inherit module None-narrowing. Lint clean; module imports.
+
 ### 2026-10-21 — 1.5.22: Narrow RDAP objects dict before .get
 
 - `aes/geolocate_headers.py` `_rdap_registrant_geo`: bind `raw_objects` once, then `objects: Dict[str, Any] = raw_objects if isinstance(...) else {}`. Fixes `objects.get` typed against `None`. Lint clean; module imports.

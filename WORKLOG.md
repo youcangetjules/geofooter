@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.25: Narrow RDAP contact dict before .get
+
+- `aes/geolocate_headers.py` `_rdap_registrant_geo`: same pattern as objects — `raw_contact` then `contact: Dict[str, Any] = ...`. Lint clean; module imports.
+
 ### 2026-10-21 — 1.5.24: Type footer-mark COM helper as Any
 
 - `aes/geolocate_headers.py` `_embed_footer_mark_job`: `_com_get(obj: Any, name: str) -> Any` so `insp.CurrentItem` / Selection access is not checked against plain `object`. Lint clean; module imports.

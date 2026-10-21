@@ -20,6 +20,11 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.25] — 2026-10-21
+
+### Fixed
+
+- RDAP registrant contact: assign once and `isinstance`-narrow so `contact.get` is never typed against `None`.
 ## [1.5.24] — 2026-10-21
 
 ### Fixed

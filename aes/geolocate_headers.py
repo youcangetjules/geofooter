@@ -7706,7 +7706,8 @@ Sender: {sender} | Domain: {domain} | Created: {created}</div>
             roles = [str(r).lower() for r in (obj.get("roles") or [])]
             if roles and "registrant" not in roles and hid not in entity_ids[:1]:
                 continue
-            contact = obj.get("contact") if isinstance(obj.get("contact"), dict) else {}
+            raw_contact = obj.get("contact")
+            contact: Dict[str, Any] = raw_contact if isinstance(raw_contact, dict) else {}
             name = str(contact.get("name") or "").strip()
             city, country = _parse_addr(contact.get("address"))
             if name or country or city:

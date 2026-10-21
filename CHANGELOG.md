@@ -20,6 +20,11 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.27] — 2026-10-21
+
+### Fixed
+
+- Footer builder: use an `if`/`else` to narrow `block_state` (the ternary form still left some checkers treating it as `None`).
 ## [1.5.26] — 2026-10-21
 
 ### Fixed

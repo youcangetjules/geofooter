@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.27: if/else narrow for block_state
+
+- `aes/geolocate_headers.py`: replace the ternary assign with `if isinstance(...): block_state = raw else: block_state = {}`. Pyright no longer flags `block_state.get`. Module imports.
+
 ### 2026-10-21 — 1.5.26: Narrow block_state dict before .get
 
 - `aes/geolocate_headers.py` footer HTML: `raw_block_state` then `block_state: Dict[str, Any] = ...`. Same isinstance-narrow pattern. Lint clean; module imports.

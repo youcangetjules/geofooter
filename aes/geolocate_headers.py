@@ -5584,9 +5584,10 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         # link to the standalone full-scan report.
         embed_full = footer_mode == "full" or int(score or 0) > 50
         raw_block_state = data.get("block_state")
-        block_state: Dict[str, Any] = (
-            raw_block_state if isinstance(raw_block_state, dict) else {}
-        )
+        if isinstance(raw_block_state, dict):
+            block_state: Dict[str, Any] = raw_block_state
+        else:
+            block_state = {}
         # Trusted senders never get HTML stripped — false-positive link noise
         # was converting newsletters to plain text.
         mitigate = risk_requires_mitigation(int(score or 0)) and not bool(

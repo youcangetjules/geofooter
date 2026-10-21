@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.26: Narrow block_state dict before .get
+
+- `aes/geolocate_headers.py` footer HTML: `raw_block_state` then `block_state: Dict[str, Any] = ...`. Same isinstance-narrow pattern. Lint clean; module imports.
+
 ### 2026-10-21 — 1.5.25: Narrow RDAP contact dict before .get
 
 - `aes/geolocate_headers.py` `_rdap_registrant_geo`: same pattern as objects — `raw_contact` then `contact: Dict[str, Any] = ...`. Lint clean; module imports.

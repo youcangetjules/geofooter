@@ -20,6 +20,11 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.38] — 2026-10-21
+
+### Changed
+
+- Footer orange A sits 5px lower (8px from the top of the strip instead of 3px). Rescan to refresh footers.
 ## [1.5.37] — 2026-10-21
 
 ### Changed

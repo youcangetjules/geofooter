@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.38: Move footer orange A 5px down
+
+- `aes/geolocate_headers.py` `_build_html` logo cell padding `3px 4px 3px 12px` to `8px 4px 0 12px`. Outlook top-aligns the rowspan cell (screenshot: 3px above the mark, 8px below in a 67px strip), so the mark now sits 8px from the top; 56 + 8 fits inside the strip, so its height is unchanged in Outlook.
+- Follow-up: rescan (no VBA re-import).
+
 ### 2026-10-21 — 1.5.37: Centre footer A/E/S letters horizontally
 
 - `scripts/build_footer_strip_images.py`: each letter PNG is the 16px letter column wide (32px at 2x) with its ink centred, so A (16px ink) and E/S (11px ink) share one centre line. The HTML takes the width from the image, so `aes/geolocate_headers.py` is unchanged. Letter PNGs rebuilt.

@@ -41,6 +41,7 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 - **Reported:** 2026-10-21
 - **Summary:** After footer re-processing, the slate strip showed vertical smear / noise. Same-colour "ghost" balancing text (`left_top` / `left_copy`) was being painted by Outlook's Word renderer, and `aes_mark_footer.png` had non-solid background pixels. Operator also wanted A, E, S in Montserrat Bold beside the orange A, on the three content rows (just off the strip grey).
 - **Fixed in:** 1.5.14. Ghost text replaced with empty spacers; mark PNG background solidified to `#46525c`; A/E/S column added (`font-family: Montserrat`, weight 700, colour `#55616b`).
+- **Update 2026-10-21:** in Outlook the 1.5.14 letters came out black and sat left of the rules. 1.5.15 puts the colour on a `<font>` tag as well as the style, starts each rule at the letter column's left edge, and sets the letters to 17px bold `#5a6671`.
 
 ### BUG-022 — GURI window jumps to the front while other apps are in use
 

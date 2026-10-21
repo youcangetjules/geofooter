@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.15] — 2026-10-21
+
+### Changed
+
+- Footer **A / E / S** letters now start exactly where the strip's horizontal lines start, left-aligned to them. They are 4pt bigger (17px), bold, and a little lighter than the strip background. Outlook had been showing them black; the colour is now set in a way Outlook keeps (BUG-023).
+
 ## [1.5.14] — 2026-10-21
 
 ### Fixed

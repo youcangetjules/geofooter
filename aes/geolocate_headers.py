@@ -591,9 +591,11 @@ AES_STRIP_MUTED = "#d5dee4"
 AES_STRIP_RULE = "#606d79"
 AES_STRIP_DOT = "#3ecf8e"
 AES_STRIP_FONT = "Segoe UI, Arial, sans-serif"
-# Stacked A/E/S beside the orange mark — just off the strip background.
-AES_STRIP_AES_COLOR = "#55616b"
+# Stacked A/E/S at the left end of the strip rules, a little lighter than the
+# strip background. 17px is the 12px strip text plus 4pt.
+AES_STRIP_AES_COLOR = "#5a6671"
 AES_STRIP_AES_FONT = "Montserrat, 'Segoe UI', Arial, sans-serif"
+AES_STRIP_AES_SIZE = 17
 AES_STRIP_AES_COL = 18
 # Outlook drops padding on a div. This row is the gap above the strip.
 AES_FOOTER_GAP_HTML = (
@@ -623,24 +625,22 @@ def _footer_mark_html() -> str:
 
 
 def _footer_aes_letter_cell(letter: str) -> str:
-    """One of A / E / S beside the mark, on a content row (Montserrat Bold)."""
+    """One of A / E / S on a content row, flush with the left end of the rules.
+
+    The colour goes on a <font> tag too: Outlook drops span colours here and
+    painted the letters black.
+    """
+    size = AES_STRIP_AES_SIZE
     return (
-        f"<td width='{AES_STRIP_AES_COL}' align='center' valign='middle' "
+        f"<td width='{AES_STRIP_AES_COL}' align='left' valign='middle' "
         f"bgcolor='{AES_STRIP_BG}' "
-        f"style='width:{AES_STRIP_AES_COL}px; padding:0 2px 0 0; "
-        f"background:{AES_STRIP_BG}; text-align:center; vertical-align:middle;'>"
-        f"<span style='color:{AES_STRIP_AES_COLOR}; font-family:{AES_STRIP_AES_FONT}; "
-        f"font-size:12px; font-weight:700; line-height:16px; "
-        f"mso-line-height-rule:exactly;'>{letter}</span></td>"
-    )
-
-
-def _footer_aes_rule_cell() -> str:
-    """Empty cell under the A/E/S column on a 1px rule row."""
-    return (
-        f"<td width='{AES_STRIP_AES_COL}' bgcolor='{AES_STRIP_BG}' "
-        f"style='width:{AES_STRIP_AES_COL}px; padding:0; background:{AES_STRIP_BG}; "
-        f"font-size:1px; line-height:1px;'>&nbsp;</td>"
+        f"style='width:{AES_STRIP_AES_COL}px; padding:0; "
+        f"background:{AES_STRIP_BG}; text-align:left; vertical-align:middle; "
+        f"color:{AES_STRIP_AES_COLOR};'>"
+        f"<font color='{AES_STRIP_AES_COLOR}' face='Montserrat, Segoe UI, Arial, sans-serif' "
+        f"style='color:{AES_STRIP_AES_COLOR}; font-family:{AES_STRIP_AES_FONT}; "
+        f"font-size:{size}px; font-weight:700; line-height:{size + 3}px; "
+        f"mso-line-height-rule:exactly;'><b>{letter}</b></font></td>"
     )
 
 
@@ -5634,18 +5634,20 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         row_pad = "5px 16px"
         mark = _footer_mark_html()
         aes_letters = bool(mark)
-        rule_inner = (
-            f"<td colspan='3' bgcolor='{AES_STRIP_BG}' style='padding:0 16px; "
+        # With the A/E/S column, each rule starts at that column's left edge so
+        # the letters sit flush with the start of the lines.
+        rule_span = 4 if aes_letters else 3
+        rule_pad = "0 16px 0 0" if aes_letters else "0 16px"
+        rule_row = (
+            f"<tr><td colspan='{rule_span}' bgcolor='{AES_STRIP_BG}' "
+            f"style='padding:{rule_pad}; "
             f"background:{AES_STRIP_BG}; font-size:1px; line-height:1px;'>"
             f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
             f"style='border-collapse:collapse;'>"
             f"<tr><td height='1' bgcolor='{AES_STRIP_RULE}' "
             f"style='height:1px; font-size:1px; line-height:1px; "
             f"background:{AES_STRIP_RULE}; mso-line-height-rule:exactly;'>"
-            f"&nbsp;</td></tr></table></td>"
-        )
-        rule_row = (
-            f"<tr>{_footer_aes_rule_cell() if aes_letters else ''}{rule_inner}</tr>"
+            f"&nbsp;</td></tr></table></td></tr>"
         )
         quip = html.escape(footer_quip(str(risk or ""), int(score or 0)))
         # The logo (+ optional A/E/S column) spans every row. The pad beside the

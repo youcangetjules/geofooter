@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.15: Align footer A/E/S with the rules
+
+- `aes/geolocate_headers.py`: the rule rows span the letter column too (`colspan=4`, no left inset), so each line starts at the letters' left edge. `_footer_aes_letter_cell` is left-aligned with no padding, 17px (`AES_STRIP_AES_SIZE`), `<b>`, colour `#5a6671`, set on both a `<font>` tag and the style because Outlook painted the span-only colour black. Removed the unused `_footer_aes_rule_cell`. Checked with a headless Edge render. BUG-023 update.
+- Follow-up: rescan a message to refresh its footer.
+
 ### 2026-10-21 — 1.5.14: Footer AES letters (Montserrat Bold) and strip banding fix
 
 - `aes/geolocate_headers.py`: A/E/S column beside the mark (`Montserrat`, weight 700, `#55616b`), aligned to the three content rows; rule rows get an empty letter cell. Left-side balance pads are empty spacers (no same-colour ghost text). `assets/icons/aes_mark_footer.png` background cleaned to solid `#46525c`. BUG-023.

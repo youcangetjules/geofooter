@@ -738,9 +738,11 @@ def _footer_aura_chip_html() -> str:
             f"<span style='color:{c};'>{letter}</span>" for letter, c in rainbow
         )
     else:
+        # Bump the cid when the PNG changes: VBA skips re-attaching a cid that
+        # is already on the mail, so a rescan would keep the old image.
         inner = (
-            f"<!-- AES-Inline-Img: aesaurachip|{path} -->"
-            f"<img src='cid:aesaurachip' width='76' height='14' alt='AURA' "
+            f"<!-- AES-Inline-Img: aesaurachip2|{path} -->"
+            f"<img src='cid:aesaurachip2' width='76' height='14' alt='AURA' "
             f"style='display:block; border:0; outline:none; width:76px; height:14px;' />"
         )
     border = AES_CHIP_FG

@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.51] — 2026-10-21
+
+### Changed
+
+- Footer AURA chip: the image no longer draws its own frame inside the chip border, and the lettering is larger and spread across the chip, with the rainbow running red to violet across the letters. Rescan to refresh footers.
+
 ## [1.5.50] — 2026-10-21
 
 ### Added

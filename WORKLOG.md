@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.51: AURA chip single border, bigger lettering
+
+- `scripts/build_footer_strip_images.py` `build_aura_chip`: image is the 76x14 interior (was 78x16 with its own frame, so the chip showed two borders). Letters sized to ~80% of the height and spread across ~80% of the width; gradient spans the lettering. `assets/icons/aes_aura_chip.png` rebuilt.
+- `aes/geolocate_headers.py`: chip cid `aesaurachip` → `aesaurachip2`, because VBA skips re-attaching a cid already on the mail.
+- Follow-up: rescan (Python only).
+
 ### 2026-10-21 — 1.5.50: AURA chip on row 2; seamless A/E/S column
 
 - `aes/geolocate_headers.py`: mid-row far-right AURA chip (78×16, rainbow glyph PNG). `aes/action_handler.py`: `aes://open-aura` launches `guri/gui.py --raise --aura`. A/E/S move to one `rowspan=5` column so rule rows never seam under E (BUG-031). `assets/icons/aes_aura_chip.png` + `scripts/build_footer_strip_images.py`.

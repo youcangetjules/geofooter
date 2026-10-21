@@ -96,11 +96,14 @@ def build_mark() -> Path:
 
 
 def build_aura_chip() -> Path:
-    """78x16 Quick-Action-sized chip with rainbow-gradient AURA lettering."""
-    from aes.geolocate_headers import AES_CHIP_BG, AES_CHIP_FG
+    """Inside of the 78x16 AURA chip: rainbow-gradient AURA, no frame.
 
-    w, h = 78 * SCALE, 16 * SCALE
-    bg, border = _rgb(AES_CHIP_BG), _rgb(AES_CHIP_FG)
+    The HTML cell draws the 1px border, so the image is the 76x14 interior.
+    """
+    from aes.geolocate_headers import AES_CHIP_BG
+
+    w, h = 76 * SCALE, 14 * SCALE
+    bg = _rgb(AES_CHIP_BG)
     stops = (
         (0.00, (228, 3, 3)),
         (0.20, (255, 140, 0)),
@@ -120,24 +123,39 @@ def build_aura_chip() -> Path:
                 return tuple(int(c0[j] + (c1[j] - c0[j]) * u) for j in range(3))  # type: ignore[return-value]
         return stops[-1][1]
 
-    font = _bold_font(22)
+    # Cap height ~80% of the interior; letters spread across ~80% of the width.
+    text = "AURA"
+    target_h = round(h * 0.8)
+    size = target_h
+    font = _bold_font(size)
+    probe = ImageDraw.Draw(Image.new("L", (1, 1)))
+    for _ in range(40):
+        box = probe.textbbox((0, 0), "A", font=font)
+        if box[3] - box[1] >= target_h:
+            break
+        size += 1
+        font = _bold_font(size)
+    glyphs = [probe.textbbox((0, 0), ch, font=font) for ch in text]
+    widths = [b[2] - b[0] for b in glyphs]
+    span = round(w * 0.8)
+    gap = max(0, (span - sum(widths)) // (len(text) - 1))
+    total = sum(widths) + gap * (len(text) - 1)
     mask = Image.new("L", (w, h), 0)
     draw = ImageDraw.Draw(mask)
-    text = "AURA"
-    bbox = draw.textbbox((0, 0), text, font=font)
-    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    x = (w - tw) // 2 - bbox[0]
-    y = (h - th) // 2 - bbox[1] - 1
-    draw.text((x, y), text, font=font, fill=255)
+    x0 = x = (w - total) // 2
+    for ch, box, cw in zip(text, glyphs, widths):
+        y = (h - (box[3] - box[1])) // 2 - box[1]
+        draw.text((x - box[0], y), ch, font=font, fill=255)
+        x += cw + gap
+    # Gradient spans the lettering, not the chip, so it runs red to violet.
     grad = Image.new("RGB", (w, h), bg)
     px = grad.load()
     for ix in range(w):
-        c = color_at(ix / max(1, w - 1))
+        c = color_at((ix - x0) / max(1, total - 1))
         for iy in range(h):
             px[ix, iy] = c
     out = Image.new("RGB", (w, h), bg)
     out.paste(grad, (0, 0), mask)
-    ImageDraw.Draw(out).rectangle([0, 0, w - 1, h - 1], outline=border)
     path = ICONS / "aes_aura_chip.png"
     out.save(path, optimize=True)
     return path
@@ -150,7 +168,7 @@ def main() -> None:
         w, h = Image.open(path).size
         print(path, f"{w // SCALE}x{h // SCALE} display")
     aura = build_aura_chip()
-    print(aura, "78x16 display")
+    print(aura, "76x14 display")
 
 
 if __name__ == "__main__":

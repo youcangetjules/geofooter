@@ -44,6 +44,7 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 - **Workaround:** None.
 - **Fixed in:** 1.5.40. Top-row centre padding and quip side-cell padding go from 2px to 0 (line-height stays 16px).
 - **Update 2026-10-21 (17:40):** text still sat high in each row because the mark `rowspan` stretched every content row to the tallest (chips) and Outlook top-aligned the nested tables. 1.5.41 puts the mark in a side column instead. Copyright uses `v.` before the version.
+- **Update 2026-10-21 (18:00):** the side column made it worse in Word (an empty paragraph after the nested rows table, then centring, so row 1 sat ~6px low). Root cause in both layouts: the mark cell was taller than the rows, and Word gives the extra to row 1 (rowspan) or splits it around the rows (nested). 1.5.42 returns to rowspan with mark padding 3px above / 0 below. Word render: rows 20.7/20.7/21.3, strip 63.3px.
 
 ### BUG-027 — Blocked BB quick-action chip rendered wider than SL/BA/TS/NT
 

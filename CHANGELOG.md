@@ -20,6 +20,16 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.42] — 2026-10-21
+
+### Fixed
+
+- Footer top row (text and the A of A/E/S) sat a few px low, and the orange A was not centred in the strip. In Outlook the mark column was taller than the rows, and Word pushed the extra height into row 1. The mark spans the rows again with 3px above and none below, so all three rows come out the same height and the orange A sits 4px from the top and 3px from the bottom (BUG-028).
+
+### Changed
+
+- Copyright version reads `v.1.5.42` (no space). Rescan to refresh footers.
+
 ## [1.5.41] — 2026-10-21
 
 ### Fixed

@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.42: Centre footer top row and orange A in Outlook
+
+- `aes/geolocate_headers.py`: mark back to `rowspan='5'` in one table (the 1.5.41 nested rows table made Word add ~6px after it and centre it, pushing row 1 down). Mark padding `3px 4px 0 12px` (`AES_STRIP_MARK_PAD_TOP`) so the mark cell, with Word's ~3px image descent, is no taller than the 62px rows. Top row back to 2px/2px padding. Copyright `v.{VERSION}`. Verified with a private Word render (PDF export): rows 20.7/20.7/21.3, strip 63.3, orange 4.0/2.7, letters 3-4px from row edges. Word ignores smaller top padding (row grows instead), so no per-row nudge.
+- Follow-up: rescan (Python only).
+
 ### 2026-10-21 — 1.5.41: Centre footer row text; prefix version with v.
 
 - `aes/geolocate_headers.py`: mark is a side column, not `rowspan='5'` (rowspan stretched every content row to the chip row and Outlook top-aligned nested tables). `valign='middle'` on mid/actions/copy cells. Copyright `v. {VERSION}`. Also blank lines after lists in `CHANGELOG.md` (MD032).

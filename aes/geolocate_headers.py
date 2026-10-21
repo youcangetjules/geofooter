@@ -594,7 +594,11 @@ AES_STRIP_FONT = "Segoe UI, Arial, sans-serif"
 # Strip rows are 20px: 16px text + 2px padding, or the 18px chips + 1px.
 # The mark (rowspan) must fit 3 rows + 2 rules, or it stretches the strip.
 AES_STRIP_ROW_H = 20
-AES_STRIP_MARK_H = 3 * AES_STRIP_ROW_H + 2 - 6  # 56; Outlook top-aligns it, so the cell pads 8px above, 0 below
+# The mark cell must be no taller than the rows (3 x 20 + two 1px rules = 62):
+# Word gives any extra rowspan height to row 1. Word also adds ~3px of line
+# descent under the inline image, so the cell pads 3px above and none below.
+AES_STRIP_MARK_H = 3 * AES_STRIP_ROW_H + 2 - 6  # 56
+AES_STRIP_MARK_PAD_TOP = 3
 AES_STRIP_MARK_W = 59  # brand A is 256x242
 AES_STRIP_MARK_CELL_W = 12 + AES_STRIP_MARK_W + 4
 # Stacked A/E/S at the left end of the strip rules, a little lighter than the
@@ -5694,9 +5698,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         fill_px = max(0, right_w - logo_col)
         # Rows 1 and 2 balance the side blocks with td padding: Outlook does not
         # hold an empty spacer table at its width, which pushed row 1 left.
-        # Top row was ~5px taller than the others (BUG-028): 2px pad on the
-        # centre cell and on the quip side cell stacked with the 16px line.
-        top_pad = f"0 16px 0 {16 + fill_px}px"
+        top_pad = f"2px 16px 2px {16 + fill_px}px"
         mid_pad = f"2px {16 + logo_col}px 2px 16px"
         right_top = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='{right_w}' "
@@ -5713,9 +5715,10 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         letter_a = letter_e = letter_s = ""
         if mark:
             logo_cell = (
-                f"<td width='{AES_STRIP_MARK_CELL_W}' valign='middle' "
+                f"<td rowspan='5' width='{AES_STRIP_MARK_CELL_W}' valign='middle' "
                 f"bgcolor='{AES_STRIP_BG}' style='width:{AES_STRIP_MARK_CELL_W}px; "
-                f"padding:8px 4px 0 12px; background:{AES_STRIP_BG}; "
+                f"padding:{AES_STRIP_MARK_PAD_TOP}px 4px 0 12px; "
+                f"background:{AES_STRIP_BG}; "
                 f"vertical-align:middle;'>"
                 f"{mark}</td>"
             )
@@ -5726,7 +5729,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             from geofooter.version import VERSION as _aes_ver
         except Exception:
             _aes_ver = ""
-        _ver_bit = f" v. {_aes_ver}" if _aes_ver else ""
+        _ver_bit = f" v.{_aes_ver}" if _aes_ver else ""
         copy_plain = f"© 2026 Aliniant Labs{_ver_bit}"
         copy_html = f"&#169; 2026 Aliniant Labs{_ver_bit}"
         copy_px = _footer_text_px(copy_plain, 11, italic=False)
@@ -5746,14 +5749,16 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"<td width='16' style='width:16px; font-size:1px;'>&nbsp;</td>"
             f"</tr></table>"
         )
-        # Mark sits in its own column (not rowspan). A rowspan mark forced every
-        # content row to the tallest row's height, and Outlook then top-aligned
-        # the nested summary/chip tables in the leftover space.
-        rows_table = (
+        # The mark spans all five rows. Word gives any extra rowspan height to
+        # row 1, so the mark cell must be no taller than the rows
+        # (AES_STRIP_MARK_PAD). Nesting the rows in a side cell instead made
+        # Word add ~6px after the nested table and centre it, pushing row 1 down.
+        summary_block = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
             f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
             f"border-collapse:collapse;'>"
             f"<tr>"
+            f"{logo_cell}"
             f"{letter_a}"
             f"<td colspan='2' align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
             f"style='background:{AES_STRIP_BG}; padding:{top_pad}; text-align:center; "
@@ -5761,7 +5766,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"font-weight:bold; letter-spacing:0.3px; line-height:16px; "
             f"mso-line-height-rule:exactly; vertical-align:middle;'>{summary_line1}</td>"
             f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:0; vertical-align:middle;'>"
+            f"style='background:{AES_STRIP_BG}; padding:2px 0; vertical-align:middle;'>"
             f"{right_top}</td>"
             f"</tr>"
             f"{rule_row}"
@@ -5787,20 +5792,6 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"</tr>"
             f"</table>"
         )
-        if logo_cell:
-            summary_block = (
-                f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
-                f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
-                f"border-collapse:collapse;'>"
-                f"<tr>"
-                f"{logo_cell}"
-                f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-                f"style='background:{AES_STRIP_BG}; padding:0; vertical-align:middle;'>"
-                f"{rows_table}</td>"
-                f"</tr></table>"
-            )
-        else:
-            summary_block = rows_table
 
         # Top-of-mail banners sit outside the AES footer block so VBA can
         # inject them after <body>; the footer itself stays the scan strip.

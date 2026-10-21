@@ -3262,6 +3262,56 @@ End Function
 
 ' Inline the footer A. Same cid pattern as the status strip, separate file prefix
 ' so a banner refresh does not delete it.
+Private Function AesCidAttached(ByVal mail As Object, ByVal wantCid As String) As Boolean
+    Const PR_ATTACH_CONTENT_ID As String = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
+    Dim i As Long
+    Dim cid As String
+    On Error Resume Next
+    wantCid = LCase$(Trim$(wantCid))
+    AesCidAttached = False
+    If mail Is Nothing Or Len(wantCid) = 0 Then Exit Function
+    For i = 1 To mail.Attachments.Count
+        cid = LCase$(Trim$(CStr(mail.Attachments.Item(i).PropertyAccessor.GetProperty(PR_ATTACH_CONTENT_ID))))
+        cid = Replace(Replace(cid, "<", ""), ">", "")
+        If StrComp(cid, wantCid, vbBinaryCompare) = 0 Then
+            AesCidAttached = True
+            Exit Function
+        End If
+        Err.Clear
+    Next i
+End Function
+
+' True when every AES-Inline-Img cid in the footer is already attached.
+Private Function AesInlineCidsAttached(ByVal mail As Object, ByVal footerHtml As String) As Boolean
+    Dim s As Long
+    Dim e As Long
+    Dim bar As Long
+    Dim spec As String
+    Dim cid As String
+    On Error GoTo EH
+    AesInlineCidsAttached = True
+    s = InStr(1, footerHtml, AES_INLINE_MARKER, vbTextCompare)
+    If s = 0 Then Exit Function
+    Do While s > 0
+        s = s + Len(AES_INLINE_MARKER)
+        e = InStr(s, footerHtml, "-->")
+        If e = 0 Then Exit Do
+        spec = Trim$(Mid$(footerHtml, s, e - s))
+        bar = InStr(1, spec, "|")
+        If bar > 1 Then
+            cid = Left$(spec, bar - 1)
+            If Not AesCidAttached(mail, cid) Then
+                AesInlineCidsAttached = False
+                Exit Function
+            End If
+        End If
+        s = InStr(e, footerHtml, AES_INLINE_MARKER, vbTextCompare)
+    Loop
+    Exit Function
+EH:
+    AesInlineCidsAttached = False
+End Function
+
 Private Function EmbedAesFooterMark(ByVal mail As Object, ByVal footerHtml As String) As String
     Const PR_ATTACH_CONTENT_ID As String = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
     Const PR_ATTACH_MIME_TAG As String = "http://schemas.microsoft.com/mapi/proptag/0x370E001F"
@@ -3272,6 +3322,7 @@ Private Function EmbedAesFooterMark(ByVal mail As Object, ByVal footerHtml As St
     Dim pngPath As String
     Dim s As Long
     Dim e As Long
+    Dim needAttach As Boolean
 
     On Error GoTo ErrHandler
     EmbedAesFooterMark = footerHtml
@@ -3286,6 +3337,15 @@ Private Function EmbedAesFooterMark(ByVal mail As Object, ByVal footerHtml As St
     Dim fso As Object
     Set fso = CreateObject("Scripting.FileSystemObject")
     If Not fso.FileExists(pngPath) Then Exit Function
+
+    ' Rescans used to delete and re-add every aes_mark_* part on each apply.
+    ' That dirties the IMAP item before CommitMailHtml, races the store, and
+    ' leaves unsaved half-written HTML that Outlook shows as text-only (BUG-030).
+    needAttach = (Not AesCidAttached(mail, AES_MARK_CID)) Or (Not AesInlineCidsAttached(mail, footerHtml))
+    If Not needAttach Then
+        EmbedAesFooterMark = footerHtml
+        Exit Function
+    End If
 
     stage = "remove previous mark"
     For i = mail.Attachments.Count To 1 Step -1
@@ -3315,8 +3375,6 @@ ErrHandler:
     EmbedAesFooterMark = footerHtml
 End Function
 
-' Attach every AES-Inline-Img marker in the footer under its own Content-ID.
-' Runs after EmbedAesFooterMark has removed the previous aes_mark_* files.
 Private Sub EmbedAesInlineImages(ByVal mail As Object, ByVal footerHtml As String)
     Const PR_ATTACH_CONTENT_ID As String = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
     Const PR_ATTACH_MIME_TAG As String = "http://schemas.microsoft.com/mapi/proptag/0x370E001F"
@@ -3398,6 +3456,28 @@ Private Function InsertFooterIntoMail(mail As Object, footerPath As String) As B
     End If
 
     footerHTML = InjectFullScanAction(mail, footerHTML)
+
+    ' A prior failed Save can leave this item dirty in the reading pane. Writing
+    ' again on top of that is what permanently flattens the body to text.
+    Dim entryIdGuard As String
+    entryIdGuard = ""
+    On Error Resume Next
+    entryIdGuard = CStr(mail.EntryID)
+    If TypeOf mail Is Outlook.MailItem Then
+        If Not CBool(mail.Saved) Then
+            DiscardUnsavedChanges mail, entryIdGuard
+        End If
+        If Not CBool(mail.Saved) Then
+            m_LastCommitConflict = True
+            MSCANModLogging.WriteLogWarn "HEALTH | ReplaceAesFooterInMail: mail has unsaved AES changes - " & _
+                "click another message without saving, then rescan: " & SafeSubject(mail)
+            Err.Clear
+            On Error GoTo ErrHandler
+            Exit Function
+        End If
+    End If
+    Err.Clear
+    On Error GoTo ErrHandler
 
     Dim bannerHtml As String
     bannerHtml = TakeAesTopBannerBlock(footerHTML)

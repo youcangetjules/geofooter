@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.46: Stop rescan attachment churn that flattens mail to text
+
+- `VBA/MSCANModule1.bas`: `AesCidAttached` / `AesInlineCidsAttached`; `EmbedAesFooterMark` skips delete/re-add when mark + letter CIDs are already present. `ReplaceAesFooterInMail` aborts if the item is still dirty after `DiscardUnsavedChanges`. ASCII/CRLF. Seen on Nvidia RTX Spark rescans at 16:01–16:03 (BUG-030).
+- Follow-up: re-import `MSCANModule1`; click away from any dirty mail without saving, then rescan once.
+
 ### 2026-10-21 — 1.5.45: Centre footer rows; Quick Actions above chips
 
 - `_build_quick_actions_row_html` returns chips only. Footer builds a two-line centred block: `QUICK ACTIONS` then the chips, still balanced by the copyright-width spacer so the buttons sit on the strip centre.

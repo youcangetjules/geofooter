@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.46] — 2026-10-21
+
+### Fixed
+
+- Rapid rescans could leave a mail as plain text. Each footer apply was deleting and re-adding the orange mark and A/E/S images, which dirtied the IMAP item and raced `Save`. Re-import `MSCANModule1` (BUG-030).
+
 ## [1.5.45] — 2026-10-21
 
 ### Changed

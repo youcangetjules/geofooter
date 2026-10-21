@@ -33,6 +33,17 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-030 — Rapid rescans flatten mail to text via dirty attachment churn
+
+- **Severity:** S2
+- **Area:** AES / VBA
+- **Status:** fixed (pending VBA re-import of `MSCANModule1`)
+- **Reported:** 2026-10-21
+- **Summary:** Rescanning "Everything you need to know about Nvidia's RTX Spark" (and similar IMAP items) hit `CommitMailHtml` "message has been changed". `EmbedAesFooterMark` had deleted and re-added every `aes_mark_*` attachment on each apply, dirtying the item before Save. Failed Saves left unsaved half-written HTML on the reading-pane item; Outlook then shows that as text-only / "Converted from text/plain". Logs at 16:01–16:03: conflict storm, footer count 2, "unsaved AES changes stayed on the message".
+- **Repro:** Short-scan an IMAP mail, then rescan it again within a few seconds while it stays selected.
+- **Workaround:** Click another message without saving the damaged one, then rescan once. If the body is already plain, restore from webmail or re-download.
+- **Fixed in:** 1.5.46. `EmbedAesFooterMark` skips delete/re-add when the mark and letter Content-IDs are already present. `ReplaceAesFooterInMail` refuses to write when the item is still dirty after `DiscardUnsavedChanges`. Re-import `MSCANModule1`.
+
 ### BUG-029 — White hairlines to the right of footer A and E letters
 
 - **Severity:** S4

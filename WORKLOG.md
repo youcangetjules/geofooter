@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.35: Fix garbage Content-ID on footer letter images
+
+- `VBA/MSCANModule1.bas` `EmbedAesInlineImages`: `SetProperty PR_ATTACH_CONTENT_ID, CStr(cid)`. A plain String variable went ByRef over late binding and the stored Content-ID was the reference bytes. A read-only COM check showed `aesfootermark` correct but the letters as `\u8d9c\u4c86...`. ASCII/CRLF. BUG-025 update.
+- Follow-up: re-import `MSCANModule1`; rescan.
+
 ### 2026-10-21 — 1.5.34: Footer-mark job stops writing letters into mail
 
 - `aes/geolocate_headers.py` `_embed_footer_mark_job`: back to mark-only, and exits if `aesfootermark` is already attached. The 1.5.32/1.5.33 letter attach rewrote `HTMLBody` and called `Save()` from a second process. On 14:58 rescans that caused a "message has been changed" conflict and left "Agency Isn't Authorization" as plain text with no footer (confirmed with the mark log, the VBA log and a read-only COM check). BUG-026. BUG-022 update: GURI processes predate the focus fix; restart needed.

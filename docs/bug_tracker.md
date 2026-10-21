@@ -55,6 +55,7 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 - **Workaround:** None.
 - **Fixed in:** 1.5.32. The letters are now 12px images (`assets/icons/aes_mark_letter_*.png`, from `scripts/build_footer_strip_images.py`) with 4px padding in 20px rows. The rows have tighter padding (16px text plus 2px; chips 18px plus 1px), and the mark is 59x56, so the strip is 62px. VBA `EmbedAesInlineImages` attaches the letters from `AES-Inline-Img` markers. The Python follow-up job also attaches any that are missing, so they appear before the re-import.
 - **Update 2026-10-21:** before the VBA re-import, the letters showed as broken-image boxes. The follow-up job read the mail before Outlook had written the new footer, saw the old footer (mark cid, no letters) and logged "already attached". 1.5.33 makes the job wait for a body that contains `cid:aesmarkletter`. Re-importing `MSCANModule1` avoids the race entirely.
+- **Update 2026-10-21 (15:06):** after the re-import, VBA attached all three letters but their Content-IDs were garbage (for example `\u8d9c\u4c86...`). `EmbedAesInlineImages` passed a `String` variable to the late-bound `PropertyAccessor.SetProperty`, which received it ByRef and stored the reference bytes. The mark works because it passes a `Const`. 1.5.35 passes `CStr(cid)`. Re-import `MSCANModule1` again.
 
 ### BUG-024 — Footer summary rows are not centred on the strip
 

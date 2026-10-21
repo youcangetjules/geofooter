@@ -3344,7 +3344,9 @@ Private Sub EmbedAesInlineImages(ByVal mail As Object, ByVal footerHtml As Strin
             pngPath = Mid$(spec, bar + 1)
             If fso.FileExists(pngPath) Then
                 Set att = mail.Attachments.Add(pngPath, olByValue, 0, fso.GetFileName(pngPath))
-                att.PropertyAccessor.SetProperty PR_ATTACH_CONTENT_ID, cid
+                ' CStr: a plain String variable goes over late binding ByRef, and
+                ' SetProperty stored the reference bytes as the Content-ID.
+                att.PropertyAccessor.SetProperty PR_ATTACH_CONTENT_ID, CStr(cid)
                 On Error Resume Next
                 att.PropertyAccessor.SetProperty PR_ATTACH_MIME_TAG, "image/png"
                 Err.Clear

@@ -20,6 +20,11 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.35] — 2026-10-21
+
+### Fixed
+
+- Footer A/E/S letters still showed as empty boxes after the VBA re-import. The images were attached, but VBA gave them garbage Content-IDs, so the footer could not find them. Re-import MSCANModule1 (BUG-025).
 ## [1.5.34] — 2026-10-21
 
 ### Fixed

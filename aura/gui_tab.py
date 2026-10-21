@@ -28,7 +28,8 @@ from PySide6.QtWidgets import (
 )
 
 from aura import automation
-from aura.catalog import find_broker, load_catalog
+from aura.catalog import find_broker, load_catalog, match_domain
+from aura.detect import match_sender
 from aura.pending import accept_pending, dismiss_pending, list_pending
 from aura.profile import IdentityProfile, load_profile, save_profile
 from aura.settings import load_settings, save_settings
@@ -146,14 +147,14 @@ class DataBrokersPanel(QWidget):
         warn.setStyleSheet("color: #b54708; font-size: 11px;")
         root.addWidget(warn)
 
-        tabs = QTabWidget()
-        root.addWidget(tabs, stretch=1)
+        self._tabs = QTabWidget()
+        root.addWidget(self._tabs, stretch=1)
 
-        tabs.addTab(self._build_review_tab(), "Review")
-        tabs.addTab(self._build_identity_tab(), "Identity")
-        tabs.addTab(self._build_brokers_tab(), "Brokers")
-        tabs.addTab(self._build_requests_tab(), "Requests")
-        tabs.addTab(self._build_aes_pending_tab(), "AES inbox")
+        self._tabs.addTab(self._build_review_tab(), "Review")
+        self._tabs.addTab(self._build_identity_tab(), "Identity")
+        self._tab_brokers = self._tabs.addTab(self._build_brokers_tab(), "Brokers")
+        self._tabs.addTab(self._build_requests_tab(), "Requests")
+        self._tabs.addTab(self._build_aes_pending_tab(), "AES inbox")
 
     # ---- Identity ----
 
@@ -707,3 +708,56 @@ class DataBrokersPanel(QWidget):
         self._reload_requests()
         self._reload_review()
         self._reload_pending()
+
+    def focus_provider(
+        self,
+        *,
+        sender: str = "",
+        domain: str = "",
+        broker_id: str = "",
+    ) -> None:
+        """Open Brokers and preselect the catalog entry for this mail's provider.
+
+        Used when the footer AURA chip (or ribbon) opens Aura with a sender
+        domain. Falls back to filtering the catalog by the domain text when
+        the sender is not a known broker.
+        """
+        hit = None
+        bid = (broker_id or "").strip().lower()
+        if bid:
+            hit = find_broker(bid)
+        if hit is None:
+            hit = match_sender(sender_email=sender, sender_domain=domain)
+        if hit is None and domain:
+            hit = match_domain(domain)
+
+        needle = ""
+        if hit:
+            needle = str(hit.get("name") or hit.get("id") or "")
+        elif domain and domain.lower() not in {"", "unknown"}:
+            needle = domain.strip()
+        elif sender and "@" in sender:
+            needle = sender.rsplit("@", 1)[-1].strip()
+
+        try:
+            self._tabs.setCurrentIndex(int(self._tab_brokers))
+        except Exception:
+            pass
+        if needle:
+            # Block signals so we can reload once with the needle and select.
+            self.broker_filter.blockSignals(True)
+            self.broker_filter.setText(needle)
+            self.broker_filter.blockSignals(False)
+        self._reload_brokers()
+        if hit:
+            want = str(hit.get("id") or "").lower()
+            for i in range(self.broker_tree.topLevelItemCount()):
+                item = self.broker_tree.topLevelItem(i)
+                if item is None:
+                    continue
+                if str(item.data(0, Qt.ItemDataRole.UserRole) or "").lower() == want:
+                    self.broker_tree.setCurrentItem(item)
+                    self.broker_tree.scrollToItem(item)
+                    break
+        label = (hit or {}).get("name") or needle or "catalog"
+        self._msg(f"Aura: looking at {label}")

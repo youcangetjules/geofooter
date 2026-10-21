@@ -10,7 +10,7 @@ Handles aes:// links clicked in AES footers / reports, e.g.
     aes://restore-html?id=r20260923120000...
     aes://open-report?path=C:/GeoFooter/output/links/links_report_….html
     aes://set-link-risk?report=links_report_…&id=…&level=low|medium|high|clear
-    aes://open-aura
+    aes://open-aura?sender=…&domain=…&broker=…
 
 Rules are stored in %LOCALAPPDATA%\\GeoFooter\\aes_sender_rules.json and are
 consumed by the Outlook VBA engine on the next scan of mail from that sender.
@@ -504,8 +504,19 @@ def handle_open_report(params: dict, logger: logging.Logger) -> int:
 
 
 def handle_open_aura(params: dict, logger: logging.Logger) -> int:
-    """Open GURI on the Aura tab (same as the Outlook Aura ribbon button)."""
-    del params  # no query args yet
+    """Open GURI on the Aura tab; optionally preselect the mail's provider."""
+    sender = (params.get("sender") or [""])[0].strip()
+    domain = (params.get("domain") or [""])[0].strip()
+    broker = (params.get("broker") or [""])[0].strip()
+    if not broker and (sender or domain):
+        try:
+            from aura.detect import match_sender
+
+            hit = match_sender(sender_email=sender, sender_domain=domain)
+            if hit:
+                broker = str(hit.get("id") or "")
+        except Exception:
+            pass
     try:
         from geofooter.paths import get_install_root
 
@@ -529,14 +540,27 @@ def handle_open_aura(params: dict, logger: logging.Logger) -> int:
     creation = 0
     if sys.platform == "win32":
         creation = int(getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000))
+    cmd = [str(exe), str(script), "--raise", "--aura"]
+    if sender:
+        cmd.append(f"--sender={sender}")
+    if domain:
+        cmd.append(f"--domain={domain}")
+    if broker:
+        cmd.append(f"--broker={broker}")
     try:
         subprocess.Popen(
-            [str(exe), str(script), "--raise", "--aura"],
+            cmd,
             cwd=str(root),
             creationflags=creation,
             close_fds=True,
         )
-        logger.info("open-aura: launched %s --raise --aura", script)
+        logger.info(
+            "open-aura: launched %s sender=%s domain=%s broker=%s",
+            script,
+            sender,
+            domain,
+            broker,
+        )
         return 0
     except Exception as exc:
         logger.exception("open-aura: launch failed")

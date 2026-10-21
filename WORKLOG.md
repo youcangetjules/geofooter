@@ -13,6 +13,14 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.54: Footer chip tooltips; AURA opens broker for the sender
+
+- `aes/geolocate_headers.py`: Quick Action chips and AURA get `title=` hover text. AURA href carries `sender` / `domain` / matched `broker`.
+- `aes/action_handler.py` `open-aura`: forwards those as `--sender=` / `--domain=` / `--broker=` to `guri/gui.py`.
+- `guri/gui.py`: CLI + single-instance IPC (`AURA\tquery`) pass provider into `show_aura_tab`.
+- `aura/gui_tab.py` `focus_provider`: switch to Brokers, filter and select the catalog row (or filter by domain when unknown).
+- Follow-up: rescan for tips/link; restart GURI once for IPC/CLI.
+
 ### 2026-10-21 — 1.5.53: Vertically centre the footer quip
 
 - `aes/geolocate_headers.py`: quip wrapped in `<span style='mso-text-raise:2px'>`. The 11px quip shared the 12px title's baseline, so it sat low (Word render: cap-to-baseline midpoint 20 vs row centre 16.5 render px; now 17). Moving padding under the quip cell made the row 3px taller instead, so that was reverted.

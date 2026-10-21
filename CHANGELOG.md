@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.54] — 2026-10-21
+
+### Added
+
+- Footer Quick Action chips (SL / BA / BB / TS / NT) and the AURA chip show a hover explanation (`title=`). Outlook shows these as tooltips on the reading-pane links.
+- AURA chip opens GURI on the Aura → Brokers tab and preselects the catalog broker for that mail's sender domain when known (`aes://open-aura?sender=…&domain=…&broker=…`). Restart GURI once so an already-running instance picks up the new IPC. Rescan to refresh footers.
+
 ## [1.5.53] — 2026-10-21
 
 ### Changed

@@ -8690,15 +8690,26 @@ Current Page: {self.current_page + 1}
         self.data_brokers_tab_index = self.notebook.addTab(panel, "Aura")
         self.data_brokers_panel = panel
 
-    def show_aura_tab(self) -> None:
-        """Select the Aura (data-broker removal) tab and bring GURI forward."""
+    def show_aura_tab(
+        self,
+        *,
+        sender: str = "",
+        domain: str = "",
+        broker_id: str = "",
+    ) -> None:
+        """Select the Aura tab and optionally preselect a broker / provider."""
         try:
             idx = int(getattr(self, "data_brokers_tab_index", -1))
             if idx >= 0:
                 self.notebook.setCurrentIndex(idx)
             panel = getattr(self, "data_brokers_panel", None)
-            if panel is not None and hasattr(panel, "reload_all"):
-                panel.reload_all()
+            if panel is not None:
+                if hasattr(panel, "reload_all"):
+                    panel.reload_all()
+                if (sender or domain or broker_id) and hasattr(panel, "focus_provider"):
+                    panel.focus_provider(
+                        sender=sender, domain=domain, broker_id=broker_id
+                    )
         except Exception:
             pass
         try:
@@ -13452,13 +13463,41 @@ def main():
     want_raise = "--raise" in sys.argv or "--foreground" in sys.argv
     want_aura = "--aura" in sys.argv or "--brokers" in sys.argv
 
+    def _arg_value(flag: str) -> str:
+        prefix = flag + "="
+        for arg in sys.argv[1:]:
+            if arg.startswith(prefix):
+                return arg[len(prefix) :].strip()
+        return ""
+
+    aura_sender = _arg_value("--sender")
+    aura_domain = _arg_value("--domain")
+    aura_broker = _arg_value("--broker")
+
+    def _aura_ipc_payload() -> bytes:
+        # AURA\tsender=…&domain=…&broker=…\n — empty query still opens Aura.
+        from urllib.parse import urlencode
+
+        q = urlencode(
+            {
+                k: v
+                for k, v in (
+                    ("sender", aura_sender),
+                    ("domain", aura_domain),
+                    ("broker", aura_broker),
+                )
+                if v
+            }
+        )
+        return (("AURA\t" + q) if q else "AURA").encode("utf-8") + b"\n"
+
     def _ping_existing() -> bool:
         sock = QLocalSocket()
         sock.connectToServer(instance_key)
         if not sock.waitForConnected(400):
             return False
         if want_aura:
-            msg = b"AURA\n"
+            msg = _aura_ipc_payload()
         elif want_raise:
             msg = b"RAISE\n"
         else:
@@ -13530,7 +13569,22 @@ def main():
             if "PUSH" in upper:
                 window.note_aes_push()
             elif "AURA" in upper or "BROKER" in upper:
-                window.show_aura_tab()
+                # Optional tab-separated query: AURA\tsender=…&domain=…&broker=…
+                sender = domain = broker = ""
+                try:
+                    from urllib.parse import parse_qs
+
+                    parts = raw.strip().split("\t", 1)
+                    if len(parts) > 1 and parts[1].strip():
+                        qs = parse_qs(parts[1].strip(), keep_blank_values=False)
+                        sender = (qs.get("sender") or [""])[0]
+                        domain = (qs.get("domain") or [""])[0]
+                        broker = (qs.get("broker") or [""])[0]
+                except Exception:
+                    pass
+                window.show_aura_tab(
+                    sender=sender, domain=domain, broker_id=broker
+                )
             elif "RAISE" in upper:
                 window.expand_to_screen(steal_focus=True)
             # PING / empty: acknowledge the second start, leave focus alone.
@@ -13546,7 +13600,14 @@ def main():
     if want_raise:
         QTimer.singleShot(0, lambda: window.expand_to_screen(steal_focus=True))
     if want_aura:
-        QTimer.singleShot(0, window.show_aura_tab)
+        QTimer.singleShot(
+            0,
+            lambda: window.show_aura_tab(
+                sender=aura_sender,
+                domain=aura_domain,
+                broker_id=aura_broker,
+            ),
+        )
 
     sys.exit(app.exec())
 

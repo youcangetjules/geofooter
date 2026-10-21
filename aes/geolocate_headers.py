@@ -718,7 +718,11 @@ def _footer_spacer_cell(width_px: int) -> str:
     )
 
 
-def _footer_aura_chip_html() -> str:
+def _footer_aura_chip_html(
+    *,
+    sender_email: str = "",
+    sender_domain: str = "",
+) -> str:
     """Row-2 AURA chip: same 78x16 frame as Quick Actions; rainbow glyph image."""
     try:
         from geofooter.paths import get_install_root
@@ -726,6 +730,37 @@ def _footer_aura_chip_html() -> str:
         path = get_install_root() / "assets" / "icons" / "aes_aura_chip.png"
     except Exception:
         path = Path()
+    broker_id = ""
+    broker_name = ""
+    try:
+        from aura.detect import match_sender
+
+        hit = match_sender(
+            sender_email=sender_email, sender_domain=sender_domain
+        )
+        if hit:
+            broker_id = str(hit.get("id") or "")
+            broker_name = str(hit.get("name") or "")
+    except Exception:
+        pass
+    query = urllib.parse.urlencode(
+        {
+            k: v
+            for k, v in (
+                ("sender", (sender_email or "").strip()),
+                ("domain", (sender_domain or "").strip()),
+                ("broker", broker_id),
+            )
+            if v
+        }
+    )
+    href = "aes://open-aura" + (f"?{query}" if query else "")
+    who = broker_name or (sender_domain or "").strip() or "this sender"
+    tip = (
+        f"Open Aura — check / remove listing for {who}"
+        if who and who.lower() != "unknown"
+        else "Open Aura (data-broker removal)"
+    )
     if not path.is_file():
         # Fallback: stepped rainbow letters if the chip PNG is missing.
         rainbow = (
@@ -759,13 +794,15 @@ def _footer_aura_chip_html() -> str:
         line = "font-size:1px; line-height:normal;"
     else:
         line = "font-size:10px; line-height:16px; mso-line-height-rule:exactly;"
+    tip_esc = html.escape(tip, quote=True)
+    href_esc = html.escape(href, quote=True)
     return (
         "<table border='0' cellpadding='0' cellspacing='0' width='78' align='right' "
         "style='border-collapse:collapse; width:78px;'>"
         f"<tr><td bgcolor='{bg}' align='center' valign='middle' width='78' height='16' "
         f"style='background:{bg}; border:1px solid {border}; "
         f"width:78px; height:16px; {line} text-align:center; padding:0;'>"
-        f"<a href='aes://open-aura' title='Open Aura' "
+        f"<a href='{href_esc}' title='{tip_esc}' "
         f"style='color:{border}; font-family:{AES_STRIP_FONT}; {line} "
         f"font-weight:bold; letter-spacing:0; text-decoration:none;'>{inner}</a>"
         "</td></tr></table>"
@@ -4564,12 +4601,14 @@ class HTMLReportGenerator:
         # Trusted sender: the chip fills green so it reads at a glance.
         trust_bg, trust_fg = AES_CHIP_TRUSTED_BG, AES_CHIP_TRUSTED_FG
 
-        def chip(url: str, code: str, bg: str, fg: str) -> str:
+        def chip(url: str, code: str, bg: str, fg: str, tip: str) -> str:
             # Same dark border on every chip. A border that matched the fill
             # (blocked BB) made that chip look ~2px wider than the white ones.
             # No letter-spacing: Outlook was also widening "BB" past the fixed
             # width. Outer table is 78 so a 1px border still fits inside.
+            # title= is the Outlook-safe hover explanation for aes:// chips.
             href = html.escape(url, quote=True)
+            title = html.escape(tip, quote=True)
             border = AES_CHIP_FG
             return (
                 "<table border='0' cellpadding='0' cellspacing='0' width='78' align='center' "
@@ -4578,40 +4617,66 @@ class HTMLReportGenerator:
                 f"style='background:{bg}; border:1px solid {border}; "
                 f"width:78px; height:16px; line-height:16px; mso-line-height-rule:exactly; "
                 f"text-align:center; padding:0; font-size:10px;'>"
-                f"<a href='{href}' "
+                f"<a href='{href}' title='{title}' "
                 f"style='color:{fg}; font-family:{AES_STRIP_FONT}; font-size:10px; "
                 f"font-weight:bold; letter-spacing:0; line-height:16px; "
                 f"mso-line-height-rule:exactly; text-decoration:none;'>{code}</a>"
                 "</td></tr></table>"
             )
 
-        planned: List[Tuple[str, str, str, str]] = []
+        who = sender or domain or "this sender"
+        planned: List[Tuple[str, str, str, str, str]] = []
         if links_href:
-            planned.append(("SL", links_href, green_bg, green_fg))
+            planned.append((
+                "SL",
+                links_href,
+                green_bg,
+                green_fg,
+                "Show Link Safety report for this message",
+            ))
         if has_sender:
             planned.append((
                 "BA",
                 f"aes://block-attachments?{query}",
                 red_bg if att_on else green_bg,
                 red_fg if att_on else green_fg,
+                (
+                    f"Attachments already blocked for {who} — click to keep blocking"
+                    if att_on
+                    else f"Block Attachments from {who} (quarantine on later scans)"
+                ),
             ))
             planned.append((
                 "BB",
                 f"aes://block-beacons?{query}",
                 red_bg if bcn_on else green_bg,
                 red_fg if bcn_on else green_fg,
+                (
+                    f"Beacons already blocked for {who} — click to keep blocking"
+                    if bcn_on
+                    else f"Block Beacons (tracking pixels) from {who}"
+                ),
             ))
             planned.append((
                 "ST" if trusted else "TS",
                 f"aes://trust-sender?{query}",
                 trust_bg if trusted else green_bg,
                 trust_fg if trusted else green_fg,
+                (
+                    f"{who} is Trusted — click to confirm / keep trust"
+                    if trusted
+                    else f"Trust Sender {who} (clears blocks for this identity)"
+                ),
             ))
             planned.append((
                 "NT",
                 f"aes://untrust-sender?{query}",
                 green_bg,
                 green_fg,
+                (
+                    f"Not Trusted / Full No Trust for {who} "
+                    "(1st click: trust off + block beacons; 2nd: text-only)"
+                ),
             ))
         if not planned:
             return ""
@@ -4625,9 +4690,10 @@ class HTMLReportGenerator:
             f"<td valign='middle' style='font-family:{AES_STRIP_FONT}; font-size:9px; "
             "font-weight:bold; letter-spacing:1.5px; white-space:nowrap; "
             "vertical-align:middle; line-height:16px; mso-line-height-rule:exactly;'>"
-            f"<span style='color:{label_color};'>QUICK ACTIONS</span></td>"
+            f"<span style='color:{label_color};' "
+            f"title='Quick Actions for this sender'>QUICK ACTIONS</span></td>"
         ]
-        for code, url, bg, fg in planned:
+        for code, url, bg, fg, tip in planned:
             parts.append(
                 "<td width='20' valign='middle' "
                 "style='width:20px; font-size:1px; line-height:1px; "
@@ -4635,7 +4701,7 @@ class HTMLReportGenerator:
             )
             parts.append(
                 "<td valign='middle' style='vertical-align:middle;'>"
-                f"{chip(url, code, bg, fg)}</td>"
+                f"{chip(url, code, bg, fg, tip)}</td>"
             )
         return (
             "<table border='0' cellpadding='0' cellspacing='0' align='center' "
@@ -5811,12 +5877,16 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"<td width='16' style='width:16px; font-size:1px; line-height:1px;'>&nbsp;</td>"
             f"</tr></table>"
         )
+        aura_chip = _footer_aura_chip_html(
+            sender_email=str(data.get("sender_email") or ""),
+            sender_domain=str(data.get("sender_domain") or ""),
+        )
         right_aura = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='{aura_w}' "
             f"align='right' style='width:{aura_w}px; border-collapse:collapse;'><tr>"
             f"<td align='right' valign='middle' "
             f"style='text-align:right; vertical-align:middle; padding:0;'>"
-            f"{_footer_aura_chip_html()}</td>"
+            f"{aura_chip}</td>"
             f"<td width='16' style='width:16px; font-size:1px; line-height:1px;'>&nbsp;</td>"
             f"</tr></table>"
         )

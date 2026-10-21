@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.21: Coerce threat-intel HTML sort keys to str
+
+- `aes/geolocate_headers.py` `_build_threat_intel_html`: `rank.get` / `kind_order.get` / `colours.get` / `labels.get` now take `str(...)` of the report fields, matching the typed `dict[str, ...]` keys. Lint clean; module imports.
+
 ### 2026-10-21 — 1.5.20: Guard None threat_intel in _run_threat_intel
 
 - `aes/geolocate_headers.py`: early `if ti is None: return []` so the optional import is narrowed before `registrable_domain` / `ThreatIntel` / `PROVIDERS` use. Lint clean; module imports.

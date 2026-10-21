@@ -20,6 +20,11 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.21] — 2026-10-21
+
+### Fixed
+
+- Threat intel HTML builder: coerce `worst` / `kind` / `verdict` / `provider` to `str` before `dict.get`, fixing the type-checker overload error on the sort key.
 ## [1.5.20] — 2026-10-21
 
 ### Fixed

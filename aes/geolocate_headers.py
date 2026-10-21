@@ -6425,13 +6425,21 @@ table.aes th {{ color: #334; background: #f4f7f9; }}
             )
 
         rows = []
-        for rep in sorted(show, key=lambda r: (rank.get(r.get("worst"), 5), kind_order.get(r.get("kind"), 9))):
+        for rep in sorted(
+            show,
+            key=lambda r: (
+                rank.get(str(r.get("worst") or ""), 5),
+                kind_order.get(str(r.get("kind") or ""), 9),
+            ),
+        ):
             worst = str(rep.get("worst") or "unknown")
             bg, fg = colours.get(worst, colours["unknown"])
             cells = []
             for pr in rep.get("results") or []:
-                pbg, pfg = colours.get(pr.get("verdict"), colours["unknown"])
-                name = labels.get(pr.get("provider"), {}).get("label", pr.get("provider", "")).split(" (")[0]
+                verdict = str(pr.get("verdict") or "unknown")
+                pbg, pfg = colours.get(verdict, colours["unknown"])
+                provider = str(pr.get("provider") or "")
+                name = labels.get(provider, {}).get("label", provider).split(" (")[0]
                 text = f"<b>{html.escape(name)}</b>: {html.escape(str(pr.get('summary') or pr.get('verdict')))}"
                 if pr.get("link"):
                     text = f"<a href='{html.escape(pr['link'], quote=True)}' style='color:{pfg};'>{text}</a>"

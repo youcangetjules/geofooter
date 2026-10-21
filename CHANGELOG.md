@@ -20,6 +20,11 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.33] — 2026-10-21
+
+### Fixed
+
+- Footer A/E/S letters showed as broken-image boxes before the VBA re-import. The follow-up attach step now waits until Outlook has written the new footer before it checks which images are missing (BUG-025).
 ## [1.5.32] — 2026-10-21
 
 ### Changed

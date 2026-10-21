@@ -8423,7 +8423,10 @@ def _embed_footer_mark_job(job_path: str) -> None:
                 html = str(getattr(cand, "HTMLBody", "") or "")
             except Exception:
                 continue
-            if "cid:aesfootermark" not in html.lower():
+            low = html.lower()
+            # Wait for this scan's footer: the previous footer also has the
+            # mark cid but no letters, and matching it skipped the attach.
+            if "cid:aesfootermark" not in low or "cid:aesmarkletter" not in low:
                 continue
             fallback = cand
             got = _norm_mail_subject(str(getattr(cand, "Subject", "") or ""))

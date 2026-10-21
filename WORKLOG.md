@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.33: Footer-mark job waits for the new footer
+
+- `aes/geolocate_headers.py` `_embed_footer_mark_job`: only accept a mail whose body has both `cid:aesfootermark` and `cid:aesmarkletter`. It had matched the previous footer, found nothing missing, and the letters stayed broken. Confirmed with a read-only COM check: the body had the letter cids but only the mark and banner were attached. BUG-025 update.
+- Follow-up: re-import `MSCANModule1` (VBA attaches the letters itself, no race); rescan.
+
 ### 2026-10-21 — 1.5.32: Compact footer strip with image A/E/S
 
 - `aes/geolocate_headers.py`: rows locked to `AES_STRIP_ROW_H` 20px (text padding 2px, chip row 1px, side cells 2px; sender line `line-height:16px` exactly). Mark is 59x56 with 3px padding, so it fits 3 rows plus 2 rules (62px) and no longer sets the strip height. `_footer_aes_letter_cell` emits a 12px letter image with 4px padding and an `AES-Inline-Img: cid|path` marker. `_embed_footer_mark_job` attaches the mark and any missing `cid:aesmarkletter*` images.

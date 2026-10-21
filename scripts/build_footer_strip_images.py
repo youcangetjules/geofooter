@@ -20,6 +20,7 @@ sys.path.insert(0, str(ROOT))
 from PIL import Image, ImageDraw, ImageFont  # noqa: E402
 
 from aes.geolocate_headers import (  # noqa: E402
+    AES_STRIP_AES_COL,
     AES_STRIP_AES_COLOR,
     AES_STRIP_BG,
     AES_STRIP_LETTER_H,
@@ -70,7 +71,12 @@ def build_letter(letter: str) -> Path:
     ink = canvas.crop(box)
     out_h = AES_STRIP_LETTER_H * SCALE
     out_w = max(1, round(ink.width * out_h / ink.height))
-    out = ink.resize((out_w, out_h), Image.Resampling.LANCZOS)
+    glyph = ink.resize((out_w, out_h), Image.Resampling.LANCZOS)
+    # Every letter is the column width with its ink centred, so A, E and S
+    # line up on one centre line.
+    col_w = max(out_w, AES_STRIP_AES_COL * SCALE)
+    out = Image.new("RGB", (col_w, out_h), bg)
+    out.paste(glyph, ((col_w - out_w) // 2, 0))
     path = ICONS / f"aes_mark_letter_{letter.lower()}.png"
     out.save(path, optimize=True)
     return path

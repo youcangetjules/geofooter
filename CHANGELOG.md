@@ -20,6 +20,11 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.37] — 2026-10-21
+
+### Changed
+
+- Footer A/E/S letters are centred on one another. A is wider than E and S, so left-aligning them made the column look ragged. Rescan to refresh footers.
 ## [1.5.36] — 2026-10-21
 
 ### Fixed

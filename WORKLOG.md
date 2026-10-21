@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.37: Centre footer A/E/S letters horizontally
+
+- `scripts/build_footer_strip_images.py`: each letter PNG is the 16px letter column wide (32px at 2x) with its ink centred, so A (16px ink) and E/S (11px ink) share one centre line. The HTML takes the width from the image, so `aes/geolocate_headers.py` is unchanged. Letter PNGs rebuilt.
+- Follow-up: rescan (no VBA re-import).
+
 ### 2026-10-21 — 1.5.36: Centre 14px A/E/S letters in footer rows
 
 - `aes/geolocate_headers.py` `_footer_aes_letter_cell`: no padding, no `font-size:1px`/exact line height; `AES_STRIP_LETTER_H` 14 (`AES_STRIP_AES_INSET` removed). Letter PNGs rebuilt at 28px (2x) via `scripts/build_footer_strip_images.py`. A Word-engine render (private `DispatchEx` Word, PDF export) showed the padded cell made rows 24–27px vs 21–24px without letters, leaving the gap under each letter. After: rows unchanged from the letterless strip, letters 14px with ~4px above/below. BUG-025 update.

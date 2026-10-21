@@ -5657,8 +5657,10 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         right_w = quip_px + 16
         logo_col = (91 + AES_STRIP_AES_COL) if mark else 0
         fill_px = max(0, right_w - logo_col)
-        # Empty spacers — same-colour ghost text was banding the strip in Outlook.
-        left_top = _footer_spacer_cell(fill_px)
+        # Rows 1 and 2 balance the side blocks with td padding: Outlook does not
+        # hold an empty spacer table at its width, which pushed row 1 left.
+        top_pad = f"5px 16px 5px {16 + fill_px}px"
+        mid_pad = f"5px {16 + logo_col}px 5px 16px"
         right_top = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='{right_w}' "
             f"align='right' style='width:{right_w}px; border-collapse:collapse;'><tr>"
@@ -5705,10 +5707,8 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"<tr>"
             f"{logo_cell}"
             f"{letter_a}"
-            f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:4px 0;'>{left_top}</td>"
-            f"<td align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:{row_pad}; text-align:center; "
+            f"<td colspan='2' align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
+            f"style='background:{AES_STRIP_BG}; padding:{top_pad}; text-align:center; "
             f"color:{AES_STRIP_TEXT}; font-family:{AES_STRIP_FONT}; font-size:12px; "
             f"font-weight:bold; letter-spacing:0.3px; line-height:16px; "
             f"mso-line-height-rule:exactly; vertical-align:middle;'>{summary_line1}</td>"
@@ -5719,7 +5719,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"<tr>"
             f"{letter_e}"
             f"<td colspan='3' align='center' bgcolor='{AES_STRIP_BG}' "
-            f"style='padding:{row_pad}; text-align:center; background:{AES_STRIP_BG}; "
+            f"style='padding:{mid_pad}; text-align:center; background:{AES_STRIP_BG}; "
             f"color:{AES_STRIP_MUTED}; font-family:{AES_STRIP_FONT}; font-size:12px; "
             f"font-weight:normal; line-height:1.5;'>{summary_line2}</td></tr>"
             f"{rule_row}"

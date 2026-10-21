@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.16: Centre the footer summary rows
+
+- `aes/geolocate_headers.py`: row 1 drops its `left_top` spacer table and gets `padding-left: 16 + fill_px` on a `colspan=2` centre cell. Outlook was not holding the empty spacer at its width. Row 2 gets `padding-right: 16 + logo_col` so it balances the logo and A/E/S column. Row 3 (quick actions, BB centred) is unchanged. BUG-024.
+- Follow-up: rescan a message to refresh its footer. If rows still drift in Outlook, measure the logo column there; the balance assumes 91 + 18 px.
+
 ### 2026-10-21 — 1.5.15: Align footer A/E/S with the rules
 
 - `aes/geolocate_headers.py`: the rule rows span the letter column too (`colspan=4`, no left inset), so each line starts at the letters' left edge. `_footer_aes_letter_cell` is left-aligned with no padding, 17px (`AES_STRIP_AES_SIZE`), `<b>`, colour `#5a6671`, set on both a `<font>` tag and the style because Outlook painted the span-only colour black. Removed the unused `_footer_aes_rule_cell`. Checked with a headless Edge render. BUG-023 update.

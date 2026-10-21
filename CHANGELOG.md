@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.16] — 2026-10-21
+
+### Fixed
+
+- The two summary lines in the footer are now centred on the strip. Before, the top line sat a little left of centre and the sender line a little right. The quick-actions row is unchanged (BUG-024).
+
 ## [1.5.15] — 2026-10-21
 
 ### Changed

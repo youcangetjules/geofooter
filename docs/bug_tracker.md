@@ -33,6 +33,17 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-024 — Footer summary rows are not centred on the strip
+
+- **Severity:** S4
+- **Area:** AES
+- **Status:** fixed (rescan to refresh footers)
+- **Reported:** 2026-10-21
+- **Summary:** In Outlook the top summary line sat left of the strip centre and the sender line sat right of it. The sender line was centred only on the space right of the logo and A/E/S column. The top line relied on an empty spacer table to balance the quip on the right, and Outlook did not keep that table at its width.
+- **Repro:** Scan any message and compare the two summary lines with the centre of the strip. The quick-actions row is centred on its middle button, which is intended.
+- **Workaround:** None.
+- **Fixed in:** 1.5.16. Both rows now balance the side blocks with td padding: the top line is padded left by the quip width less the logo column, and the sender line is padded right by the logo column.
+
 ### BUG-023 — Footer strip shows banding after re-processing; A/E/S mark letters
 
 - **Severity:** S3

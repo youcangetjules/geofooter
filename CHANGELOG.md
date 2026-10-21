@@ -20,11 +20,22 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.41] — 2026-10-21
+
+### Fixed
+
+- Footer summary text sat at the top of each row. The orange mark no longer uses rowspan, so rows keep their own height and the text centres vertically.
+
+### Changed
+
+- Footer copyright shows `v.` before the suite version. Rescan to refresh footers.
+
 ## [1.5.40] — 2026-10-21
 
 ### Fixed
 
 - Footer top summary row was about 5px taller than the others. Its vertical padding is now 0 (BUG-028). Rescan to refresh footers.
+
 ## [1.5.39] — 2026-10-21
 
 ### Fixed
@@ -34,102 +45,122 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 ### Changed
 
 - Footer copyright reads `© 2026 Aliniant Labs` plus the suite version. Rescan to refresh footers.
+
 ## [1.5.38] — 2026-10-21
 
 ### Changed
 
 - Footer orange A sits 5px lower (8px from the top of the strip instead of 3px). Rescan to refresh footers.
+
 ## [1.5.37] — 2026-10-21
 
 ### Changed
 
 - Footer A/E/S letters are centred on one another. A is wider than E and S, so left-aligning them made the column look ragged. Rescan to refresh footers.
+
 ## [1.5.36] — 2026-10-21
 
 ### Fixed
 
 - Footer A/E/S letters sat high in each row with a gap below, and made the rows taller. The letter cells no longer have padding or a fixed line height; the letters are 14px and centred, about 4px from the top and bottom of each row in Outlook. Rescan to refresh footers (BUG-025).
+
 ## [1.5.35] — 2026-10-21
 
 ### Fixed
 
 - Footer A/E/S letters still showed as empty boxes after the VBA re-import. The images were attached, but VBA gave them garbage Content-IDs, so the footer could not find them. Re-import MSCANModule1 (BUG-025).
+
 ## [1.5.34] — 2026-10-21
 
 ### Fixed
 
 - A rescan could leave a mail as plain text with no footer. The follow-up step that attached the A/E/S letter images rewrote and saved the mail from outside Outlook, and that collided with the rescan. It now only attaches the orange mark, and only when Outlook hasn't (BUG-026). The letters come from the VBA step once MSCANModule1 is re-imported.
+
 ## [1.5.33] — 2026-10-21
 
 ### Fixed
 
 - Footer A/E/S letters showed as broken-image boxes before the VBA re-import. The follow-up attach step now waits until Outlook has written the new footer before it checks which images are missing (BUG-025).
+
 ## [1.5.32] — 2026-10-21
 
 ### Changed
 
 - Footer strip is as short as its content allows: 62px, down from about 84px. The text is unchanged. Rows are 20px each, and the orange mark is scaled to fit them.
 - **A / E / S** are now crisp Montserrat Bold images, 4px from the top and bottom of each row. Outlook can no longer pad them or stretch the rows (BUG-025). Re-import MSCANModule1 so new footers attach them directly; until then, the scan's follow-up step attaches them.
+
 ## [1.5.31] — 2026-10-21
 
 ### Changed
 
 - Footer **A / E / S** letters fill each summary row with a 3px top/bottom inset (20px glyphs in a locked 26px row). The strip no longer grows from an oversized line-height.
+
 ## [1.5.30] — 2026-10-21
 
 ### Fixed
 
 - Hop timestamp parsing: only call `total_seconds` when `dt.utcoffset()` is not `None`.
+
 ## [1.5.29] — 2026-10-21
 
 ### Changed
 
 - Footer **A / E / S** letters are much larger (32px / ~24pt, HTML `size=6`) so Outlook's Word renderer actually shows the bump.
+
 ## [1.5.28] — 2026-10-21
 
 ### Fixed
 
 - Footer builder: initialise `block_state` as `{}` and read `trusted` only inside the `isinstance(..., dict)` branch, so nothing calls `.get` on a possibly-`None` value.
+
 ## [1.5.27] — 2026-10-21
 
 ### Fixed
 
 - Footer builder: use an `if`/`else` to narrow `block_state` (the ternary form still left some checkers treating it as `None`).
+
 ## [1.5.26] — 2026-10-21
 
 ### Fixed
 
 - Footer builder: narrow `block_state` to a dict before `.get("trusted")`.
+
 ## [1.5.25] — 2026-10-21
 
 ### Fixed
 
 - RDAP registrant contact: assign once and `isinstance`-narrow so `contact.get` is never typed against `None`.
+
 ## [1.5.24] — 2026-10-21
 
 ### Fixed
 
 - Footer mark embed job: `_com_get` is annotated to return `Any`, so Outlook COM attributes like `CurrentItem` type-check.
+
 ## [1.5.23] — 2026-10-21
 
 ### Fixed
 
 - Hop address decode: after the `addr_decode is None` guard, bind a local `ad` and use it in the nested `_host_loc` helper so the type checker keeps the narrowing.
+
 ## [1.5.22] — 2026-10-21
 
 ### Fixed
 
 - RDAP registrant geo: assign `objects` from a single `data.get` then narrow with `isinstance`, so it is never typed as `None` before `.get`.
+
 ## [1.5.21] — 2026-10-21
 
 ### Fixed
 
 - Threat intel HTML builder: coerce `worst` / `kind` / `verdict` / `provider` to `str` before `dict.get`, fixing the type-checker overload error on the sort key.
+
 ## [1.5.20] — 2026-10-21
 
 ### Fixed
 
 - Threat intel path: `_run_threat_intel` returns early when the module failed to import, so type checkers no longer treat `ThreatIntel` / `registrable_domain` as attributes of `None`.
+
 ## [1.5.19] — 2026-10-21
 
 ### Fixed

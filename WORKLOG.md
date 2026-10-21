@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-21 — 1.5.41: Centre footer row text; prefix version with v.
+
+- `aes/geolocate_headers.py`: mark is a side column, not `rowspan='5'` (rowspan stretched every content row to the chip row and Outlook top-aligned nested tables). `valign='middle'` on mid/actions/copy cells. Copyright `v. {VERSION}`. Also blank lines after lists in `CHANGELOG.md` (MD032).
+- Follow-up: rescan (Python only).
+
 ### 2026-10-21 — 1.5.40: Shorten footer top summary row by 5px
 
 - `aes/geolocate_headers.py` `_build_html`: top centre `top_pad` and quip side cell padding 2px → 0. Line-height stays 16px. BUG-028.

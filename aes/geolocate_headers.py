@@ -4524,21 +4524,23 @@ class HTMLReportGenerator:
 
         # Shrink-wrapped row so the chips sit together. A 20px spacer cell is
         # what Outlook actually honours between them.
-        spacer = (
-            "<td width='20' style='width:20px; font-size:1px; line-height:1px;'>&nbsp;</td>"
-        )
         label_color = contrasting_text_color(banner_bg)
         if label_color == "#ffffff":
             label_color = AES_STRIP_MUTED
         parts = [
-            f"<td style='font-family:{AES_STRIP_FONT}; font-size:9px; "
-            "font-weight:bold; letter-spacing:1.5px; white-space:nowrap; vertical-align:middle;'>"
+            f"<td valign='middle' style='font-family:{AES_STRIP_FONT}; font-size:9px; "
+            "font-weight:bold; letter-spacing:1.5px; white-space:nowrap; "
+            "vertical-align:middle; line-height:16px; mso-line-height-rule:exactly;'>"
             f"<span style='color:{label_color};'>QUICK ACTIONS</span></td>"
         ]
         for code, url, bg, fg in planned:
-            parts.append(spacer)
             parts.append(
-                "<td style='vertical-align:middle;'>"
+                "<td width='20' valign='middle' "
+                "style='width:20px; font-size:1px; line-height:1px; "
+                "vertical-align:middle;'>&nbsp;</td>"
+            )
+            parts.append(
+                "<td valign='middle' style='vertical-align:middle;'>"
                 f"{chip(url, code, bg, fg)}</td>"
             )
         return (
@@ -5711,9 +5713,10 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         letter_a = letter_e = letter_s = ""
         if mark:
             logo_cell = (
-                f"<td rowspan='5' width='{AES_STRIP_MARK_CELL_W}' valign='middle' "
+                f"<td width='{AES_STRIP_MARK_CELL_W}' valign='middle' "
                 f"bgcolor='{AES_STRIP_BG}' style='width:{AES_STRIP_MARK_CELL_W}px; "
-                f"padding:8px 4px 0 12px; background:{AES_STRIP_BG};'>"
+                f"padding:8px 4px 0 12px; background:{AES_STRIP_BG}; "
+                f"vertical-align:middle;'>"
                 f"{mark}</td>"
             )
             letter_a = _footer_aes_letter_cell("A")
@@ -5723,30 +5726,34 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             from geofooter.version import VERSION as _aes_ver
         except Exception:
             _aes_ver = ""
-        _ver_bit = f" {_aes_ver}" if _aes_ver else ""
+        _ver_bit = f" v. {_aes_ver}" if _aes_ver else ""
         copy_plain = f"© 2026 Aliniant Labs{_ver_bit}"
         copy_html = f"&#169; 2026 Aliniant Labs{_ver_bit}"
         copy_px = _footer_text_px(copy_plain, 11, italic=False)
         copy_w = copy_px + 16
         copy_font = (
             f"font-family:{AES_STRIP_FONT}; font-size:11px; font-weight:normal; "
-            f"white-space:nowrap; line-height:16px; mso-line-height-rule:exactly;"
+            f"white-space:nowrap; line-height:16px; mso-line-height-rule:exactly; "
+            f"vertical-align:middle;"
         )
         left_copy = _footer_spacer_cell(copy_w)
         right_copy = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='{copy_w}' "
             f"align='right' style='width:{copy_w}px; border-collapse:collapse;'><tr>"
-            f"<td align='right' nowrap style='{copy_font} color:{AES_STRIP_MUTED}; "
-            f"text-align:right;'><span style='color:{AES_STRIP_MUTED};'>{copy_html}</span></td>"
+            f"<td align='right' valign='middle' nowrap style='{copy_font} "
+            f"color:{AES_STRIP_MUTED}; text-align:right;'>"
+            f"<span style='color:{AES_STRIP_MUTED};'>{copy_html}</span></td>"
             f"<td width='16' style='width:16px; font-size:1px;'>&nbsp;</td>"
             f"</tr></table>"
         )
-        summary_block = (
+        # Mark sits in its own column (not rowspan). A rowspan mark forced every
+        # content row to the tallest row's height, and Outlook then top-aligned
+        # the nested summary/chip tables in the leftover space.
+        rows_table = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
             f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
             f"border-collapse:collapse;'>"
             f"<tr>"
-            f"{logo_cell}"
             f"{letter_a}"
             f"<td colspan='2' align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
             f"style='background:{AES_STRIP_BG}; padding:{top_pad}; text-align:center; "
@@ -5754,29 +5761,46 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"font-weight:bold; letter-spacing:0.3px; line-height:16px; "
             f"mso-line-height-rule:exactly; vertical-align:middle;'>{summary_line1}</td>"
             f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:0;'>{right_top}</td>"
+            f"style='background:{AES_STRIP_BG}; padding:0; vertical-align:middle;'>"
+            f"{right_top}</td>"
             f"</tr>"
             f"{rule_row}"
             f"<tr>"
             f"{letter_e}"
-            f"<td colspan='3' align='center' bgcolor='{AES_STRIP_BG}' "
+            f"<td colspan='3' align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
             f"style='padding:{mid_pad}; text-align:center; background:{AES_STRIP_BG}; "
             f"color:{AES_STRIP_MUTED}; font-family:{AES_STRIP_FONT}; font-size:12px; "
-            f"font-weight:normal; line-height:16px; mso-line-height-rule:exactly;'>"
-            f"{summary_line2}</td></tr>"
+            f"font-weight:normal; line-height:16px; mso-line-height-rule:exactly; "
+            f"vertical-align:middle;'>{summary_line2}</td></tr>"
             f"{rule_row}"
             f"<tr>"
             f"{letter_s}"
             f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:2px 0;'>{left_copy}</td>"
+            f"style='background:{AES_STRIP_BG}; padding:0; vertical-align:middle;'>"
+            f"{left_copy}</td>"
             f"<td align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:{row_pad}; text-align:center;'>"
-            f"{quick_actions}</td>"
+            f"style='background:{AES_STRIP_BG}; padding:{row_pad}; text-align:center; "
+            f"vertical-align:middle;'>{quick_actions}</td>"
             f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-            f"style='background:{AES_STRIP_BG}; padding:2px 0;'>{right_copy}</td>"
+            f"style='background:{AES_STRIP_BG}; padding:0; vertical-align:middle;'>"
+            f"{right_copy}</td>"
             f"</tr>"
             f"</table>"
         )
+        if logo_cell:
+            summary_block = (
+                f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
+                f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
+                f"border-collapse:collapse;'>"
+                f"<tr>"
+                f"{logo_cell}"
+                f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
+                f"style='background:{AES_STRIP_BG}; padding:0; vertical-align:middle;'>"
+                f"{rows_table}</td>"
+                f"</tr></table>"
+            )
+        else:
+            summary_block = rows_table
 
         # Top-of-mail banners sit outside the AES footer block so VBA can
         # inject them after <body>; the footer itself stays the scan strip.

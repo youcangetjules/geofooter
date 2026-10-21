@@ -43,6 +43,7 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 - **Repro:** Rescan a message and compare the three strip rows in Outlook.
 - **Workaround:** None.
 - **Fixed in:** 1.5.40. Top-row centre padding and quip side-cell padding go from 2px to 0 (line-height stays 16px).
+- **Update 2026-10-21 (17:40):** text still sat high in each row because the mark `rowspan` stretched every content row to the tallest (chips) and Outlook top-aligned the nested tables. 1.5.41 puts the mark in a side column instead. Copyright uses `v.` before the version.
 
 ### BUG-027 — Blocked BB quick-action chip rendered wider than SL/BA/TS/NT
 

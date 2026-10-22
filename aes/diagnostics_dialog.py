@@ -941,7 +941,7 @@ def run_dialog(ctx: DiagContext) -> int:
     dlg = QDialog()
     dlg.setWindowTitle("AES Diagnostics")
     dlg.setWindowFlags(dlg.windowFlags() | Qt.WindowStaysOnTopHint)
-    dlg.resize(1120, 720)
+    dlg.resize(1800, 1000)
     dlg.setMinimumSize(900, 560)
     dlg.setStyleSheet(STYLESHEET)
 

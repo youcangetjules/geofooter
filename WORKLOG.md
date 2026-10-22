@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-22 — 1.5.58: Diagnostics window 1800x1000
+
+- `aes/diagnostics_dialog.py`: default `resize(1800, 1000)`.
+- Follow-up: reopen Diagnostics.
+
 ### 2026-10-22 — 1.5.57: Diagnostics two-column layout
 
 - `aes/diagnostics_dialog.py`: Live Controls in a left scroll column; tests + progress + result detail on the right. Default size 1120x720.

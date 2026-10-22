@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.58] — 2026-10-22
+
+### Changed
+
+- AES Diagnostics default window size is 1800×1000.
+
 ## [1.5.57] — 2026-10-22
 
 ### Changed

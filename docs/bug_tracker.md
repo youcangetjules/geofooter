@@ -33,16 +33,17 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
-### BUG-038 — CompleteAsyncFooter holds the UI thread 1–7s (logged stalls)
+### BUG-035 — Outlook locks up for extended periods (hard UI freeze)
 
-- **Severity:** S2
-- **Area:** VBA
-- **Status:** open
-- **Reported:** 2026-10-22 (from VBA_Log)
-- **Summary:** HEALTH UI stall lines show `CompleteAsyncFooter` holding Outlook for 1400–7156 ms (HTMLBody write + Save + retries with WaitMs 400). Expected cost of footering on the UI thread, but long enough to drop keystrokes if the user is typing.
-- **Repro:** Let a compact scan finish while interacting with Outlook; check VBA_Log for `HEALTH | UI stall: CompleteAsyncFooter`.
-- **Workaround:** Compose detection defers queue work while typing; footer apply still runs when the job completes.
-- **Related:** BUG-035
+- **Severity:** S1
+- **Area:** VBA / AES / Outlook
+- **Status:** investigating
+- **Reported:** 2026-10-22
+- **Summary:** Outlook becomes fully unresponsive for extended periods (not a brief footer stall). Prior PERF-002 sample showed idle queue, CatchUp heartbeats, duplicate GURI, and HEALTH uiStalls=0 because CatchUp was not timed. Hard freezes cannot be logged from VBA (UI thread stuck).
+- **Repro:** Use Outlook with AES enabled until the UI stops responding for a long stretch.
+- **Workaround / capture:** AES Diagnostics → Start lockup scanner (1.5.55+); reproduce; collect `%LOCALAPPDATA%\GeoFooter\Logs\lockup_scans\freeze_*.txt` and `outlook_lockup_events.log`. Re-import VBA (`MSCANModule1`, `MSCANModQueueManager`) for 1.5.56 CatchUp mitigations.
+- **Update 2026-10-22:** Distinct from BUG-038 (brief footer stall is acceptable). Strongest AES suspect was idle CatchUp Restrict/HTMLBody (BUG-036, fixed 1.5.56 pending re-import). Still need a freeze report from the lockup scanner to confirm what holds the UI when it is fully wedged.
+- **Related:** PERF-002, BUG-034, BUG-036
 
 ### BUG-037 — StripSensitiveHeadersFromMail spams unsupported SetProperty errors
 
@@ -65,17 +66,15 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 - **Fixed in:** 1.5.56 — `IsAesScannedLite` (property / `aes_mark_*` only) for CatchUp and queue skips; GetFirst/GetNext instead of Count; idle CatchUp heartbeat backs off to 240s when nothing was queued.
 - **Related:** BUG-035, PERF-002
 
-### BUG-035 — Outlook locks up for extended periods (hard UI freeze)
+### BUG-038 — CompleteAsyncFooter holds the UI thread 1–7s (logged stalls)
 
-- **Severity:** S1
-- **Area:** VBA / AES / Outlook
-- **Status:** investigating
-- **Reported:** 2026-10-22
-- **Summary:** Outlook becomes unresponsive for extended periods again (user report). Prior PERF-002 sample showed idle queue, CatchUp heartbeats, duplicate GURI, and HEALTH uiStalls=0 because CatchUp was not timed. Hard freezes cannot be logged from VBA (UI thread stuck).
-- **Repro:** Use Outlook with AES enabled until the UI stops responding for a long stretch.
-- **Workaround / capture:** AES Diagnostics → Start lockup scanner (1.5.55+); reproduce; collect `%LOCALAPPDATA%\GeoFooter\Logs\lockup_scans\freeze_*.txt` and `outlook_lockup_events.log`. Re-import VBA so CatchUp stalls appear in HEALTH.
-- **Update 2026-10-22:** Code cleanse found CatchUp HTMLBody/`Items.Count` (BUG-036) and footer apply stalls (BUG-038) as concrete contributors; mitigations in 1.5.56. Still need lockup scanner evidence for remaining hard freezes.
-- **Related:** PERF-002, BUG-034, BUG-036, BUG-038
+- **Severity:** S3
+- **Area:** VBA
+- **Status:** wontfix
+- **Reported:** 2026-10-22 (from VBA_Log)
+- **Summary:** HEALTH UI stall lines show `CompleteAsyncFooter` holding Outlook for 1400–7156 ms (HTMLBody write + Save + retries). Inherent cost of writing the footer on Outlook's UI thread.
+- **Update 2026-10-22:** User clarified a brief stall with buffered keystrokes is acceptable. The real pain is total Outlook lockup (BUG-035). Left alone on purpose.
+- **Related:** BUG-035
 
 ### BUG-034 — Two GURI GUI processes can run at once
 

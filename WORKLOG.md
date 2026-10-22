@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-22 — 1.5.57: Diagnostics two-column layout
+
+- `aes/diagnostics_dialog.py`: Live Controls in a left scroll column; tests + progress + result detail on the right. Default size 1120x720.
+- Follow-up: reopen Diagnostics from Outlook (Python only).
+
 ### 2026-10-22 — 1.5.56: CatchUp freeze cleanse (BUG-036/037)
 
 - Audit of VBA freeze risks + VBA_Log: ~9k CatchUp sweeps / 90s, `IsAesScanned` HTMLBody fallback, `Items.Count` on Restrict, StripSensitive SetProperty spam, CompleteAsyncFooter stalls (BUG-038 open).

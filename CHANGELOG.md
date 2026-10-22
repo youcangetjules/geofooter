@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.57] — 2026-10-22
+
+### Changed
+
+- AES Diagnostics is a two-column window: Live Controls (timers, logging, capture, lockup scanner) on the left; Run all / test list / result detail on the right.
+
 ## [1.5.56] — 2026-10-22
 
 ### Fixed

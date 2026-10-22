@@ -941,7 +941,8 @@ def run_dialog(ctx: DiagContext) -> int:
     dlg = QDialog()
     dlg.setWindowTitle("AES Diagnostics")
     dlg.setWindowFlags(dlg.windowFlags() | Qt.WindowStaysOnTopHint)
-    dlg.resize(780, 760)
+    dlg.resize(1120, 720)
+    dlg.setMinimumSize(900, 560)
     dlg.setStyleSheet(STYLESHEET)
 
     root = QVBoxLayout(dlg)
@@ -958,6 +959,18 @@ def run_dialog(ctx: DiagContext) -> int:
     sub.setObjectName("subtitle")
     sub.setWordWrap(True)
     root.addWidget(sub)
+
+    # Two columns: Live Controls | tests + detail
+    columns = QHBoxLayout()
+    columns.setSpacing(12)
+    root.addLayout(columns, 1)
+
+    left_col = QVBoxLayout()
+    left_col.setSpacing(8)
+    right_col = QVBoxLayout()
+    right_col.setSpacing(8)
+    columns.addLayout(left_col, 1)
+    columns.addLayout(right_col, 1)
 
     # ---- Live Controls ----
     controls = QGroupBox("Live Controls")
@@ -1285,8 +1298,14 @@ def run_dialog(ctx: DiagContext) -> int:
     lock_row.addStretch(1)
     controls_layout.addLayout(lock_row)
     controls_layout.addWidget(lock_status)
+    controls_layout.addStretch(1)
 
-    root.addWidget(controls)
+    left_scroll = QScrollArea()
+    left_scroll.setWidgetResizable(True)
+    left_scroll.setFrameShape(QFrame.NoFrame)
+    left_scroll.setWidget(controls)
+    left_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+    left_col.addWidget(left_scroll, 1)
 
     tail_timer = QTimer(dlg)
     tail_timer.setInterval(2500)
@@ -1310,12 +1329,12 @@ def run_dialog(ctx: DiagContext) -> int:
     btn_row.addWidget(clear_btn)
     btn_row.addStretch(1)
     btn_row.addWidget(close_btn)
-    root.addLayout(btn_row)
+    right_col.addLayout(btn_row)
 
     progress = QProgressBar()
     progress.setRange(0, len(tests))
     progress.setValue(0)
-    root.addWidget(progress)
+    right_col.addWidget(progress)
 
     scroll = QScrollArea()
     scroll.setWidgetResizable(True)
@@ -1331,7 +1350,7 @@ def run_dialog(ctx: DiagContext) -> int:
     detail = QTextEdit()
     detail.setReadOnly(True)
     detail.setPlaceholderText("Select a test and click Run — details appear here.")
-    detail.setMinimumHeight(180)
+    detail.setMinimumHeight(140)
 
     def status_style(status: str) -> Tuple[str, str]:
         return {
@@ -1437,12 +1456,12 @@ def run_dialog(ctx: DiagContext) -> int:
 
     host_layout.addStretch(1)
     scroll.setWidget(host)
-    root.addWidget(scroll, 1)
+    right_col.addWidget(scroll, 2)
 
     det_lbl = QLabel("Result detail")
     det_lbl.setObjectName("section")
-    root.addWidget(det_lbl)
-    root.addWidget(detail)
+    right_col.addWidget(det_lbl)
+    right_col.addWidget(detail, 1)
 
     run_all_btn.clicked.connect(run_all)
     clear_btn.clicked.connect(lambda: (

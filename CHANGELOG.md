@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.55] — 2026-10-22
+
+### Added
+
+- AES Diagnostics → Live Controls: **Start / Stop lockup scanner**. An out-of-process watcher (`aes/outlook_lockup_scanner.py`) probes Outlook with `SendMessageTimeout`; on hang it writes a freeze report under `%LOCALAPPDATA%\GeoFooter\Logs\lockup_scans\` (process snapshot + VBA / ribbon / geolocate tails) and appends `outlook_lockup_events.log`. Starting the scanner also kicks off VBA log capture.
+- `CatchUpMissedInboxMail` is wrapped in `MSCANHealth.BeginOp` / `EndOp` so long Restrict walks show up as `HEALTH | UI stall` / uiStalls (PERF-002). Requires VBA re-import.
+
 ## [1.5.54] — 2026-10-21
 
 ### Added

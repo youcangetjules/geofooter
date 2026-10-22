@@ -1140,6 +1140,152 @@ def run_dialog(ctx: DiagContext) -> int:
     controls_layout.addWidget(status_line)
     controls_layout.addWidget(live_log)
 
+    # ---- Outlook lockup scanner (out-of-process) ----
+    lock_lbl = QLabel("Outlook lockup scanner")
+    lock_lbl.setObjectName("section")
+    controls_layout.addWidget(lock_lbl)
+    lock_hint = QLabel(
+        "Runs outside Outlook and probes the UI thread with SendMessageTimeout. "
+        "When Outlook stops responding it writes a freeze report (process snapshot + "
+        "log tails) under Logs\\lockup_scans\\ and appends outlook_lockup_events.log. "
+        "Also starts VBA log capture so AES lines land in a sidecar while you watch."
+    )
+    lock_hint.setObjectName("hint")
+    lock_hint.setWordWrap(True)
+    controls_layout.addWidget(lock_hint)
+
+    lock_status = QLabel("Scanner: —")
+    lock_status.setObjectName("hint")
+    lock_status.setWordWrap(True)
+
+    start_lock = QPushButton("Start lockup scanner")
+    stop_lock = QPushButton("Stop lockup scanner")
+    stop_lock.setObjectName("secondary")
+    open_lock_dir = QPushButton("Open freeze reports")
+    open_lock_dir.setObjectName("secondary")
+    open_lock_events = QPushButton("Open events log")
+    open_lock_events.setObjectName("secondary")
+
+    def _lockup_paths() -> Tuple[Path, Path, Path]:
+        logs = _geofooter_dir() / "Logs"
+        return (
+            logs / "outlook_lockup_scanner_status.json",
+            logs / "lockup_scans",
+            logs / "outlook_lockup_events.log",
+        )
+
+    def _scanner_script() -> Path:
+        return _suite_root() / "aes" / "outlook_lockup_scanner.py"
+
+    def _pythonw() -> Path:
+        # Prefer the GeoFooter venv so the scanner matches the suite.
+        venv_w = _suite_root() / ".venv" / "Scripts" / "pythonw.exe"
+        if venv_w.is_file():
+            return venv_w
+        venv_py = _suite_root() / ".venv" / "Scripts" / "python.exe"
+        if venv_py.is_file():
+            return venv_py
+        return Path(sys.executable)
+
+    def refresh_lockup_status() -> None:
+        status_path, reports_dir, _events = _lockup_paths()
+        payload: Dict[str, Any] = {}
+        if status_path.is_file():
+            try:
+                payload = json.loads(status_path.read_text(encoding="utf-8"))
+            except Exception:
+                payload = {}
+        running = bool(payload.get("running"))
+        state = str(payload.get("last_state") or ("on" if running else "off"))
+        probes = payload.get("probes", 0)
+        freezes = payload.get("freezes", 0)
+        last_ms = payload.get("last_probe_ms", "")
+        last_at = payload.get("last_probe_at") or ""
+        report = str(payload.get("last_report") or "")
+        bits = [
+            f"Scanner: {'ON' if running else 'off'}",
+            f"state={state}",
+            f"probes={probes}",
+            f"freezes={freezes}",
+        ]
+        if last_at:
+            bits.append(f"last={last_at} ({last_ms}ms)")
+        if report:
+            bits.append(f"last report={Path(report).name}")
+        elif reports_dir.is_dir():
+            try:
+                n = len(list(reports_dir.glob("freeze_*.txt")))
+                bits.append(f"reports on disk={n}")
+            except Exception:
+                pass
+        lock_status.setText(" · ".join(bits))
+
+    def start_lockup_scanner() -> None:
+        script = _scanner_script()
+        if not script.is_file():
+            status_line.setText(f"Scanner script missing: {script}")
+            return
+        # Best-effort: also start VBA capture so AES lines are mirrored.
+        try:
+            _enqueue_diag_ops("capture_start")
+            capture_active["on"] = True
+        except Exception:
+            pass
+        try:
+            subprocess.Popen(
+                [str(_pythonw()), str(script), "--start"],
+                cwd=str(_suite_root()),
+                close_fds=True,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+            status_line.setText(
+                "Lockup scanner starting — leave Diagnostics open or close it; "
+                "the watcher keeps running in the background."
+            )
+        except Exception as exc:
+            status_line.setText(f"Could not start lockup scanner: {exc}")
+        QTimer.singleShot(600, refresh_lockup_status)
+        QTimer.singleShot(800, refresh_capture_status)
+
+    def stop_lockup_scanner() -> None:
+        script = _scanner_script()
+        try:
+            subprocess.Popen(
+                [str(_pythonw()), str(script), "--stop"],
+                cwd=str(_suite_root()),
+                close_fds=True,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+            status_line.setText("Lockup scanner stop requested")
+        except Exception as exc:
+            status_line.setText(f"Could not stop lockup scanner: {exc}")
+        QTimer.singleShot(600, refresh_lockup_status)
+
+    def open_freeze_reports() -> None:
+        _status, reports_dir, _events = _lockup_paths()
+        reports_dir.mkdir(parents=True, exist_ok=True)
+        open_path(str(reports_dir))
+
+    def open_events_log() -> None:
+        _status, _reports, events = _lockup_paths()
+        if not events.is_file():
+            events.write_text("", encoding="utf-8")
+        open_path(str(events))
+
+    start_lock.clicked.connect(start_lockup_scanner)
+    stop_lock.clicked.connect(stop_lockup_scanner)
+    open_lock_dir.clicked.connect(open_freeze_reports)
+    open_lock_events.clicked.connect(open_events_log)
+
+    lock_row = QHBoxLayout()
+    lock_row.addWidget(start_lock)
+    lock_row.addWidget(stop_lock)
+    lock_row.addWidget(open_lock_dir)
+    lock_row.addWidget(open_lock_events)
+    lock_row.addStretch(1)
+    controls_layout.addLayout(lock_row)
+    controls_layout.addWidget(lock_status)
+
     root.addWidget(controls)
 
     tail_timer = QTimer(dlg)
@@ -1147,6 +1293,12 @@ def run_dialog(ctx: DiagContext) -> int:
     tail_timer.timeout.connect(refresh_log_tail)
     tail_timer.start()
     refresh_log_tail()
+
+    lock_timer = QTimer(dlg)
+    lock_timer.setInterval(2000)
+    lock_timer.timeout.connect(refresh_lockup_status)
+    lock_timer.start()
+    refresh_lockup_status()
 
     btn_row = QHBoxLayout()
     run_all_btn = QPushButton("Run all")

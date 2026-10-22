@@ -819,6 +819,9 @@ End Function
 Public Sub CatchUpMissedInboxMail(Optional ByVal force As Boolean = False)
     On Error GoTo EH
 
+    Dim opTick As Long
+    Dim opActive As Boolean
+
     If Not MSCANModWatchers.IsServiceEnabled() Then Exit Sub
     If IsStartupQuiet() Then Exit Sub
     ' Don't pile Restrict walks on top of an active backlog / in-flight scan
@@ -857,6 +860,11 @@ Public Sub CatchUpMissedInboxMail(Optional ByVal force As Boolean = False)
     skippedOld = 0
     skippedAccount = 0
     scannedInboxes = 0
+
+    ' Restrict + newest-N across inboxes can stall the UI thread for tens of
+    ' seconds; pair with MSCANHealth so STALL_WARN / uiStalls see it.
+    opTick = MSCANHealth.BeginOp()
+    opActive = True
 
     For Each acc In Application.Session.Accounts
         On Error Resume Next
@@ -938,11 +946,23 @@ NextCatchUpAccount:
     ' Keep a heartbeat alive so the next miss is recovered without waiting for
     ' the user to click a message (ItemLoad).
     LaunchCatchUpHeartbeat
+    If opActive Then
+        MSCANHealth.EndOp "CatchUpMissedInboxMail", opTick
+        opActive = False
+    End If
     Exit Sub
 
 EH:
-    m_LastCatchUpResult = "ERROR #" & Err.Number & " - " & Err.Description
-    MSCANModLogging.WriteLog "CatchUpMissedInboxMail error: #" & Err.Number & " - " & Err.Description
+    Dim errNum As Long
+    Dim errDesc As String
+    errNum = Err.Number
+    errDesc = Err.Description
+    If opActive Then
+        MSCANHealth.EndOp "CatchUpMissedInboxMail", opTick
+        opActive = False
+    End If
+    m_LastCatchUpResult = "ERROR #" & errNum & " - " & errDesc
+    MSCANModLogging.WriteLog "CatchUpMissedInboxMail error: #" & errNum & " - " & errDesc
 End Sub
 
 ' Newest-first inbox items from the last windowMinutes.

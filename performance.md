@@ -80,6 +80,7 @@ Cheap things worth grabbing while the symptom is fresh:
 - **What else was going on:** AES queue idle (pending 0); last scans finished ~19:13. Catch-up heartbeat every ~90s across 5 inboxes (~58 CatchUp log lines in the prior hour). Two GURI `gui.py --raise` processes (PIDs 9684 and 33548, both started 18:44, parents under Outlook). Claude Desktop and Cursor also on CPU. Workflow Manager `main.py` ~577 MB but quiet in the sample.
 - **Evidence:** At check time Outlook was mostly idle (~0.8% of one core) then spiked to ~16% of one core in a 5s sample; ~12,010 COM/UI handles, 152 threads, 450–480 MB. HEALTH: conflicts=0, uiStalls=0, worstStall=0ms, uiBusy=13s since 16:11, queuePeak=5, 30 commits. Disk idle; 31 GB RAM free. No AES conflict storm.
 - **Outcome:** Not an AES scan backlog. Likely mix of (1) Outlook UI-thread CatchUp Restrict walks, (2) two GURI instances, (3) other desktop apps (Claude/Cursor). Watch whether closing the duplicate GURI and/or restarting Outlook clears the feel; if uiBusy climbs without uiStalls, CatchUp cost may need a bug.
+- **Update 2026-10-22:** 1.5.55 instruments CatchUp with BeginOp/EndOp (uiStalls will count long Restrict walks after VBA re-import). Diagnostics can start an out-of-process lockup scanner that writes freeze reports when Outlook stops answering WM_NULL — use that for the next hard freeze (VBA cannot log while hung).
 
 ### PERF-001 — Machine slowed to a crawl; GURI suspected
 

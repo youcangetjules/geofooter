@@ -33,6 +33,17 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-035 — Outlook locks up for extended periods (hard UI freeze)
+
+- **Severity:** S1
+- **Area:** VBA / AES / Outlook
+- **Status:** investigating
+- **Reported:** 2026-10-22
+- **Summary:** Outlook becomes unresponsive for extended periods again (user report). Prior PERF-002 sample showed idle queue, CatchUp heartbeats, duplicate GURI, and HEALTH uiStalls=0 because CatchUp was not timed. Hard freezes cannot be logged from VBA (UI thread stuck).
+- **Repro:** Use Outlook with AES enabled until the UI stops responding for a long stretch.
+- **Workaround / capture:** AES Diagnostics → Start lockup scanner (1.5.55+); reproduce; collect `%LOCALAPPDATA%\GeoFooter\Logs\lockup_scans\freeze_*.txt` and `outlook_lockup_events.log`. Re-import VBA so CatchUp stalls appear in HEALTH.
+- **Related:** PERF-002, BUG-034
+
 ### BUG-034 — Two GURI GUI processes can run at once
 
 - **Severity:** S3

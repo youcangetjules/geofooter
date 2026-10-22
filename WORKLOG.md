@@ -13,6 +13,13 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-22 — 1.5.55: Outlook lockup scanner in Diagnostics
+
+- `aes/outlook_lockup_scanner.py`: background watcher; probes Outlook UI with SendMessageTimeout; on confirmed hang writes freeze reports + event log under `%LOCALAPPDATA%\GeoFooter\Logs\`.
+- `aes/diagnostics_dialog.py`: Live Controls Start/Stop lockup scanner, open freeze reports / events log; start also enqueues VBA `capture_start`.
+- `VBA/MSCANModQueueManager.bas`: `CatchUpMissedInboxMail` BeginOp/EndOp so CatchUp stalls feed HEALTH uiStalls (PERF-002).
+- Follow-up: re-import `MSCANModQueueManager` (or full VBA import); open Diagnostics → Start lockup scanner before reproducing a freeze; collect `Logs\lockup_scans\freeze_*.txt`.
+
 ### 2026-10-21 — 1.5.54: Footer chip tooltips; AURA opens broker for the sender
 
 - `aes/geolocate_headers.py`: Quick Action chips and AURA get `title=` hover text. AURA href carries `sender` / `domain` / matched `broker`.

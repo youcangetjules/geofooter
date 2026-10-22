@@ -13,6 +13,14 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-22 — 1.5.56: CatchUp freeze cleanse (BUG-036/037)
+
+- Audit of VBA freeze risks + VBA_Log: ~9k CatchUp sweeps / 90s, `IsAesScanned` HTMLBody fallback, `Items.Count` on Restrict, StripSensitive SetProperty spam, CompleteAsyncFooter stalls (BUG-038 open).
+- `MSCANModule1`: `IsAesScannedLite`; StripSensitive session skip after unsupported write.
+- `MSCANModQueueManager`: CatchUp/post-send GetFirst/GetNext + Lite; idle heartbeat 240s; ItemAdd resets streak.
+- Logged BUG-036 (fixed pending re-import), BUG-037 (fixed pending re-import), BUG-038 (open).
+- Follow-up: re-import `MSCANModule1` + `MSCANModQueueManager`; start lockup scanner for remaining hard freezes.
+
 ### 2026-10-22 — 1.5.55: Outlook lockup scanner in Diagnostics
 
 - `aes/outlook_lockup_scanner.py`: background watcher; probes Outlook UI with SendMessageTimeout; on confirmed hang writes freeze reports + event log under `%LOCALAPPDATA%\GeoFooter\Logs\`.

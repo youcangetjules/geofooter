@@ -44,10 +44,15 @@ Private Const QUEUE_TICK_MIN_SEC As Long = 2
 ' Periodic inbox sweep when ItemAdd/NewMailEx miss delivery (IMAP/OST sync).
 Private Const CATCHUP_MIN_INTERVAL_SEC As Long = 60
 Private Const CATCHUP_HEARTBEAT_MS As Long = 90000
+' When the last CatchUp queued nothing, back off so Restrict/Sort across every
+' inbox is not hammering the UI thread every 90s while idle (BUG-036).
+Private Const CATCHUP_HEARTBEAT_IDLE_MS As Long = 240000
 Private Const CATCHUP_PER_INBOX As Long = 15
 Private Const CATCHUP_WINDOW_MIN As Long = 90
 Private Const CATCHUP_UNREAD_MAX_MIN As Long = 120
 Private Const CATCHUP_READ_MAX_MIN As Long = 20
+Private m_LastCatchUpQueued As Long
+Private m_CatchUpIdleStreak As Long
 
 Public Function GetQueueSize() As Long
     On Error Resume Next
@@ -87,6 +92,8 @@ Public Sub InitializeQueueManager()
     m_QuietResumePending = False
     m_CatchUpHeartbeatPending = False
     m_LastCatchUpResult = ""
+    m_LastCatchUpQueued = 0
+    m_CatchUpIdleStreak = 0
     Set m_NotReadyRetries = CreateObject("Scripting.Dictionary")
     m_NotReadyRetries.CompareMode = vbTextCompare
     If m_EarliestProcessAt = 0 Then m_EarliestProcessAt = Now
@@ -321,7 +328,8 @@ Public Sub ProcessQueue()
         End If
 
         ' Drop already-stamped mail without reading HTMLBody (catch-up backlog).
-        If MSCANModule1.IsAesScanned(mail) Then
+        ' Lite only: UserProperty / aes_mark_* - never HTMLBody on the UI thread.
+        If MSCANModule1.IsAesScannedLite(mail) Then
             footerSkips = footerSkips + 1
             ClearNotReadyRetry entryKey
             GoTo NextQueueItem
@@ -340,7 +348,7 @@ Public Sub ProcessQueue()
                 MSCANModLogging.WriteLog "Giving up on not-ready mail after retries: " & Left$(subjectHint, 80)
             End If
             startedScan = True
-        ElseIf MSCANModule1.IsAesScanned(mail) Then
+        ElseIf MSCANModule1.IsAesScannedLite(mail) Then
             ' Footer already present - stamped; keep draining backlog this tick.
             footerSkips = footerSkips + 1
             ClearNotReadyRetry entryKey
@@ -743,12 +751,15 @@ Public Sub NoteItemAddEvent(ByVal subject As String, ByVal folderLabel As String
     If Len(folderLabel) > 0 Then
         m_LastItemAddSubject = m_LastItemAddSubject & " [" & Left$(folderLabel, 40) & "]"
     End If
+    ' New mail arrived - drop idle CatchUp backoff so the next sweep is prompt.
+    m_CatchUpIdleStreak = 0
 End Sub
 
 Public Sub NoteNewMailExEvent(ByVal subject As String)
     On Error Resume Next
     m_LastNewMailExAt = Now
     m_LastNewMailExSubject = Left$(Trim$(subject), 80)
+    m_CatchUpIdleStreak = 0
 End Sub
 
 Public Function GetAutoScanDiagnostics() As String
@@ -881,13 +892,20 @@ Public Sub CatchUpMissedInboxMail(Optional ByVal force As Boolean = False)
         scannedInboxes = scannedInboxes + 1
         Set inboxItems = RecentInboxItemsDesc(inboxFolder, CATCHUP_WINDOW_MIN)
         If inboxItems Is Nothing Then GoTo NextCatchUpAccount
-        checkCount = CATCHUP_PER_INBOX
-        If inboxItems.Count < checkCount Then checkCount = inboxItems.Count
 
-        For idx = 1 To checkCount
-            Set itm = inboxItems.Item(idx)
+        ' Walk GetFirst/GetNext - never call Items.Count (forces a full
+        ' enumeration of the Restricted set on large inboxes).
+        checkCount = 0
+        Set itm = Nothing
+        On Error Resume Next
+        Set itm = inboxItems.GetFirst
+        Err.Clear
+        On Error GoTo EH
+        Do While Not itm Is Nothing And checkCount < CATCHUP_PER_INBOX
+            checkCount = checkCount + 1
             If Not MSCANModule1.IsScannableItem(itm) Then GoTo NextCatchUpItem
-            If MSCANModule1.IsAesScanned(itm) Then
+            ' Lite only: never HTMLBody during CatchUp (BUG-036).
+            If MSCANModule1.IsAesScannedLite(itm) Then
                 skippedScanned = skippedScanned + 1
                 GoTo NextCatchUpItem
             End If
@@ -896,6 +914,7 @@ Public Sub CatchUpMissedInboxMail(Optional ByVal force As Boolean = False)
             unread = False
             ageMin = 99999
             Err.Clear
+            On Error Resume Next
             received = itm.ReceivedTime
             unread = itm.UnRead
             If Err.Number <> 0 Or received = 0 Then
@@ -917,6 +936,7 @@ Public Sub CatchUpMissedInboxMail(Optional ByVal force As Boolean = False)
                     GoTo NextCatchUpItem
                 End If
             End If
+            On Error GoTo EH
 
             subj = Left$(CStr(itm.Subject), 60)
             QueueMailForProcessing itm
@@ -927,7 +947,11 @@ Public Sub CatchUpMissedInboxMail(Optional ByVal force As Boolean = False)
 NextCatchUpItem:
             Set itm = Nothing
             Err.Clear
-        Next idx
+            On Error Resume Next
+            Set itm = inboxItems.GetNext
+            Err.Clear
+            On Error GoTo EH
+        Loop
 
 NextCatchUpAccount:
         Err.Clear
@@ -939,8 +963,12 @@ NextCatchUpAccount:
         " accounts_off=" & skippedAccount
     MSCANModLogging.WriteLog "CatchUpMissedInboxMail: " & m_LastCatchUpResult
 
+    m_LastCatchUpQueued = queued
     If queued > 0 Then
+        m_CatchUpIdleStreak = 0
         If Not m_IsProcessing And Not IsStartupQuiet() Then ScheduleDeferredProcessQueue
+    Else
+        m_CatchUpIdleStreak = m_CatchUpIdleStreak + 1
     End If
 
     ' Keep a heartbeat alive so the next miss is recovered without waiting for
@@ -1060,13 +1088,18 @@ Private Sub LaunchCatchUpHeartbeat()
     If IsStartupQuiet() Then Exit Sub
     If m_CatchUpHeartbeatPending Then Exit Sub
 
+    Dim delayMs As Long
+    delayMs = CATCHUP_HEARTBEAT_MS
+    If m_LastCatchUpQueued = 0 And m_CatchUpIdleStreak >= 1 Then
+        delayMs = CATCHUP_HEARTBEAT_IDLE_MS
+    End If
+
     ' The pending flag alone is not enough: NudgeQueueWork clears it on every
-    ' nudge, including one caused by the user clicking a message, while the
-    ' previous wscript is still inside its 90s sleep. Browsing mail therefore
-    ' used to leave one sleeping process per message opened, and each of them
-    ' woke up and drove more item loads. Wall-clock time is the real guard.
+    ' nudge while the previous wscript is still sleeping. Wall-clock uses the
+    ' delay we actually schedule (idle backoff included). Browsing mail used to
+    ' leave one sleeping process per message opened.
     If m_HeartbeatLaunchedAt > 0 Then
-        If DateDiff("s", m_HeartbeatLaunchedAt, Now) < (CATCHUP_HEARTBEAT_MS \ 1000) Then
+        If DateDiff("s", m_HeartbeatLaunchedAt, Now) < (delayMs \ 1000) Then
             Exit Sub
         End If
     End If
@@ -1076,7 +1109,7 @@ Private Sub LaunchCatchUpHeartbeat()
 
     Dim vbsPath As String
     vbsPath = Environ$("LOCALAPPDATA") & "\GeoFooter\aes_catchup_heartbeat.vbs"
-    If Not WriteSleepRunScript(vbsPath, CATCHUP_HEARTBEAT_MS, "AesCatchUpHeartbeat") Then
+    If Not WriteSleepRunScript(vbsPath, delayMs, "AesCatchUpHeartbeat") Then
         MSCANModLogging.WriteLog "LaunchCatchUpHeartbeat: could not write heartbeat script."
         m_CatchUpHeartbeatPending = False
         Exit Sub
@@ -1085,7 +1118,7 @@ Private Sub LaunchCatchUpHeartbeat()
     Dim shell As Object
     Set shell = CreateObject("WScript.Shell")
     shell.Run "wscript.exe //Nologo //B " & Chr$(34) & vbsPath & Chr$(34), 0, False
-    MSCANModLogging.WriteLogDebug "LaunchCatchUpHeartbeat: next sweep in " & CATCHUP_HEARTBEAT_MS & " ms."
+    MSCANModLogging.WriteLogDebug "LaunchCatchUpHeartbeat: next sweep in " & delayMs & " ms."
     Exit Sub
 
 EH:
@@ -1206,21 +1239,31 @@ Private Sub FindAndQueueRecentMailBySubject(ByVal targetSubject As String)
         Set inboxItems = RecentInboxItemsDesc(inboxFolder, 60)
         If inboxItems Is Nothing Then GoTo NextAccount
 
-        checkCount = 10
-        If inboxItems.Count < checkCount Then checkCount = inboxItems.Count
-
-        For idx = 1 To checkCount
-            If MSCANModule1.IsScannableItem(inboxItems(idx)) Then
-                Set mail = inboxItems(idx)
+        ' GetFirst/GetNext - avoid Items.Count on Restricted sets.
+        checkCount = 0
+        Set mail = Nothing
+        On Error Resume Next
+        Set mail = inboxItems.GetFirst
+        Err.Clear
+        On Error GoTo EH
+        Do While Not mail Is Nothing And checkCount < 10
+            checkCount = checkCount + 1
+            If MSCANModule1.IsScannableItem(mail) Then
                 If StrComp(mail.Subject, targetSubject, vbTextCompare) = 0 Then
-                    If Not MSCANModule1.MailHasFooter(mail) Then
+                    ' Lite: do not HTMLBody-probe every recent item after send.
+                    If Not MSCANModule1.IsAesScannedLite(mail) Then
                         MSCANModLogging.WriteLog "PostSendFooterScan: Queuing inbox copy on " & acc.DisplayName & " - " & Left$(targetSubject, 80)
                         QueueMailForProcessing mail
                     End If
                     Exit Sub
                 End If
             End If
-        Next idx
+            Set mail = Nothing
+            On Error Resume Next
+            Set mail = inboxItems.GetNext
+            Err.Clear
+            On Error GoTo EH
+        Loop
 
 NextAccount:
     Next acc

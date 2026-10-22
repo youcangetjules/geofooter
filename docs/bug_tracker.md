@@ -33,6 +33,38 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-038 — CompleteAsyncFooter holds the UI thread 1–7s (logged stalls)
+
+- **Severity:** S2
+- **Area:** VBA
+- **Status:** open
+- **Reported:** 2026-10-22 (from VBA_Log)
+- **Summary:** HEALTH UI stall lines show `CompleteAsyncFooter` holding Outlook for 1400–7156 ms (HTMLBody write + Save + retries with WaitMs 400). Expected cost of footering on the UI thread, but long enough to drop keystrokes if the user is typing.
+- **Repro:** Let a compact scan finish while interacting with Outlook; check VBA_Log for `HEALTH | UI stall: CompleteAsyncFooter`.
+- **Workaround:** Compose detection defers queue work while typing; footer apply still runs when the job completes.
+- **Related:** BUG-035
+
+### BUG-037 — StripSensitiveHeadersFromMail spams unsupported SetProperty errors
+
+- **Severity:** S3
+- **Area:** VBA
+- **Status:** fixed (pending VBA re-import)
+- **Reported:** 2026-10-22
+- **Summary:** After every footer apply, `StripSensitiveHeadersFromMail` logs `#-2147024891 - The property ... does not support this operation` (1563+ times in one log). GetProperty works; SetProperty is rejected on IMAP/Gmail stores. Noise only, but every apply pays the failed Set + Save attempt.
+- **Repro:** Apply a footer on a store that rejects header writes; watch VBA_Log.
+- **Fixed in:** 1.5.56 — after one unsupported SetProperty, skip for the rest of the Outlook session.
+
+### BUG-036 — CatchUp Restrict/HTMLBody path can freeze Outlook while idle
+
+- **Severity:** S1
+- **Area:** VBA
+- **Status:** fixed (pending VBA re-import)
+- **Reported:** 2026-10-22
+- **Summary:** Idle CatchUp ran every ~90s across 5 inboxes (9000+ sweeps in VBA_Log). Each pass Restrict+Sort and called `IsAesScanned`, which falls back to reading `HTMLBody` when `AESScanned` is missing (common on IMAP). Also used `Items.Count` on Restricted sets (full enumeration). Combined with PERF-002 / BUG-035 hard freezes.
+- **Repro:** Leave Outlook idle with AES ON and several large inboxes; UI stutters every ~90s or locks up.
+- **Fixed in:** 1.5.56 — `IsAesScannedLite` (property / `aes_mark_*` only) for CatchUp and queue skips; GetFirst/GetNext instead of Count; idle CatchUp heartbeat backs off to 240s when nothing was queued.
+- **Related:** BUG-035, PERF-002
+
 ### BUG-035 — Outlook locks up for extended periods (hard UI freeze)
 
 - **Severity:** S1
@@ -42,7 +74,8 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 - **Summary:** Outlook becomes unresponsive for extended periods again (user report). Prior PERF-002 sample showed idle queue, CatchUp heartbeats, duplicate GURI, and HEALTH uiStalls=0 because CatchUp was not timed. Hard freezes cannot be logged from VBA (UI thread stuck).
 - **Repro:** Use Outlook with AES enabled until the UI stops responding for a long stretch.
 - **Workaround / capture:** AES Diagnostics → Start lockup scanner (1.5.55+); reproduce; collect `%LOCALAPPDATA%\GeoFooter\Logs\lockup_scans\freeze_*.txt` and `outlook_lockup_events.log`. Re-import VBA so CatchUp stalls appear in HEALTH.
-- **Related:** PERF-002, BUG-034
+- **Update 2026-10-22:** Code cleanse found CatchUp HTMLBody/`Items.Count` (BUG-036) and footer apply stalls (BUG-038) as concrete contributors; mitigations in 1.5.56. Still need lockup scanner evidence for remaining hard freezes.
+- **Related:** PERF-002, BUG-034, BUG-036, BUG-038
 
 ### BUG-034 — Two GURI GUI processes can run at once
 

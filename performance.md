@@ -81,6 +81,7 @@ Cheap things worth grabbing while the symptom is fresh:
 - **Evidence:** At check time Outlook was mostly idle (~0.8% of one core) then spiked to ~16% of one core in a 5s sample; ~12,010 COM/UI handles, 152 threads, 450–480 MB. HEALTH: conflicts=0, uiStalls=0, worstStall=0ms, uiBusy=13s since 16:11, queuePeak=5, 30 commits. Disk idle; 31 GB RAM free. No AES conflict storm.
 - **Outcome:** Not an AES scan backlog. Likely mix of (1) Outlook UI-thread CatchUp Restrict walks, (2) two GURI instances, (3) other desktop apps (Claude/Cursor). Watch whether closing the duplicate GURI and/or restarting Outlook clears the feel; if uiBusy climbs without uiStalls, CatchUp cost may need a bug.
 - **Update 2026-10-22:** 1.5.55 instruments CatchUp with BeginOp/EndOp (uiStalls will count long Restrict walks after VBA re-import). Diagnostics can start an out-of-process lockup scanner that writes freeze reports when Outlook stops answering WM_NULL — use that for the next hard freeze (VBA cannot log while hung).
+- **Update 2026-10-22 (cleanse):** VBA_Log showed ~9k CatchUp sweeps (~every 90s, 5 inboxes) and 8 `CompleteAsyncFooter` UI stalls (1.4–7.2s). Promoted CatchUp cost to BUG-036 (fixed 1.5.56: no HTMLBody on CatchUp, idle backoff 240s); footer stalls logged as BUG-038.
 
 ### PERF-001 — Machine slowed to a crawl; GURI suspected
 

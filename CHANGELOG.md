@@ -20,6 +20,15 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.56] — 2026-10-22
+
+### Fixed
+
+- CatchUp / queue skip paths use `IsAesScannedLite` (UserProperty or `aes_mark_*` attachment only) so idle sweeps never read `HTMLBody` on the UI thread (BUG-036).
+- CatchUp and post-send inbox walks use `GetFirst`/`GetNext` instead of `Items.Count` (avoids full Restricted-set enumeration).
+- Idle CatchUp heartbeat backs off to 240s when the last sweep queued nothing; new mail resets the streak.
+- `StripSensitiveHeadersFromMail` stops retrying after one unsupported `SetProperty` on the store (BUG-037). Requires VBA re-import.
+
 ## [1.5.55] — 2026-10-22
 
 ### Added

@@ -12,6 +12,8 @@ Private m_InNudge As Boolean
 Private m_NudgeWiredLogged As Boolean
 ' Set when CommitMailHtml gave up because the store kept changing the item.
 Private m_LastCommitConflict As Boolean
+' Set when PR_TRANSPORT_MESSAGE_HEADERS rejects SetProperty (IMAP/Gmail).
+Private m_StripHeadersUnsupported As Boolean
 
 ' The rendered footer heading. Survives comment stripping and id rewriting, so
 ' it is the last-resort way to find a footer that must be removed.
@@ -1427,6 +1429,9 @@ Public Function IsLikelyTrackingBeacon(ByVal imgTag As String) As Boolean
     IsLikelyTrackingBeacon = False
 End Function
 
+' Some stores (IMAP/Gmail OST) allow reading PR_TRANSPORT_MESSAGE_HEADERS but
+' reject SetProperty. After one unsupported write, skip for the rest of the
+' session so every footer apply does not spam the log (BUG-037).
 Private Sub StripSensitiveHeadersFromMail(ByVal mail As Object)
     On Error GoTo EH
 
@@ -1442,6 +1447,8 @@ Private Sub StripSensitiveHeadersFromMail(ByVal mail As Object)
     Dim headerLine As String
     Dim headerKey As String
     Dim pos As Integer
+
+    If m_StripHeadersUnsupported Then Exit Sub
 
     Set pa = mail.PropertyAccessor
     On Error Resume Next
@@ -1488,8 +1495,19 @@ Private Sub StripSensitiveHeadersFromMail(ByVal mail As Object)
 
     If Len(removedHeadersLog) = 0 Then Exit Sub
 
+    Err.Clear
+    On Error Resume Next
     pa.SetProperty PR_TRANSPORT_MESSAGE_HEADERS, newHeader
+    If Err.Number <> 0 Then
+        ' #-2147024891: property does not support this operation on this store.
+        m_StripHeadersUnsupported = True
+        MSCANModLogging.WriteLogWarn "StripSensitiveHeadersFromMail: SetProperty unsupported on this store " & _
+            "(#" & Err.Number & "); skipping for the rest of this Outlook session."
+        Err.Clear
+        Exit Sub
+    End If
     mail.Save
+    On Error GoTo EH
     MSCANModLogging.WriteLog "StripSensitiveHeadersFromMail: Sensitive headers removed after footer insert."
     Exit Sub
 
@@ -3883,7 +3901,40 @@ Public Function MailHasFooter(ByVal mail As Object) As Boolean
     MailHasFooter = MailAlreadyHasFooter(mail)
 End Function
 
-' Fast path for queue/catch-up - avoids reading HTMLBody.
+' Fast path for queue/catch-up - never reads HTMLBody (BUG-036).
+' True when AESScanned=1 or an aes_mark_* attachment is present. False does not
+' prove unscanned; callers that must be sure use IsAesScanned.
+Public Function IsAesScannedLite(ByVal mail As Object) As Boolean
+    On Error Resume Next
+    IsAesScannedLite = False
+    If mail Is Nothing Then Exit Function
+
+    Dim up As Object
+    Err.Clear
+    Set up = mail.UserProperties.Find(AES_SCANNED_PROP)
+    If Err.Number = 0 Then
+        If Not up Is Nothing Then
+            If CStr(up.Value) = "1" Then
+                IsAesScannedLite = True
+                Exit Function
+            End If
+        End If
+    End If
+    Err.Clear
+
+    ' Inline mark part survives on IMAP when named properties do not.
+    Dim i As Long
+    Dim fn As String
+    For i = 1 To mail.Attachments.Count
+        fn = CStr(mail.Attachments.Item(i).FileName)
+        If InStr(1, fn, AES_MARK_FILE_PREFIX, vbTextCompare) = 1 Then
+            IsAesScannedLite = True
+            Exit Function
+        End If
+        Err.Clear
+    Next i
+End Function
+
 ' Whether this message has already been scanned.
 '
 ' A failed property read used to report False, which sent an already-footered
@@ -3891,10 +3942,18 @@ End Function
 ' falls back to the body, and an unreadable body answers True: skipping a scan
 ' costs one missing footer, while a wrong False costs a rewrite on every pass
 ' for as long as the message stays in the catch-up window.
+'
+' Prefer IsAesScannedLite on CatchUp / queue skip paths - HTMLBody on the UI
+' thread across many items is what freezes Outlook.
 Public Function IsAesScanned(ByVal mail As Object) As Boolean
     On Error Resume Next
     IsAesScanned = False
     If mail Is Nothing Then Exit Function
+
+    If IsAesScannedLite(mail) Then
+        IsAesScanned = True
+        Exit Function
+    End If
 
     Dim up As Object
     Err.Clear
@@ -3906,12 +3965,14 @@ Public Function IsAesScanned(ByVal mail As Object) As Boolean
     End If
 
     If Not up Is Nothing Then
+        ' Lite already checked Value=1; a present property with another value
+        ' still means "not scanned" unless the body says otherwise.
         IsAesScanned = (CStr(up.Value) = "1")
-        Exit Function
+        If IsAesScanned Then Exit Function
     End If
 
-    ' No property. On IMAP and Gmail stores named properties are often not
-    ' round-tripped at all, so the body is the more reliable record.
+    ' No property / not marked. On IMAP and Gmail stores named properties are
+    ' often not round-tripped, so the body is the more reliable record.
     IsAesScanned = BodyShowsAesFooter(mail, False)
 End Function
 

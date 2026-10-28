@@ -430,8 +430,25 @@ Public Function GetLogFilePath() As String
 End Function
 
 Public Function GetVersion() As String
-    '''Returns the MSCAN version string
-    GetVersion = "2.0.0"
+    ' Suite SemVer from install-root VERSION (same file as geofooter/version.py).
+    ' Hard-coded "2.0.0" here drifted years behind the product (BUG-039).
+    On Error Resume Next
+    Dim fso As Object
+    Dim path As String
+    Dim ts As Object
+    Dim line As String
+    GetVersion = ""
+    path = MSCANPaths.GetInstallRoot()
+    If Len(path) = 0 Then Exit Function
+    path = path & "\VERSION"
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If Not fso.FileExists(path) Then Exit Function
+    Set ts = fso.OpenTextFile(path, 1) ' ForReading
+    If Not ts Is Nothing Then
+        If Not ts.AtEndOfStream Then line = Trim$(ts.ReadLine)
+        ts.Close
+    End If
+    GetVersion = line
 End Function
 
 Public Function GetDetectionPattern() As String

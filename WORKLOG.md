@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-28 — 1.5.59: Align MSCANCore.GetVersion with suite VERSION
+
+- Checked Outlook VBA vs disk: cannot open VBE from outside (known AccessVBOM/VBE null). Runtime proof that 1.5.56 CatchUp is loaded: VBA_Log 2026-10-26 shows idle heartbeat `240000 ms`.
+- `MSCANCore.GetVersion` was still hard-coded `2.0.0` on disk (BUG-039) — now reads `VERSION` via `MSCANPaths.GetInstallRoot`.
+- Follow-up: re-import `MSCANCore` only (for GetVersion). Freeze modules already match 1.5.56+.
+
 ### 2026-10-22 — 1.5.58: Diagnostics window 1800x1000
 
 - `aes/diagnostics_dialog.py`: default `resize(1800, 1000)`.

@@ -33,6 +33,15 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-039 — MSCANCore.GetVersion hard-coded as 2.0.0
+
+- **Severity:** S4
+- **Area:** VBA
+- **Status:** fixed (pending VBA re-import of `MSCANCore`)
+- **Reported:** 2026-10-28
+- **Summary:** `MSCANCore.GetVersion` returned `"2.0.0"` while the suite is on 1.5.x (`VERSION` / `geofooter/version.py`). Any diagnostics that call GetVersion reported the wrong product version.
+- **Fixed in:** 1.5.59 — reads install-root `VERSION` via `MSCANPaths.GetInstallRoot`.
+
 ### BUG-035 — Outlook locks up for extended periods (hard UI freeze)
 
 - **Severity:** S1
@@ -42,28 +51,31 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 - **Summary:** Outlook becomes fully unresponsive for extended periods (not a brief footer stall). Prior PERF-002 sample showed idle queue, CatchUp heartbeats, duplicate GURI, and HEALTH uiStalls=0 because CatchUp was not timed. Hard freezes cannot be logged from VBA (UI thread stuck).
 - **Repro:** Use Outlook with AES enabled until the UI stops responding for a long stretch.
 - **Workaround / capture:** AES Diagnostics → Start lockup scanner (1.5.55+); reproduce; collect `%LOCALAPPDATA%\GeoFooter\Logs\lockup_scans\freeze_*.txt` and `outlook_lockup_events.log`. Re-import VBA (`MSCANModule1`, `MSCANModQueueManager`) for 1.5.56 CatchUp mitigations.
-- **Update 2026-10-22:** Distinct from BUG-038 (brief footer stall is acceptable). Strongest AES suspect was idle CatchUp Restrict/HTMLBody (BUG-036, fixed 1.5.56 pending re-import). Still need a freeze report from the lockup scanner to confirm what holds the UI when it is fully wedged.
+- **Update 2026-10-22:** Distinct from BUG-038 (brief footer stall is acceptable). Strongest AES suspect was idle CatchUp Restrict/HTMLBody (BUG-036). Still need a freeze report from the lockup scanner for remaining hard freezes.
+- **Update 2026-10-28:** VBA_Log on 2026-10-26 shows `LaunchCatchUpHeartbeat: next sweep in 240000 ms` — Outlook has the 1.5.56 CatchUp idle backoff loaded (re-import happened). External VBE compare still blocked (AccessVBOM=1 but `Application.VBE` null from outside).
 - **Related:** PERF-002, BUG-034, BUG-036
 
 ### BUG-037 — StripSensitiveHeadersFromMail spams unsupported SetProperty errors
 
 - **Severity:** S3
 - **Area:** VBA
-- **Status:** fixed (pending VBA re-import)
+- **Status:** fixed
 - **Reported:** 2026-10-22
 - **Summary:** After every footer apply, `StripSensitiveHeadersFromMail` logs `#-2147024891 - The property ... does not support this operation` (1563+ times in one log). GetProperty works; SetProperty is rejected on IMAP/Gmail stores. Noise only, but every apply pays the failed Set + Save attempt.
 - **Repro:** Apply a footer on a store that rejects header writes; watch VBA_Log.
 - **Fixed in:** 1.5.56 — after one unsupported SetProperty, skip for the rest of the Outlook session.
+- **Update 2026-10-28:** CatchUp idle-backoff evidence shows 1.5.56 VBA (`MSCANModule1` / queue manager) is loaded; treat strip-skip as imported with that set.
 
 ### BUG-036 — CatchUp Restrict/HTMLBody path can freeze Outlook while idle
 
 - **Severity:** S1
 - **Area:** VBA
-- **Status:** fixed (pending VBA re-import)
+- **Status:** fixed
 - **Reported:** 2026-10-22
 - **Summary:** Idle CatchUp ran every ~90s across 5 inboxes (9000+ sweeps in VBA_Log). Each pass Restrict+Sort and called `IsAesScanned`, which falls back to reading `HTMLBody` when `AESScanned` is missing (common on IMAP). Also used `Items.Count` on Restricted sets (full enumeration). Combined with PERF-002 / BUG-035 hard freezes.
 - **Repro:** Leave Outlook idle with AES ON and several large inboxes; UI stutters every ~90s or locks up.
 - **Fixed in:** 1.5.56 — `IsAesScannedLite` (property / `aes_mark_*` only) for CatchUp and queue skips; GetFirst/GetNext instead of Count; idle CatchUp heartbeat backs off to 240s when nothing was queued.
+- **Update 2026-10-28:** Confirmed loaded — VBA_Log shows 240000 ms idle heartbeats on 2026-10-26.
 - **Related:** BUG-035, PERF-002
 
 ### BUG-038 — CompleteAsyncFooter holds the UI thread 1–7s (logged stalls)

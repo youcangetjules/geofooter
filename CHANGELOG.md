@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.59] — 2026-10-28
+
+### Fixed
+
+- `MSCANCore.GetVersion` reads install-root `VERSION` instead of a hard-coded `2.0.0` (BUG-039). Re-import `MSCANCore`.
+
 ## [1.5.58] — 2026-10-22
 
 ### Changed

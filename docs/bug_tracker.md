@@ -65,8 +65,9 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 - **Repro:** Use Outlook with AES enabled until the UI stops responding for a long stretch.
 - **Workaround / capture:** AES Diagnostics → Start lockup scanner (1.5.55+); reproduce; collect `%LOCALAPPDATA%\GeoFooter\Logs\lockup_scans\freeze_*.txt` and `outlook_lockup_events.log`. Re-import VBA (`MSCANModule1`, `MSCANModQueueManager`) for 1.5.56 CatchUp mitigations.
 - **Update 2026-10-22:** Distinct from BUG-038 (brief footer stall is acceptable). Strongest AES suspect was idle CatchUp Restrict/HTMLBody (BUG-036). Still need a freeze report from the lockup scanner for remaining hard freezes.
-- **Update 2026-10-28:** VBA_Log on 2026-10-26 shows `LaunchCatchUpHeartbeat: next sweep in 240000 ms` — Outlook has the 1.5.56 CatchUp idle backoff loaded (re-import happened). External VBE compare still blocked (AccessVBOM=1 but `Application.VBE` null from outside).
-- **Related:** PERF-002, BUG-034, BUG-036
+- **Update 2026-10-28:** VBA_Log on 2026-10-26 shows `LaunchCatchUpHeartbeat: next sweep in 240000 ms` — Outlook had the 1.5.56 CatchUp idle backoff loaded. External VBE compare still blocked (AccessVBOM=1 but `Application.VBE` null from outside).
+- **Update 2026-10-28 (critical):** User reports Outlook still freezes with **all MSCAN VBA modules removed** (BUG-040 empty project). That rules out CatchUp / footer VBA as the *current* lockup cause. Still loaded: `Aliniant.AesRibbonHost` (LoadBehavior=3) — ribbon bar remains without VBA. Also Google Drive/Meet/Apps Sync, Acrobat, Teams, GpgOL. Heavy Python outside AES (Workflow Manager, Aria, GURI gui). No `wscript` currently running. Next: disable AesRibbonHost (LoadBehavior=2) and retest; then other COM add-ins; lockup scanner during a freeze.
+- **Related:** PERF-002, BUG-034, BUG-036, BUG-040
 
 ### BUG-037 — StripSensitiveHeadersFromMail spams unsupported SetProperty errors
 

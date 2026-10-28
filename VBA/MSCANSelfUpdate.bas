@@ -19,6 +19,14 @@ Private Const VBE_CTL_COMPILE As Long = 578
 Private Const VBE_CTL_SAVE As Long = 3
 Private Const ACCESS_VBOM_KEY As String = "HKCU\Software\Microsoft\Office\16.0\Outlook\Security\AccessVBOM"
 
+' Self-contained sleep: this module must compile alone in an empty project
+' (BUG-040 restore). Do not call MSCANIdle here - it is not imported yet.
+#If VBA7 Then
+    Private Declare PtrSafe Sub ApiSleep Lib "kernel32" Alias "Sleep" (ByVal dwMilliseconds As Long)
+#Else
+    Private Declare Sub ApiSleep Lib "kernel32" Alias "Sleep" (ByVal dwMilliseconds As Long)
+#End If
+
 Public Sub UpdateAesFromDisk()
     Dim root As String
     Dim vbaDir As String
@@ -294,5 +302,7 @@ Private Sub CopyTextToClipboard(ByVal text As String)
 End Sub
 
 Private Sub SleepMs(ByVal ms As Long)
-    MSCANIdle.WaitMs ms
+    On Error Resume Next
+    If ms <= 0 Then Exit Sub
+    ApiSleep ms
 End Sub

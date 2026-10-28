@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.60] — 2026-10-28
+
+### Fixed
+
+- `MSCANSelfUpdate` no longer calls `MSCANIdle` (compile error in an empty VBA project during BUG-040 restore). Uses kernel32 `Sleep` instead. Re-import `MSCANSelfUpdate.bas` from disk, then run `UpdateAesFromDisk`.
+
 ## [1.5.59] — 2026-10-28
 
 ### Fixed

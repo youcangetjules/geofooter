@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-28 — 1.5.60: SelfUpdate bootstraps without MSCANIdle
+
+- Empty Outlook VBA project (BUG-040): importing SelfUpdate then running UpdateAesFromDisk failed with `Variable not defined` on `MSCANIdle.WaitMs`.
+- `MSCANSelfUpdate.SleepMs` now uses kernel32 Sleep so the module compiles alone.
+- Follow-up: remove old SelfUpdate from VBE if present, File > Import File the new `MSCANSelfUpdate.bas`, Alt+F8 > UpdateAesFromDisk, Compile, Save, quit Outlook.
+
 ### 2026-10-28 — 1.5.59: Align MSCANCore.GetVersion with suite VERSION
 
 - Checked Outlook VBA vs disk: cannot open VBE from outside (known AccessVBOM/VBE null). Runtime proof that 1.5.56 CatchUp is loaded: VBA_Log 2026-10-26 shows idle heartbeat `240000 ms`.

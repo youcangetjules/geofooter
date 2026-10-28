@@ -43,6 +43,7 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 - **Evidence 2026-10-28:** AES was healthy through 2026-10-26 10:56 (`VBA_Log`, CatchUp 240s). Outlook restarted 2026-10-28 07:16 with **no** `Application_Startup` log line — macros did not run. `%APPDATA%\Microsoft\Outlook\VbaProject.OTM` is **missing** (folder has only srs/xml/ribbon files). Same machine previously hit BUG-003 (imports not persisted to OTM). Likely the in-memory VBA project was never saved to OTM after the last good session, or OTM was deleted/reset between 26–28 Oct; Outlook then opened an empty Project1.
 - **Repro:** Open Alt+F11; Project1 has no Modules list.
 - **Workaround:** In VBE: File > Import File > `MSCANSelfUpdate.bas`, Alt+F8 > `UpdateAesFromDisk`, fix built-in ThisOutlookSession from `ThisOutlookSession.cls`, Debug > Compile, **File > Save**, fully quit Outlook (tray) and reopen. Confirm `VbaProject.OTM` appears under `%APPDATA%\Microsoft\Outlook\`.
+- **Update 2026-10-28:** First restore attempt failed with `Compile error: Variable not defined` on `MSCANIdle.WaitMs` inside `MSCANSelfUpdate.SleepMs` — SelfUpdate could not compile in an empty project. Fixed in 1.5.60 (kernel32 Sleep, no MSCANIdle). Re-import `MSCANSelfUpdate.bas` from disk and run `UpdateAesFromDisk` again.
 - **Related:** BUG-001, BUG-003
 
 ### BUG-039 — MSCANCore.GetVersion hard-coded as 2.0.0

@@ -33,6 +33,17 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 
 ## Open
 
+### BUG-040 — Outlook VBA project lost all MSCAN modules
+
+- **Severity:** S1
+- **Area:** VBA / Install
+- **Status:** investigating
+- **Reported:** 2026-10-28
+- **Summary:** VBE Project Explorer shows only `ThisOutlookSession` under Microsoft Outlook Objects — no Modules folder, no `MSCAN*` modules. Disk copies under `VBA\` are intact (including 1.5.56 CatchUp fixes). AES cannot scan or footer until modules are re-imported. Cause unknown (failed import wipe, project reset, corrupt VbaProject.OTM, or manual delete).
+- **Repro:** Open Alt+F11; Project1 has no Modules list.
+- **Workaround:** Re-import from `C:\GeoFooter\VBA\` via `scripts\Import_VBA_to_Outlook.bat` (AccessVBOM + Alt+F11), or manual File > Import File per `VBA\IMPORT.txt`, then paste `ThisOutlookSession.cls` body into the built-in object. Compile + Save.
+- **Related:** BUG-001
+
 ### BUG-039 — MSCANCore.GetVersion hard-coded as 2.0.0
 
 - **Severity:** S4

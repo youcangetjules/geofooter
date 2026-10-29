@@ -82,6 +82,8 @@ Cheap things worth grabbing while the symptom is fresh:
 - **Outcome:** Not an AES scan backlog. Likely mix of (1) Outlook UI-thread CatchUp Restrict walks, (2) two GURI instances, (3) other desktop apps (Claude/Cursor). Watch whether closing the duplicate GURI and/or restarting Outlook clears the feel; if uiBusy climbs without uiStalls, CatchUp cost may need a bug.
 - **Update 2026-10-22:** 1.5.55 instruments CatchUp with BeginOp/EndOp (uiStalls will count long Restrict walks after VBA re-import). Diagnostics can start an out-of-process lockup scanner that writes freeze reports when Outlook stops answering WM_NULL — use that for the next hard freeze (VBA cannot log while hung).
 - **Update 2026-10-22 (cleanse):** VBA_Log showed ~9k CatchUp sweeps (~every 90s, 5 inboxes) and 8 `CompleteAsyncFooter` UI stalls (1.4–7.2s). Promoted CatchUp cost to BUG-036 (fixed 1.5.56: no HTMLBody on CatchUp, idle backoff 240s); footer stalls logged as BUG-038.
+- **Update 2026-10-28:** Freeze still happens with VBA project empty (no MSCAN modules). AES VBA is not required for the current lockup. Check COM add-ins (AesRibbonHost, Google Sync/Drive, Acrobat) and other desktop Python load.
+- **Update 2026-10-29 09:38:** Soft lock again while typing felt frozen (`freeze_live_20261029_093846.txt`). Windows still says not hung. Same long-lived Outlook (~25h, ~18k handles, many open compose/Word editors). Scanner separately logged hard hung streaks earlier the same morning (~08:34–08:42). Promoted pattern remains under BUG-035.
 
 ### PERF-001 — Machine slowed to a crawl; GURI suspected
 

@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-29 — BUG-035 soft-lock capture (freeze again)
+
+- Live capture during user-reported freeze: `freeze_live_20261029_093846.txt`. Soft lock again (WM_NULL OK); scanner also had hard hung streaks earlier (~08:34–08:42).
+- Logged on BUG-035 + PERF-002. AES VBA empty, AesRibbonHost off — next isolation is Outlook restart then non-AES COM add-ins.
+
 ### 2026-10-28 — 1.5.60: SelfUpdate bootstraps without MSCANIdle
 
 - Empty Outlook VBA project (BUG-040): importing SelfUpdate then running UpdateAesFromDisk failed with `Variable not defined` on `MSCANIdle.WaitMs`.

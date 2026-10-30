@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-30 — BUG-035: safe mode clean; disable Google Apps Sync
+
+- User: safe mode does not freeze → COM add-in. Set HKCU `GoogleAppsSync.Connect` LoadBehavior=2. Quit/relaunch Outlook normally to test. Acrobat/Drive still on if needed next.
+
 ### 2026-10-30 — BUG-035 major lockup; isolation ladder
 
 - Capture `freeze_live_20261030_175327.txt`: soft lock + Outlook top CPU; AES still off. Documented COM isolation order on BUG-035 (safe mode → Google Apps Sync → Acrobat/Drive).

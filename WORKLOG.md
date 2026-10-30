@@ -13,6 +13,10 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-10-30 — BUG-035 major lockup; isolation ladder
+
+- Capture `freeze_live_20261030_175327.txt`: soft lock + Outlook top CPU; AES still off. Documented COM isolation order on BUG-035 (safe mode → Google Apps Sync → Acrobat/Drive).
+
 ### 2026-10-29 — BUG-035 soft-lock capture (freeze again)
 
 - Live capture during user-reported freeze: `freeze_live_20261029_093846.txt`. Soft lock again (WM_NULL OK); scanner also had hard hung streaks earlier (~08:34–08:42).

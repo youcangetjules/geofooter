@@ -44,6 +44,7 @@ Use this for **bugs and regressions**, not day-to-day build notes (`WORKLOG.md`)
 - **Repro:** Open Alt+F11; Project1 has no Modules list.
 - **Workaround:** In VBE: File > Import File > `MSCANSelfUpdate.bas`, Alt+F8 > `UpdateAesFromDisk`, fix built-in ThisOutlookSession from `ThisOutlookSession.cls`, Debug > Compile, **File > Save**, fully quit Outlook (tray) and reopen. Confirm `VbaProject.OTM` appears under `%APPDATA%\Microsoft\Outlook\`.
 - **Update 2026-10-28:** First restore attempt failed with `Compile error: Variable not defined` on `MSCANIdle.WaitMs` inside `MSCANSelfUpdate.SleepMs` — SelfUpdate could not compile in an empty project. Fixed in 1.5.60 (kernel32 Sleep, no MSCANIdle). Re-import `MSCANSelfUpdate.bas` from disk and run `UpdateAesFromDisk` again.
+- **Update 2026-11-01:** User screenshot confirms still empty: Project1 → only `ThisOutlookSession`. Disk `VBA\*.bas` intact. AES ribbon popup expected until restore. Restore path unchanged: import `MSCANSelfUpdate.bas` (1.5.60+), `UpdateAesFromDisk`, fix built-in ThisOutlookSession, Compile, **Save**, quit Outlook, confirm `VbaProject.OTM` exists.
 - **Related:** BUG-001, BUG-003
 
 ### BUG-039 — MSCANCore.GetVersion hard-coded as 2.0.0

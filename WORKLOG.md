@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-02 — OTM missing explains empty VBA project
+
+- Confirmed `VbaProject.OTM` absent; Project Explorer empty is reload-of-nothing, not live module deletion.
+- Added `scripts/Backup_VbaProject_OTM.ps1` / `.bat` (Status / Backup / Restore). After a good import+Save+quit, back up OTM immediately.
+
 ### 2026-11-02 — 1.5.62: UI importer binds to Outlook VBE only
 
 - First run lost focus because Excel VBA was also open (title match grabbed wrong IDE).

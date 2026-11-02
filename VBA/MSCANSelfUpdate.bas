@@ -6,10 +6,9 @@ Attribute VB_Name = "MSCANSelfUpdate"
 ' Each update: Alt+F11 once (leave the editor open), then Alt+F8 >
 '              UpdateAesFromDisk. Fully quit Outlook afterwards.
 '
-' On some Outlook builds Application.VBE stays Nothing until the VBA editor
-' has been opened in the current session, even with AccessVBOM=1. This module
-' sends Alt+F11 and retries; if VBE is still unreachable it falls back to a
-' manual import checklist (File > Import does not need AccessVBOM).
+' On some Outlook builds Application.VBE stays Nothing even with AccessVBOM=1
+' (BUG-003). This module sends Alt+F11 and retries; if VBE is still unreachable
+' it launches scripts\Import_VBA_ViaUi.ps1 to drive File > Import File via UI.
 '===============================================================================
 Option Explicit
 
@@ -58,7 +57,17 @@ Public Sub UpdateAesFromDisk()
     End If
 
     If proj Is Nothing Then
-        ShowManualImportGuide vbaDir, files, accessVal
+        ' This machine blocks Application.VBE from macros — drive File > Import via UI.
+        If RunUiImporter(root, report) Then
+            MsgBox "Application.VBE is blocked (AccessVBOM=" & accessVal & ")." & vbCrLf & _
+                   "UI importer finished." & vbCrLf & vbCrLf & report & vbCrLf & _
+                   "Next: paste VBA\ThisOutlookSession.cls into the built-in " & _
+                   "ThisOutlookSession, Compile, Save, quit Outlook fully, reopen, " & _
+                   "then Alt+F8 > RecoverAesUi.", _
+                   vbInformation, "AES update"
+        Else
+            ShowManualImportGuide vbaDir, files, accessVal
+        End If
         Exit Sub
     End If
 
@@ -81,6 +90,47 @@ Public Sub UpdateAesFromDisk()
            "Now fully quit Outlook (tray too) and reopen.", _
            IIf(failed = 0, vbInformation, vbExclamation), "AES update"
 End Sub
+
+' Launch scripts\Import_VBA_ViaUi.ps1 (32-bit Windows PowerShell) and wait.
+Private Function RunUiImporter(ByVal root As String, ByRef report As String) As Boolean
+    Dim sh As Object
+    Dim ps As String
+    Dim script As String
+    Dim cmd As String
+    Dim rc As Long
+    Dim sysWow As String
+    Dim sys32 As String
+
+    script = root & "\scripts\Import_VBA_ViaUi.ps1"
+    If Not CreateObject("Scripting.FileSystemObject").FileExists(script) Then
+        report = report & "UI importer missing: " & script & vbCrLf
+        Exit Function
+    End If
+
+    sysWow = Environ$("SystemRoot") & "\SysWOW64\WindowsPowerShell\v1.0\powershell.exe"
+    sys32 = Environ$("SystemRoot") & "\System32\WindowsPowerShell\v1.0\powershell.exe"
+    If CreateObject("Scripting.FileSystemObject").FileExists(sysWow) Then
+        ps = sysWow
+    Else
+        ps = sys32
+    End If
+
+    cmd = """" & ps & """ -NoProfile -ExecutionPolicy Bypass -File """ & script & """ -Root """ & root & """"
+    report = report & "Launching UI importer (hands off keyboard)..." & vbCrLf
+
+    On Error Resume Next
+    Set sh = CreateObject("WScript.Shell")
+    rc = sh.Run(cmd, 1, True)
+    If Err.Number <> 0 Then
+        report = report & "UI importer launch failed: " & Err.Description & vbCrLf
+        Err.Clear
+        Exit Function
+    End If
+    On Error GoTo 0
+
+    report = report & "UI importer exit code: " & CStr(rc) & vbCrLf
+    RunUiImporter = (rc = 0)
+End Function
 
 ' Opens the VBA folder and copies the remove/import order to the clipboard.
 Public Sub ShowAesImportChecklist()

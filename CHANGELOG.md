@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.61] — 2026-11-02
+
+### Fixed
+
+- `UpdateAesFromDisk` no longer dead-ends when `Application.VBE` is blocked (BUG-003/040). It launches `scripts\Import_VBA_ViaUi.ps1` to drive VBA **File > Import File** for every MSCAN module. Same path: `scripts\Import_VBA_ViaUi.bat`.
+
 ## [1.5.60] — 2026-10-28
 
 ### Fixed

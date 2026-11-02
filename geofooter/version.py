@@ -17,10 +17,10 @@ SemVer (MAJOR.MINOR.PATCH) — almost everything is a PATCH:
 from __future__ import annotations
 
 # Semver: MAJOR.MINOR.PATCH
-VERSION = "1.5.60"
-VERSION_TUPLE = (1, 5, 60)
+VERSION = "1.5.61"
+VERSION_TUPLE = (1, 5, 61)
 # Local release / build timestamp for this VERSION (YYYY-MM-DD HH:MM)
-VERSION_STAMP = "2026-10-28 08:09"
+VERSION_STAMP = "2026-11-02 13:35"
 
 APP_NAME = "GURI"
 APP_FULL_NAME = "GURI - Aliniant Smart Ass Email"

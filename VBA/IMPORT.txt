@@ -118,6 +118,12 @@ reach the VBA project, i.e. Application.VBE is Nothing from outside):
       (re-imports every VBA\MSCAN* file listed above, compiles, saves)
   Then fully quit Outlook (tray too) and reopen.
 
+  If UpdateAesFromDisk says Application.VBE is blocked (AccessVBOM=1 but
+  still no VBE — common on this PC), it launches scripts\Import_VBA_ViaUi.ps1
+  to drive File > Import File automatically. Or run directly:
+    scripts\Import_VBA_ViaUi.bat
+  (Outlook open; leave the keyboard alone until it finishes.)
+
 External sync (Outlook must be running):
 
   scripts\Import_VBA_to_Outlook.bat

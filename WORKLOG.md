@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-02 — 1.5.61: UI VBA importer when Application.VBE blocked
+
+- `scripts/Import_VBA_ViaUi.ps1` (+ `.bat`) drives Outlook VBE File > Import for all MSCAN modules.
+- `MSCANSelfUpdate.UpdateAesFromDisk` launches that script when `Application.VBE` is Nothing (BUG-003/040).
+- Follow-up: re-import `MSCANSelfUpdate.bas` once, or run `Import_VBA_ViaUi.bat` with Outlook open; then paste ThisOutlookSession.cls, Compile, Save, quit/reopen.
+
 ### 2026-11-01 — BUG-035 soft thaw; re-disable ribbon/add-ins
 
 - User: freezes with suspects off; slowly self-unfroze; today milder. Ribbon had flipped to LB=3 without VBA → ShortScanEmail popup. Set AesRibbonHost + Acrobat/Drive/Meet back to LB=2.

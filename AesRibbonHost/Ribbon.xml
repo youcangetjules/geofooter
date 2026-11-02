@@ -68,6 +68,13 @@
                   onAction="OnViewLogs"
                   screentip="View Logs"
                   supertip="Open the Aliniant Email Scanner VBA log in Notepad."/>
+          <button id="AESRepairVba"
+                  label="Repair VBA"
+                  size="normal"
+                  imageMso="RefreshAll"
+                  onAction="OnRepairVba"
+                  screentip="Repair VBA"
+                  supertip="Re-import all AES VBA modules from disk into this Outlook project (uses in-process VBE). Then Compile/Save. Quit Outlook fully afterward so VbaProject.OTM is written."/>
         </group>
       </tab>
     </tabs>

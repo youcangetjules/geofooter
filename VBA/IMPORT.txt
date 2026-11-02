@@ -124,6 +124,17 @@ reach the VBA project, i.e. Application.VBE is Nothing from outside):
     scripts\Import_VBA_ViaUi.bat
   (Outlook open; leave the keyboard alone until it finishes.)
 
+  Norton / AV often blocks SendKeys automation. Then use the guided importer
+  (clipboard only — you press File > Import / Ctrl+V / Enter yourself):
+    scripts\Import_VBA_Guided.bat
+  Or add Norton exclusions for <install root>\scripts and \VBA, then retry ViaUi.
+
+  Preferred when AesRibbonHost is installed (1.5.63+): ribbon **Repair VBA**
+  (or COMAddIn.Object.SyncAesVbaFromDisk). In-process VBE often works when
+  external Application.VBE does not. After a good Save+quit, run
+  scripts\Backup_VbaProject_OTM.bat; later use Start_Outlook_AES.bat so a
+  missing OTM is restored automatically before Outlook starts.
+
 External sync (Outlook must be running):
 
   scripts\Import_VBA_to_Outlook.bat

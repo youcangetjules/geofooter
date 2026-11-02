@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-02 — 1.5.63: automate VBA reload via ribbon host + OTM ensure
+
+- AesRibbonHost: `SyncAesVbaFromDisk` / Repair VBA button; auto-import if `MSCANPaths` missing; Save on shutdown.
+- `Ensure_VbaProject_OTM.ps1` + `Start_Outlook_AES.bat` restore backed-up OTM before launch.
+- Follow-up: quit Outlook, `AesRibbonHost\install.ps1`, set LoadBehavior=3, reopen; use Repair VBA once; quit; `Backup_VbaProject_OTM.bat`.
+
 ### 2026-11-02 — OTM missing explains empty VBA project
 
 - Confirmed `VbaProject.OTM` absent; Project Explorer empty is reload-of-nothing, not live module deletion.

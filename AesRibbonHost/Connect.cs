@@ -90,11 +90,28 @@ namespace Aliniant.AesRibbonHost
             HostLog.Write("OnStartupComplete");
             StartStateWatch();
             InvalidateAesRibbon();
+            // If the VBA project was wiped (missing OTM / empty Project1), reload
+            // modules from disk while we still have an in-process Application handle.
+            // External scripts often see Application.VBE as Nothing on this machine.
+            try
+            {
+                if (!VbaAesModulesPresent())
+                {
+                    HostLog.Write("OnStartupComplete: AES VBA modules missing — SyncAesVbaFromDisk");
+                    string result = SyncAesVbaFromDisk();
+                    HostLog.Write("OnStartupComplete auto-sync: " + (result ?? "").Replace("\r", " ").Replace("\n", " | "));
+                }
+            }
+            catch (Exception ex)
+            {
+                HostLog.Write("OnStartupComplete auto-sync skipped: " + ex.Message);
+            }
         }
 
         public void OnBeginShutdown(ref Array custom)
         {
             HostLog.Write("OnBeginShutdown");
+            TrySaveVbaProject();
             StopStateWatch();
             _ribbon = null;
         }
@@ -324,6 +341,235 @@ namespace Aliniant.AesRibbonHost
         {
             ExecuteVbaButton("AES_LOGS", "ViewLogs");
         }
+
+        /// <summary>
+        /// Ribbon: re-import AES VBA modules from &lt;install root&gt;\VBA.
+        /// </summary>
+        public void OnRepairVba(IRibbonControl control)
+        {
+            string result;
+            try
+            {
+                result = SyncAesVbaFromDisk();
+            }
+            catch (Exception ex)
+            {
+                result = "Repair failed: " + ex.Message;
+                HostLog.Write("OnRepairVba FATAL: " + ex);
+            }
+
+            System.Windows.Forms.MessageBox.Show(
+                (result ?? "(no result)") +
+                "\n\nNext: Debug → Compile in VBA if needed, then fully quit Outlook (tray too) " +
+                "so VbaProject.OTM is written. Run scripts\\Backup_VbaProject_OTM.bat afterward.",
+                "Aliniant AES — Repair VBA",
+                System.Windows.Forms.MessageBoxButtons.OK,
+                System.Windows.Forms.MessageBoxIcon.Information);
+        }
+
+        /// <summary>
+        /// Import every MSCAN* module from disk into the Outlook VBA project.
+        /// Callable from COM (COMAddIn.Object.SyncAesVbaFromDisk) and the ribbon.
+        /// </summary>
+        public string SyncAesVbaFromDisk()
+        {
+            string root = InstallRoot();
+            if (string.IsNullOrEmpty(root))
+                return "No install root. Set it in GURI → Database → Install root.";
+
+            string vbaDir = Path.Combine(root, "VBA");
+            if (!Directory.Exists(vbaDir))
+                return "VBA folder missing: " + vbaDir;
+
+            if (_application == null)
+                return "Outlook Application not connected.";
+
+            dynamic app = _application;
+            dynamic vbe;
+            try
+            {
+                vbe = app.VBE;
+            }
+            catch (Exception ex)
+            {
+                return "Application.VBE blocked (" + ex.Message + "). " +
+                       "Trust Center → Macro Settings → Trust access to the VBA project object model, " +
+                       "or use scripts\\Import_VBA_Guided.bat.";
+            }
+            if (vbe == null)
+                return "Application.VBE is Nothing. Enable Trust access to the VBA project object model, " +
+                       "restart Outlook, or use scripts\\Import_VBA_Guided.bat.";
+
+            dynamic proj = null;
+            try { proj = vbe.ActiveVBProject; } catch { }
+            if (proj == null)
+            {
+                try { proj = vbe.VBProjects.Item(1); } catch { }
+            }
+            if (proj == null)
+                return "No VBProject available.";
+
+            int ok = 0;
+            int fail = 0;
+            var report = new StringBuilder();
+            foreach (string file in AesVbaModuleFiles)
+            {
+                string path = Path.Combine(vbaDir, file);
+                string name = Path.GetFileNameWithoutExtension(file);
+                if (!File.Exists(path))
+                {
+                    fail++;
+                    report.AppendLine("MISSING " + file);
+                    continue;
+                }
+
+                TryRemoveVbComponent(proj, name);
+                try
+                {
+                    proj.VBComponents.Import(path);
+                    ok++;
+                }
+                catch (Exception ex)
+                {
+                    fail++;
+                    report.AppendLine("FAIL " + name + ": " + ex.Message);
+                    HostLog.Write("SyncAesVbaFromDisk import fail " + name + ": " + ex.Message);
+                }
+            }
+
+            TryCompileVbaProject(vbe);
+            TrySaveVbaProject();
+
+            string summary = "Imported " + ok + " module(s), " + fail + " failed.";
+            HostLog.Write("SyncAesVbaFromDisk: " + summary);
+            if (report.Length > 0)
+                return summary + "\n" + report.ToString().TrimEnd();
+            return summary + "\nFully quit Outlook so VbaProject.OTM is flushed, then run Backup_VbaProject_OTM.bat.";
+        }
+
+        private bool VbaAesModulesPresent()
+        {
+            try
+            {
+                if (_application == null) return true; // don't auto-sync if we can't tell
+                dynamic app = _application;
+                dynamic vbe = app.VBE;
+                if (vbe == null) return true; // can't sync anyway; avoid noisy attempts every start
+                dynamic proj = null;
+                try { proj = vbe.ActiveVBProject; } catch { }
+                if (proj == null)
+                {
+                    try { proj = vbe.VBProjects.Item(1); } catch { }
+                }
+                if (proj == null) return true;
+                try
+                {
+                    dynamic comp = proj.VBComponents.Item("MSCANPaths");
+                    return comp != null;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        private static void TryRemoveVbComponent(dynamic proj, string compName)
+        {
+            try
+            {
+                dynamic comp = proj.VBComponents.Item(compName);
+                if (comp == null) return;
+                // Document modules (ThisOutlookSession) cannot be removed.
+                try
+                {
+                    int t = (int)comp.Type;
+                    if (t == 100) return; // vbext_ct_Document
+                }
+                catch { }
+                try
+                {
+                    comp.Name = compName.Substring(0, Math.Min(20, compName.Length)) +
+                                "_old" + (Environment.TickCount & 0xFFFF);
+                }
+                catch { }
+                proj.VBComponents.Remove(comp);
+            }
+            catch { }
+        }
+
+        private void TryCompileVbaProject(dynamic vbe)
+        {
+            try
+            {
+                // VBE CommandBar control Id 578 = Debug > Compile
+                dynamic ctl = vbe.CommandBars.FindControl(Type.Missing, 578, Type.Missing, Type.Missing);
+                if (ctl != null && ctl.Enabled)
+                {
+                    ctl.Execute();
+                    HostLog.Write("TryCompileVbaProject: Compile executed");
+                }
+            }
+            catch (Exception ex)
+            {
+                HostLog.Write("TryCompileVbaProject: " + ex.Message);
+            }
+        }
+
+        private void TrySaveVbaProject()
+        {
+            try
+            {
+                if (_application == null) return;
+                dynamic app = _application;
+                dynamic vbe = app.VBE;
+                if (vbe == null) return;
+                // VBE CommandBar control Id 3 = File > Save
+                dynamic ctl = vbe.CommandBars.FindControl(Type.Missing, 3, Type.Missing, Type.Missing);
+                if (ctl != null && ctl.Enabled)
+                {
+                    ctl.Execute();
+                    HostLog.Write("TrySaveVbaProject: Save executed");
+                }
+                else
+                {
+                    HostLog.Write("TrySaveVbaProject: Save control missing/disabled");
+                }
+            }
+            catch (Exception ex)
+            {
+                HostLog.Write("TrySaveVbaProject: " + ex.Message);
+            }
+        }
+
+        // Order matches VBA\IMPORT.txt (MSCANSelfUpdate last so it stays available).
+        private static readonly string[] AesVbaModuleFiles =
+        {
+            "MSCANPaths.bas",
+            "MSCANModLogging.bas",
+            "MSCANHealth.bas",
+            "MSCANIdle.bas",
+            "MSCANModQueueManager.bas",
+            "MSCANModWatchers.bas",
+            "MSCANModStatus.bas",
+            "MSCANSettings.bas",
+            "MSCANAppBootstrap.bas",
+            "MSCANClassificationDialog.bas",
+            "MSCANReadNotify.bas",
+            "MSCANPixel.bas",
+            "MSCANToolbar.bas",
+            "MSCANModSenderRules.bas",
+            "MSCANModule1.bas",
+            "MSCANCore.bas",
+            "MSCANEventHandlers.bas",
+            "MSCANDiagnostics.bas",
+            "MSCANEmailWatcher.cls",
+            "MSCANSelfUpdate.bas",
+        };
 
         private static string LoadRibbonXml(string tabIdMso)
         {

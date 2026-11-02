@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.63] — 2026-11-02
+
+### Added
+
+- AesRibbonHost **Repair VBA** ribbon button and `SyncAesVbaFromDisk()` — in-process re-import of all `VBA\MSCAN*` modules when `Application.VBE` works for the add-in (external scripts often cannot). Auto-runs on startup if `MSCANPaths` is missing; saves the VBA project on Outlook shutdown.
+- `scripts\Ensure_VbaProject_OTM.ps1` and `Start_Outlook_AES.bat` — restore a backed-up `VbaProject.OTM` before launching Outlook when the file is missing/empty.
+
 ## [1.5.62] — 2026-11-02
 
 ### Fixed

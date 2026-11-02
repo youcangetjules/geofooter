@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.62] — 2026-11-02
+
+### Fixed
+
+- `Import_VBA_ViaUi.ps1` targets **Outlook’s** VBE window only (by OUTLOOK PID). Excel/Word VBA open at the same time no longer steals focus mid-import.
+
 ## [1.5.61] — 2026-11-02
 
 ### Fixed

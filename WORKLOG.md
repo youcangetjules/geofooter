@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-02 — 1.5.62: UI importer binds to Outlook VBE only
+
+- First run lost focus because Excel VBA was also open (title match grabbed wrong IDE).
+- `Import_VBA_ViaUi.ps1` now finds the VBE HWND owned by OUTLOOK.exe only.
+- Follow-up: close Excel VBA if possible; remove any partial MSCAN* from the failed run; re-run `Import_VBA_ViaUi.bat`.
+
 ### 2026-11-02 — 1.5.61: UI VBA importer when Application.VBE blocked
 
 - `scripts/Import_VBA_ViaUi.ps1` (+ `.bat`) drives Outlook VBE File > Import for all MSCAN modules.

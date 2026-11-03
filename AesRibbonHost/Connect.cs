@@ -90,12 +90,13 @@ namespace Aliniant.AesRibbonHost
             HostLog.Write("OnStartupComplete");
             StartStateWatch();
             InvalidateAesRibbon();
-            // If the VBA project was wiped (missing OTM / empty Project1), reload
-            // modules from disk while we still have an in-process Application handle.
-            // External scripts often see Application.VBE as Nothing on this machine.
+            // This machine loses VbaProject.OTM across sessions (BUG-040). Disk
+            // under <install root>\VBA is the source of truth — reload when missing.
             try
             {
-                if (!VbaAesModulesPresent())
+                bool present = VbaAesModulesPresent();
+                HostLog.Write("OnStartupComplete: VbaAesModulesPresent=" + present);
+                if (!present)
                 {
                     HostLog.Write("OnStartupComplete: AES VBA modules missing — SyncAesVbaFromDisk");
                     string result = SyncAesVbaFromDisk();
@@ -104,7 +105,7 @@ namespace Aliniant.AesRibbonHost
             }
             catch (Exception ex)
             {
-                HostLog.Write("OnStartupComplete auto-sync skipped: " + ex.Message);
+                HostLog.Write("OnStartupComplete auto-sync skipped: " + ex);
             }
         }
 
@@ -112,6 +113,7 @@ namespace Aliniant.AesRibbonHost
         {
             HostLog.Write("OnBeginShutdown");
             TrySaveVbaProject();
+            TryBackupOtm("shutdown");
             StopStateWatch();
             _ribbon = null;
         }
@@ -437,31 +439,54 @@ namespace Aliniant.AesRibbonHost
                 }
             }
 
+            try { SyncThisOutlookSessionCode(proj, vbaDir); }
+            catch (Exception ex)
+            {
+                fail++;
+                report.AppendLine("FAIL ThisOutlookSession: " + ex.Message);
+                HostLog.Write("SyncAesVbaFromDisk ThisOutlookSession: " + ex.Message);
+            }
+
             TryCompileVbaProject(vbe);
             TrySaveVbaProject();
+            TryBackupOtm("after-sync");
 
             string summary = "Imported " + ok + " module(s), " + fail + " failed.";
             HostLog.Write("SyncAesVbaFromDisk: " + summary);
             if (report.Length > 0)
                 return summary + "\n" + report.ToString().TrimEnd();
-            return summary + "\nFully quit Outlook so VbaProject.OTM is flushed, then run Backup_VbaProject_OTM.bat.";
+            return summary + "\nQuit Outlook fully so VbaProject.OTM is flushed (or rely on auto-sync next start).";
         }
 
         private bool VbaAesModulesPresent()
         {
             try
             {
-                if (_application == null) return true; // don't auto-sync if we can't tell
+                if (_application == null) return false;
                 dynamic app = _application;
-                dynamic vbe = app.VBE;
-                if (vbe == null) return true; // can't sync anyway; avoid noisy attempts every start
+                dynamic vbe = null;
+                try { vbe = app.VBE; }
+                catch (Exception ex)
+                {
+                    HostLog.Write("VbaAesModulesPresent: VBE access threw: " + ex.Message);
+                    return false;
+                }
+                if (vbe == null)
+                {
+                    HostLog.Write("VbaAesModulesPresent: Application.VBE is Nothing");
+                    return false;
+                }
                 dynamic proj = null;
                 try { proj = vbe.ActiveVBProject; } catch { }
                 if (proj == null)
                 {
                     try { proj = vbe.VBProjects.Item(1); } catch { }
                 }
-                if (proj == null) return true;
+                if (proj == null)
+                {
+                    HostLog.Write("VbaAesModulesPresent: no VBProject");
+                    return false;
+                }
                 try
                 {
                     dynamic comp = proj.VBComponents.Item("MSCANPaths");
@@ -472,9 +497,79 @@ namespace Aliniant.AesRibbonHost
                     return false;
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                return true;
+                HostLog.Write("VbaAesModulesPresent: " + ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Replace built-in ThisOutlookSession code with VBA\ThisOutlookSession.cls body.
+        /// </summary>
+        private static void SyncThisOutlookSessionCode(dynamic proj, string vbaDir)
+        {
+            string path = Path.Combine(vbaDir, "ThisOutlookSession.cls");
+            if (!File.Exists(path)) return;
+
+            string[] lines = File.ReadAllLines(path);
+            var body = new StringBuilder();
+            bool started = false;
+            foreach (string raw in lines)
+            {
+                string line = raw ?? "";
+                // Skip file header / Attribute lines used by File>Import of a .cls
+                if (!started)
+                {
+                    string t = line.Trim();
+                    if (t.StartsWith("VERSION ", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (t.Equals("BEGIN", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (t.Equals("END", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (t.StartsWith("MultiUse", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (t.StartsWith("Attribute ", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (string.IsNullOrWhiteSpace(t)) continue;
+                    started = true;
+                }
+                body.AppendLine(line);
+            }
+            string code = body.ToString().TrimEnd() + "\r\n";
+            if (code.Length < 40) return;
+
+            dynamic comp = proj.VBComponents.Item("ThisOutlookSession");
+            dynamic cm = comp.CodeModule;
+            int count = (int)cm.CountOfLines;
+            if (count > 0)
+                cm.DeleteLines(1, count);
+            cm.AddFromString(code);
+            HostLog.Write("SyncThisOutlookSessionCode: wrote " + code.Length + " chars");
+        }
+
+        private void TryBackupOtm(string reason)
+        {
+            try
+            {
+                string otm = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    @"Microsoft\Outlook\VbaProject.OTM");
+                string bakDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    @"GeoFooter\vba_otm_backups");
+                if (!File.Exists(otm))
+                {
+                    HostLog.Write("TryBackupOtm(" + reason + "): OTM still missing at " + otm);
+                    return;
+                }
+                Directory.CreateDirectory(bakDir);
+                var info = new FileInfo(otm);
+                string dest = Path.Combine(
+                    bakDir,
+                    "VbaProject_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + "_" + info.Length + ".otm");
+                File.Copy(otm, dest, true);
+                HostLog.Write("TryBackupOtm(" + reason + "): " + dest + " (" + info.Length + " bytes)");
+            }
+            catch (Exception ex)
+            {
+                HostLog.Write("TryBackupOtm(" + reason + "): " + ex.Message);
             }
         }
 

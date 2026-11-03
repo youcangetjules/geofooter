@@ -1,14 +1,14 @@
 REGEDIT4
 
-[HKEY_CURRENT_USER\Software\Classes\Record\{29C8C4E7-2086-3C6E-B99B-9C803994E24B}\1.4.3.0]
+[HKEY_CURRENT_USER\Software\Classes\Record\{95179114-7F3F-32E8-A2B3-C4AE0D258892}\1.4.9.0]
 "Class"="Extensibility.ext_ConnectMode"
-"Assembly"="AesRibbonHost, Version=1.4.3.0, Culture=neutral, PublicKeyToken=null"
+"Assembly"="AesRibbonHost, Version=1.4.9.0, Culture=neutral, PublicKeyToken=null"
 "RuntimeVersion"="v4.0.30319"
 "CodeBase"="file:///C:/GeoFooter/AesRibbonHost/bin/Release/AesRibbonHost.dll"
 
-[HKEY_CURRENT_USER\Software\Classes\Record\{1627A466-406F-3FC1-82EA-572290E3CFB4}\1.4.3.0]
+[HKEY_CURRENT_USER\Software\Classes\Record\{9B6DFE39-EFF5-3411-B87D-140677BD875B}\1.4.9.0]
 "Class"="Extensibility.ext_DisconnectMode"
-"Assembly"="AesRibbonHost, Version=1.4.3.0, Culture=neutral, PublicKeyToken=null"
+"Assembly"="AesRibbonHost, Version=1.4.9.0, Culture=neutral, PublicKeyToken=null"
 "RuntimeVersion"="v4.0.30319"
 "CodeBase"="file:///C:/GeoFooter/AesRibbonHost/bin/Release/AesRibbonHost.dll"
 
@@ -25,13 +25,13 @@ REGEDIT4
 @="mscoree.dll"
 "ThreadingModel"="Both"
 "Class"="Aliniant.AesRibbonHost.Connect"
-"Assembly"="AesRibbonHost, Version=1.4.3.0, Culture=neutral, PublicKeyToken=null"
+"Assembly"="AesRibbonHost, Version=1.4.9.0, Culture=neutral, PublicKeyToken=null"
 "RuntimeVersion"="v4.0.30319"
 "CodeBase"="file:///C:/GeoFooter/AesRibbonHost/bin/Release/AesRibbonHost.dll"
 
-[HKEY_CURRENT_USER\Software\Classes\CLSID\{A1E50001-AE51-4B0B-9C11-AE5B1BB00001}\InprocServer32\1.4.3.0]
+[HKEY_CURRENT_USER\Software\Classes\CLSID\{A1E50001-AE51-4B0B-9C11-AE5B1BB00001}\InprocServer32\1.4.9.0]
 "Class"="Aliniant.AesRibbonHost.Connect"
-"Assembly"="AesRibbonHost, Version=1.4.3.0, Culture=neutral, PublicKeyToken=null"
+"Assembly"="AesRibbonHost, Version=1.4.9.0, Culture=neutral, PublicKeyToken=null"
 "RuntimeVersion"="v4.0.30319"
 "CodeBase"="file:///C:/GeoFooter/AesRibbonHost/bin/Release/AesRibbonHost.dll"
 
@@ -40,15 +40,15 @@ REGEDIT4
 
 [HKEY_CURRENT_USER\Software\Classes\CLSID\{A1E50001-AE51-4B0B-9C11-AE5B1BB00001}\Implemented Categories\{62C8FE65-4EBB-45E7-B440-6E39B2CDBF29}]
 
-[HKEY_CURRENT_USER\Software\Classes\Wow6432Node\Record\{29C8C4E7-2086-3C6E-B99B-9C803994E24B}\1.4.3.0]
+[HKEY_CURRENT_USER\Software\Classes\Wow6432Node\Record\{95179114-7F3F-32E8-A2B3-C4AE0D258892}\1.4.9.0]
 "Class"="Extensibility.ext_ConnectMode"
-"Assembly"="AesRibbonHost, Version=1.4.3.0, Culture=neutral, PublicKeyToken=null"
+"Assembly"="AesRibbonHost, Version=1.4.9.0, Culture=neutral, PublicKeyToken=null"
 "RuntimeVersion"="v4.0.30319"
 "CodeBase"="file:///C:/GeoFooter/AesRibbonHost/bin/Release/AesRibbonHost.dll"
 
-[HKEY_CURRENT_USER\Software\Classes\Wow6432Node\Record\{1627A466-406F-3FC1-82EA-572290E3CFB4}\1.4.3.0]
+[HKEY_CURRENT_USER\Software\Classes\Wow6432Node\Record\{9B6DFE39-EFF5-3411-B87D-140677BD875B}\1.4.9.0]
 "Class"="Extensibility.ext_DisconnectMode"
-"Assembly"="AesRibbonHost, Version=1.4.3.0, Culture=neutral, PublicKeyToken=null"
+"Assembly"="AesRibbonHost, Version=1.4.9.0, Culture=neutral, PublicKeyToken=null"
 "RuntimeVersion"="v4.0.30319"
 "CodeBase"="file:///C:/GeoFooter/AesRibbonHost/bin/Release/AesRibbonHost.dll"
 
@@ -65,13 +65,13 @@ REGEDIT4
 @="mscoree.dll"
 "ThreadingModel"="Both"
 "Class"="Aliniant.AesRibbonHost.Connect"
-"Assembly"="AesRibbonHost, Version=1.4.3.0, Culture=neutral, PublicKeyToken=null"
+"Assembly"="AesRibbonHost, Version=1.4.9.0, Culture=neutral, PublicKeyToken=null"
 "RuntimeVersion"="v4.0.30319"
 "CodeBase"="file:///C:/GeoFooter/AesRibbonHost/bin/Release/AesRibbonHost.dll"
 
-[HKEY_CURRENT_USER\Software\Classes\Wow6432Node\CLSID\{A1E50001-AE51-4B0B-9C11-AE5B1BB00001}\InprocServer32\1.4.3.0]
+[HKEY_CURRENT_USER\Software\Classes\Wow6432Node\CLSID\{A1E50001-AE51-4B0B-9C11-AE5B1BB00001}\InprocServer32\1.4.9.0]
 "Class"="Aliniant.AesRibbonHost.Connect"
-"Assembly"="AesRibbonHost, Version=1.4.3.0, Culture=neutral, PublicKeyToken=null"
+"Assembly"="AesRibbonHost, Version=1.4.9.0, Culture=neutral, PublicKeyToken=null"
 "RuntimeVersion"="v4.0.30319"
 "CodeBase"="file:///C:/GeoFooter/AesRibbonHost/bin/Release/AesRibbonHost.dll"
 

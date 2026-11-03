@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.64] — 2026-11-03
+
+### Fixed
+
+- AesRibbonHost now treats empty VBA / missing `MSCANPaths` as needing sync (previously skipped when `Application.VBE` threw). Rewrites built-in `ThisOutlookSession` from disk, backups `VbaProject.OTM` after sync/shutdown. **Install the new DLL** — 1.5.63 never loaded while Outlook held the old Oct-20 binary.
+
 ## [1.5.63] — 2026-11-02
 
 ### Added

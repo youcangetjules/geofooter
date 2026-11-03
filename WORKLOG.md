@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-03 — 1.5.64: fix VBA wipe — install real DLL + harder auto-sync
+
+- Root cause of “deletes every script”: OTM never persists, and Outlook was still running **Oct 20** AesRibbonHost (1.5.63 never installed — DLL locked).
+- Quit Outlook, `install.ps1`, LoadBehavior=3. Sync now runs when modules missing; rewrites ThisOutlookSession; backups OTM when Save actually creates it.
+- Follow-up: start Outlook, confirm AesRibbonHost.log shows `SyncAesVbaFromDisk` / `VbaAesModulesPresent=False` then import; Alt+F11 should list MSCAN* modules.
+
 ### 2026-11-02 — 1.5.63: automate VBA reload via ribbon host + OTM ensure
 
 - AesRibbonHost: `SyncAesVbaFromDisk` / Repair VBA button; auto-import if `MSCANPaths` missing; Save on shutdown.

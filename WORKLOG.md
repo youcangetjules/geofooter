@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-03 — 1.5.66: VBA wipe — VBE blocked from add-in; guided+OTM path
+
+- Confirmed: OTM missing every session; AccessVBOM=1 but `Application.VBE` is not on Outlook’s ApplicationClass (IDispatch + ExecuteMso nudge still fail). Auto SyncAesVbaFromDisk cannot import on this build.
+- Offers Import_VBA_Guided once/day. Durable fix: Guided → Compile → **File > Save** → quit → Backup_VbaProject_OTM → Start_Outlook_AES restores OTM before launch.
+- 1.5.64/65 installed the real DLL (was stuck on Oct-20 binary).
+
 ### 2026-11-03 — 1.5.64: fix VBA wipe — install real DLL + harder auto-sync
 
 - Root cause of “deletes every script”: OTM never persists, and Outlook was still running **Oct 20** AesRibbonHost (1.5.63 never installed — DLL locked).

@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.66] — 2026-11-03
+
+### Fixed
+
+- AesRibbonHost tries IDispatch + ExecuteMso VBE nudge before giving up on auto-sync. This Outlook build still does not expose `Application.VBE` to the add-in (AccessVBOM=1). When sync cannot reach VBE, offers **Import_VBA_Guided.bat** once per day. Persistence path remains: Guided → Compile → **Save** → quit → `Backup_VbaProject_OTM.bat` → later `Start_Outlook_AES.bat`.
+
 ## [1.5.64] — 2026-11-03
 
 ### Fixed

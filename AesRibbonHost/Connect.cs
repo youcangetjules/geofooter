@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using Extensibility;
 using Microsoft.Office.Core;
+using Microsoft.VisualBasic.CompilerServices;
 using stdole;
 
 namespace Aliniant.AesRibbonHost
@@ -101,6 +102,13 @@ namespace Aliniant.AesRibbonHost
                     HostLog.Write("OnStartupComplete: AES VBA modules missing — SyncAesVbaFromDisk");
                     string result = SyncAesVbaFromDisk();
                     HostLog.Write("OnStartupComplete auto-sync: " + (result ?? "").Replace("\r", " ").Replace("\n", " | "));
+                    if (result != null &&
+                        (result.IndexOf("Could not reach Application.VBE", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         result.IndexOf("VBE", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                         result.IndexOf("Imported", StringComparison.OrdinalIgnoreCase) < 0))
+                    {
+                        OfferGuidedVbaImport(result);
+                    }
                 }
             }
             catch (Exception ex)
@@ -386,22 +394,13 @@ namespace Aliniant.AesRibbonHost
             if (_application == null)
                 return "Outlook Application not connected.";
 
-            dynamic app = _application;
-            dynamic vbe;
-            try
-            {
-                vbe = app.VBE;
-            }
-            catch (Exception ex)
-            {
-                return "Application.VBE blocked (" + ex.Message + "). " +
-                       "Trust Center → Macro Settings → Trust access to the VBA project object model, " +
-                       "or use scripts\\Import_VBA_Guided.bat.";
-            }
-            if (vbe == null)
-                return "Application.VBE is Nothing. Enable Trust access to the VBA project object model, " +
-                       "restart Outlook, or use scripts\\Import_VBA_Guided.bat.";
+            object vbeObj = TryGetOutlookVbe(_application);
+            if (vbeObj == null)
+                return "Could not reach Application.VBE via IDispatch (AccessVBOM=" +
+                       ReadAccessVbom() + "). If AccessVBOM is 1, this is an interop issue — " +
+                       "use scripts\\Import_VBA_Guided.bat once, then Backup_VbaProject_OTM.bat.";
 
+            dynamic vbe = vbeObj;
             dynamic proj = null;
             try { proj = vbe.ActiveVBProject; } catch { }
             if (proj == null)
@@ -463,19 +462,13 @@ namespace Aliniant.AesRibbonHost
             try
             {
                 if (_application == null) return false;
-                dynamic app = _application;
-                dynamic vbe = null;
-                try { vbe = app.VBE; }
-                catch (Exception ex)
+                object vbeObj = TryGetOutlookVbe(_application);
+                if (vbeObj == null)
                 {
-                    HostLog.Write("VbaAesModulesPresent: VBE access threw: " + ex.Message);
+                    HostLog.Write("VbaAesModulesPresent: TryGetOutlookVbe returned null");
                     return false;
                 }
-                if (vbe == null)
-                {
-                    HostLog.Write("VbaAesModulesPresent: Application.VBE is Nothing");
-                    return false;
-                }
+                dynamic vbe = vbeObj;
                 dynamic proj = null;
                 try { proj = vbe.ActiveVBProject; } catch { }
                 if (proj == null)
@@ -501,6 +494,167 @@ namespace Aliniant.AesRibbonHost
             {
                 HostLog.Write("VbaAesModulesPresent: " + ex.Message);
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Outlook's primary interop assembly has no VBE property on ApplicationClass.
+        /// Even IDispatch fails until the VBA project host is loaded (open the editor once).
+        /// </summary>
+        private static object TryGetOutlookVbe(object application)
+        {
+            if (application == null) return null;
+
+            object vbe = TryGetOutlookVbeCore(application, out Exception firstFail);
+            if (vbe != null) return vbe;
+
+            // Force the VBA project host to load (AccessVBOM=1 alone is not enough
+            // until VBE has been opened in this Outlook session).
+            try
+            {
+                HostLog.Write("TryGetOutlookVbe: nudging Visual Basic (ExecuteMso)");
+                dynamic app = application;
+                dynamic exp = null;
+                try { exp = app.ActiveExplorer(); } catch { }
+                if (exp != null)
+                {
+                    try { exp.CommandBars.ExecuteMso("VisualBasic"); }
+                    catch (Exception ex)
+                    {
+                        HostLog.Write("ExecuteMso VisualBasic: " + ex.Message);
+                        // Fallback: Alt+F11 into Outlook.
+                        try
+                        {
+                            var shell = new System.Diagnostics.Process();
+                            // use WScript.Shell SendKeys via COM
+                            Type shType = Type.GetTypeFromProgID("WScript.Shell");
+                            object sh = Activator.CreateInstance(shType);
+                            shType.InvokeMember("AppActivate", BindingFlags.InvokeMethod, null, sh,
+                                new object[] { (int)Process.GetCurrentProcess().Id });
+                            Thread.Sleep(200);
+                            shType.InvokeMember("SendKeys", BindingFlags.InvokeMethod, null, sh,
+                                new object[] { "%{F11}", true });
+                        }
+                        catch (Exception ex2)
+                        {
+                            HostLog.Write("Alt+F11 nudge failed: " + ex2.Message);
+                        }
+                    }
+                }
+                Thread.Sleep(1000);
+                vbe = TryGetOutlookVbeCore(application, out Exception secondFail);
+                if (vbe != null)
+                {
+                    try
+                    {
+                        dynamic d = vbe;
+                        d.MainWindow.Visible = false;
+                    }
+                    catch { }
+                    HostLog.Write("TryGetOutlookVbe: OK after VBE nudge");
+                    return vbe;
+                }
+                HostLog.Write("TryGetOutlookVbe still null after nudge: " +
+                    (secondFail ?? firstFail)?.Message);
+            }
+            catch (Exception ex)
+            {
+                HostLog.Write("TryGetOutlookVbe nudge path: " + ex.Message);
+            }
+            return null;
+        }
+
+        private static object TryGetOutlookVbeCore(object application, out Exception last)
+        {
+            last = null;
+            try
+            {
+                return application.GetType().InvokeMember(
+                    "VBE",
+                    BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.Public,
+                    null,
+                    application,
+                    null);
+            }
+            catch (Exception ex) { last = ex; }
+
+            try
+            {
+                return NewLateBinding.LateGet(
+                    application, null, "VBE", new object[0], null, null, null);
+            }
+            catch (Exception ex) { last = ex; }
+
+            return null;
+        }
+
+        private static string ReadAccessVbom()
+        {
+            try
+            {
+                using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
+                    @"Software\Microsoft\Office\16.0\Outlook\Security"))
+                {
+                    if (key == null) return "(missing)";
+                    object v = key.GetValue("AccessVBOM");
+                    return v == null ? "(missing)" : v.ToString();
+                }
+            }
+            catch { return "(error)"; }
+        }
+
+        /// <summary>
+        /// This Outlook build never exposes Application.VBE to the COM add-in
+        /// (AccessVBOM=1, ExecuteMso nudge still fails). Fall back to guided import.
+        /// </summary>
+        private void OfferGuidedVbaImport(string syncResult)
+        {
+            try
+            {
+                string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                string flag = Path.Combine(local, "GeoFooter", "vba_guided_offer_day.txt");
+                string today = DateTime.Now.ToString("yyyy-MM-dd");
+                if (File.Exists(flag) && File.ReadAllText(flag).Trim() == today)
+                {
+                    HostLog.Write("OfferGuidedVbaImport: already offered today");
+                    return;
+                }
+                Directory.CreateDirectory(Path.GetDirectoryName(flag));
+                File.WriteAllText(flag, today);
+
+                string root = InstallRoot() ?? "";
+                string bat = Path.Combine(root, "scripts", "Import_VBA_Guided.bat");
+                var answer = System.Windows.Forms.MessageBox.Show(
+                    "Outlook is wiping the AES VBA project on every restart because " +
+                    "VbaProject.OTM never gets saved (and this Outlook build blocks " +
+                    "Application.VBE from the ribbon host even with AccessVBOM=1).\n\n" +
+                    syncResult + "\n\n" +
+                    "Click Yes to run the guided importer now.\n" +
+                    "After the last file: Debug → Compile → File → Save, " +
+                    "fully quit Outlook, then run Backup_VbaProject_OTM.bat.\n" +
+                    "Later starts: use Start_Outlook_AES.bat so OTM is restored first.",
+                    "Aliniant AES — VBA project missing",
+                    System.Windows.Forms.MessageBoxButtons.YesNo,
+                    System.Windows.Forms.MessageBoxIcon.Warning);
+                if (answer != System.Windows.Forms.DialogResult.Yes) return;
+                if (File.Exists(bat))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = bat,
+                        UseShellExecute = true,
+                        WorkingDirectory = Path.GetDirectoryName(bat),
+                    });
+                    HostLog.Write("OfferGuidedVbaImport: launched " + bat);
+                }
+                else
+                {
+                    HostLog.Write("OfferGuidedVbaImport: missing " + bat);
+                }
+            }
+            catch (Exception ex)
+            {
+                HostLog.Write("OfferGuidedVbaImport: " + ex.Message);
             }
         }
 
@@ -620,9 +774,13 @@ namespace Aliniant.AesRibbonHost
             try
             {
                 if (_application == null) return;
-                dynamic app = _application;
-                dynamic vbe = app.VBE;
-                if (vbe == null) return;
+                object vbeObj = TryGetOutlookVbe(_application);
+                if (vbeObj == null)
+                {
+                    HostLog.Write("TrySaveVbaProject: no VBE");
+                    return;
+                }
+                dynamic vbe = vbeObj;
                 // VBE CommandBar control Id 3 = File > Save
                 dynamic ctl = vbe.CommandBars.FindControl(Type.Missing, 3, Type.Missing, Type.Missing);
                 if (ctl != null && ctl.Enabled)
@@ -1105,8 +1263,13 @@ namespace Aliniant.AesRibbonHost
                 dynamic app = _application;
                 try
                 {
-                    string name = app.VBE.ActiveVBProject.Name as string;
-                    if (!string.IsNullOrEmpty(name)) project = name;
+                    object vbeObj = TryGetOutlookVbe(_application);
+                    if (vbeObj != null)
+                    {
+                        dynamic vbe = vbeObj;
+                        string name = vbe.ActiveVBProject.Name as string;
+                        if (!string.IsNullOrEmpty(name)) project = name;
+                    }
                 }
                 catch { }
 
@@ -1118,7 +1281,8 @@ namespace Aliniant.AesRibbonHost
                 {
                     try
                     {
-                        app.Run(candidate);
+                        // Outlook has no Application.Run — try late-bound anyway for odd builds.
+                        NewLateBinding.LateCall(app, null, "Run", new object[] { candidate }, null, null, null, true);
                         HostLog.Write("TryRunVbaMacro OK: " + candidate);
                         InvalidateAesRibbon();
                         return true;

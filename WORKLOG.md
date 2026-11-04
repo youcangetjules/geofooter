@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-04 — 1.5.69: VBA persistence verified; Norton mail certificates recorded
+- Five controlled restarts (Explorer and direct, 300 ms and 15 s gaps): AES started every time with 5 watchers and no certificate prompts. The 10:21 startup miss did not recur and stays unexplained.
+- `docs/bug_tracker.md`: BUG-040 fixed; new BUG-041.
+- Not separately exercised: the ribbon Repair VBA button and Alt+F8 UpdateAesFromDisk. They launch the same importer as the tested startup path.
+- Follow-up: after the Norton mail setting change, certificates are issued by the normal Norton root, so Norton still appears to intercept mail TLS. Watch for "Untrusted Root" returning.
+
 ### 2026-11-04 — 1.5.68: Norton exclusions verified; one AES startup miss still open
 - `scripts/Import_VBA_ViaUi.ps1`: a run without `-Notify` no longer marks the daily quarantine notice as shown.
 - Verified with the user's Norton exclusions: OTM and backup survive Outlook exit (no new quarantine entries in a 90 s watch); AES starts after restart; startup check reports no work when current; add-in auto-update ran end to end with AES running (20 modules, compile OK); a later direct-launch restart on that saved project started AES.

@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.69] — 2026-11-04
+
+### Changed
+
+- Docs: BUG-040 marked fixed with restart results. Added BUG-041 for Norton's mail certificate prompts, which block Outlook from exiting.
+
 ## [1.5.68] — 2026-11-04
 
 ### Fixed

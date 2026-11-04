@@ -20,6 +20,20 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.67] — 2026-11-04
+
+### Fixed
+
+- **VBA wipe root cause (BUG-040):** Norton quarantines `VbaProject.OTM` and its backups as `MO97:Downloader-YI`, usually seconds after Outlook exits. Outlook was never deleting it. Needs Norton exclusions (see `VBA/IMPORT.txt`). The importer now detects this: at startup it reports once a day and skips the import instead of re-importing forever.
+- `scripts/Import_VBA_ViaUi.ps1` rewritten to use MSAA menu commands: no SendKeys, no window focus, no `Application.VBE`. Removes and imports modules from `VBA/IMPORT.txt`, writes the built-in `ThisOutlookSession`, compiles, saves and verifies the result.
+- GURI no longer starts a headless `OUTLOOK.EXE -Embedding` every 5 minutes while Outlook is closed. It attaches to an open Outlook only, so manual GURI Outlook actions now need Outlook open.
+- `UpdateAesFromDisk` no longer waits on the importer, which kept the VBA editor busy.
+- Ribbon buttons no longer try to open the VBA editor and wait 1 second on each macro call.
+
+### Changed
+
+- AesRibbonHost runs the importer at startup when Outlook has a window, and **Repair VBA** launches it. Removed the `Application.VBE` code, which this Outlook build can never reach.
+
 ## [1.5.66] — 2026-11-03
 
 ### Fixed

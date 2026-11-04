@@ -8,7 +8,7 @@ Attribute VB_Name = "MSCANSelfUpdate"
 '
 ' On some Outlook builds Application.VBE stays Nothing even with AccessVBOM=1
 ' (BUG-003). This module sends Alt+F11 and retries; if VBE is still unreachable
-' it launches scripts\Import_VBA_ViaUi.ps1 to drive File > Import File via UI.
+' it starts scripts\Import_VBA_ViaUi.ps1 and ends, so the editor is free to use.
 '===============================================================================
 Option Explicit
 
@@ -57,15 +57,10 @@ Public Sub UpdateAesFromDisk()
     End If
 
     If proj Is Nothing Then
-        ' This machine blocks Application.VBE from macros — drive File > Import via UI.
-        If RunUiImporter(root, report) Then
-            MsgBox "Application.VBE is blocked (AccessVBOM=" & accessVal & ")." & vbCrLf & _
-                   "UI importer finished." & vbCrLf & vbCrLf & report & vbCrLf & _
-                   "Next: paste VBA\ThisOutlookSession.cls into the built-in " & _
-                   "ThisOutlookSession, Compile, Save, quit Outlook fully, reopen, " & _
-                   "then Alt+F8 > RecoverAesUi.", _
-                   vbInformation, "AES update"
-        Else
+        ' Application.VBE is missing on this build. The importer drives the editor,
+        ' whose menus stay greyed out while a macro runs: start it and end, with no
+        ' MsgBox here. It reports the result itself.
+        If Not RunUiImporter(root, report) Then
             ShowManualImportGuide vbaDir, files, accessVal
         End If
         Exit Sub
@@ -91,13 +86,13 @@ Public Sub UpdateAesFromDisk()
            IIf(failed = 0, vbInformation, vbExclamation), "AES update"
 End Sub
 
-' Launch scripts\Import_VBA_ViaUi.ps1 (32-bit Windows PowerShell) and wait.
+' Start scripts\Import_VBA_ViaUi.ps1 (Windows PowerShell). Never wait for it: this
+' macro would keep the editor busy and the importer could not run.
 Private Function RunUiImporter(ByVal root As String, ByRef report As String) As Boolean
     Dim sh As Object
     Dim ps As String
     Dim script As String
     Dim cmd As String
-    Dim rc As Long
     Dim sysWow As String
     Dim sys32 As String
 
@@ -115,12 +110,11 @@ Private Function RunUiImporter(ByVal root As String, ByRef report As String) As 
         ps = sys32
     End If
 
-    cmd = """" & ps & """ -NoProfile -ExecutionPolicy Bypass -File """ & script & """ -Root """ & root & """"
-    report = report & "Launching UI importer (hands off keyboard)..." & vbCrLf
+    cmd = """" & ps & """ -NoProfile -ExecutionPolicy Bypass -File """ & script & """ -Root """ & root & """ -Notify"
 
     On Error Resume Next
     Set sh = CreateObject("WScript.Shell")
-    rc = sh.Run(cmd, 1, True)
+    sh.Run cmd, 0, False
     If Err.Number <> 0 Then
         report = report & "UI importer launch failed: " & Err.Description & vbCrLf
         Err.Clear
@@ -128,8 +122,7 @@ Private Function RunUiImporter(ByVal root As String, ByRef report As String) As 
     End If
     On Error GoTo 0
 
-    report = report & "UI importer exit code: " & CStr(rc) & vbCrLf
-    RunUiImporter = (rc = 0)
+    RunUiImporter = True
 End Function
 
 ' Opens the VBA folder and copies the remove/import order to the clipboard.

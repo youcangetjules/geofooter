@@ -110,42 +110,32 @@ Microsoft Outlook Objects should remain.
 
 Future updates
 --------------
-Recommended - in-Outlook updater (works even when external scripts cannot
-reach the VBA project, i.e. Application.VBE is Nothing from outside):
+Automatic (1.5.67+): when Outlook opens with a window, AesRibbonHost runs
+scripts\Import_VBA_ViaUi.ps1 -IfStale. If VbaProject.OTM is missing or VBA\ has
+changed since the last import, it replaces the modules, rewrites the built-in
+ThisOutlookSession, compiles and saves. You get a message; restart Outlook to
+load the new code. It sends no keystrokes (Norton is not a factor) and does not
+use Application.VBE, which does not exist on this Outlook build.
 
-  One time: Alt+F11 > File > Import File > VBA\MSCANSelfUpdate.bas
-  Each update: Alt+F8 > UpdateAesFromDisk > Run
-      (re-imports every VBA\MSCAN* file listed above, compiles, saves)
-  Then fully quit Outlook (tray too) and reopen.
+On demand, any of these (Outlook does not need to be open for the .bat):
+  scripts\Import_VBA_ViaUi.bat
+  Ribbon > Repair VBA
+  Alt+F8 > UpdateAesFromDisk
+Progress and errors: %LOCALAPPDATA%\GeoFooter\Logs\VbaImport.log
 
-  If UpdateAesFromDisk says Application.VBE is blocked (AccessVBOM=1 but
-  still no VBE — common on this PC), it launches scripts\Import_VBA_ViaUi.ps1
-  to drive File > Import File automatically. Or run directly:
-    scripts\Import_VBA_ViaUi.bat
-  (Outlook open; leave the keyboard alone until it finishes.)
+Norton: it quarantines VbaProject.OTM as MO97:Downloader-YI, usually seconds
+after Outlook exits (BUG-040). That is what empties Project1. Exclude these in
+Norton, then use Repair VBA:
+  %APPDATA%\Microsoft\Outlook\VbaProject.OTM
+  %LOCALAPPDATA%\GeoFooter\vba_otm_backups
+Until then, startup reports this once a day and skips the import.
 
-  Norton / AV often blocks SendKeys automation. Then use the guided importer
-  (clipboard only — you press File > Import / Ctrl+V / Enter yourself):
-    scripts\Import_VBA_Guided.bat
-  Or add Norton exclusions for <install root>\scripts and \VBA, then retry ViaUi.
+Each successful import backs up VbaProject.OTM to
+%LOCALAPPDATA%\GeoFooter\vba_otm_backups. Restore it with
+scripts\Backup_VbaProject_OTM.bat -Restore while Outlook is closed.
 
-  Preferred when AesRibbonHost is installed (1.5.63+): ribbon **Repair VBA**
-  (or COMAddIn.Object.SyncAesVbaFromDisk). In-process VBE often works when
-  external Application.VBE does not. After a good Save+quit, run
-  scripts\Backup_VbaProject_OTM.bat; later use Start_Outlook_AES.bat so a
-  missing OTM is restored automatically before Outlook starts.
-
-External sync (Outlook must be running):
-
-  scripts\Import_VBA_to_Outlook.bat
-  scripts\Import_VBA_to_Outlook.bat -EnableAccessVBOM
-      (first time only if AccessVBOM is not set; then quit Outlook fully and re-run)
-  scripts\Import_VBA_to_Outlook.bat -SyncThisOutlookSession
-      (also overwrites the built-in ThisOutlookSession from VBA\ThisOutlookSession.cls)
-
-Or PowerShell:
-  powershell -File scripts\Import_VBA_to_Outlook.ps1
-  powershell -File scripts\Import_VBA_to_Outlook.ps1 -DryRun
+Clipboard-only fallback if the importer fails:
+  scripts\Import_VBA_Guided.bat
 
 Manual fallback: File > Import File for each .bas / .cls listed above.
 After the one-time ThisOutlookSession setup, re-import .bas / .cls files only

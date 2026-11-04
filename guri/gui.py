@@ -156,6 +156,7 @@ from guri.outlook_scraper import (
     fetch_mail_body,
     load_aes_account_configs,
     open_mail_in_outlook,
+    outlook_is_running,
     save_aes_account_configs,
     scrape_outlook_inboxes,
 )
@@ -12956,6 +12957,8 @@ Preview:
             if getattr(self, "_ingest_mode", "pull") == "push":
                 return
             if self._scrape_busy or getattr(self, "_expanding_to_screen", False):
+                return
+            if not outlook_is_running():
                 return
             self._start_outlook_scrape(manual=False)
         except Exception as e:

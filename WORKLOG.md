@@ -13,6 +13,15 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-04 — 1.5.67: VBA auto-update works; the "wipe" is Norton quarantine
+- Why: user needs the VBA auto-update to work. Modules kept disappearing and every earlier fix assumed Outlook was at fault.
+- Found: Norton quarantine (`chest/index.xml`, `Cleaner.log`) holds `VbaProject.OTM` as `MO97:Downloader-YI [Trj]` at 2026-11-01 21:37, 11-02 14:11 and 11-04 09:56, plus my backup at 11-04 09:19 (7 s after writing). `Cleaner.log` also has it on 10-26 10:57, the minute AES stopped. Audit of `VBA\`: no HTTP client, no download code, no obfuscation; URLs are MAPI property names and `track.aliniant.net`. Likely a heuristic false positive on the WScript/PowerShell/ADODB.Stream helpers.
+- Found: `Application.VBE` is `DISP_E_UNKNOWNNAME` on this build, even in a normal session, so Repair VBA and auto-sync could never work (60 of 60 logged attempts failed). `OnBeginShutdown` has never logged in 503 starts.
+- Found: GURI's scrape started `OUTLOOK.EXE -Embedding` every 5 minutes while Outlook was closed (`_outlook_app` fell through to Dispatch).
+- `scripts/Import_VBA_ViaUi.ps1`: rewritten on MSAA. First real run: 20 modules, compile OK, 3.1 MB OTM. Adds `-IfStale`, `-Notify`, Norton quarantine detection.
+- `AesRibbonHost/Connect.cs`: starts the importer; removed VBE code. `VBA/MSCANSelfUpdate.bas`: no longer waits. `guri/outlook_scraper.py`, `guri/gui.py`: attach only. `tests/test_outlook_no_headless_launch.py`.
+- Follow-up: the user adds the Norton exclusions (Claude does not change security settings), then Repair VBA and restart Outlook. Survival across a restart and updating with AES running are NOT yet verified. Worth reporting the false positive to Norton.
+
 ### 2026-11-03 — 1.5.66: VBA wipe — VBE blocked from add-in; guided+OTM path
 
 - Confirmed: OTM missing every session; AccessVBOM=1 but `Application.VBE` is not on Outlook’s ApplicationClass (IDispatch + ExecuteMso nudge still fail). Auto SyncAesVbaFromDisk cannot import on this build.

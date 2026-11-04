@@ -91,36 +91,21 @@ namespace Aliniant.AesRibbonHost
             HostLog.Write("OnStartupComplete");
             StartStateWatch();
             InvalidateAesRibbon();
-            // This machine loses VbaProject.OTM across sessions (BUG-040). Disk
-            // under <install root>\VBA is the source of truth — reload when missing.
-            try
+            // A COM client's headless Outlook has no window to host the VBA editor.
+            if (!HasExplorerWindow())
             {
-                bool present = VbaAesModulesPresent();
-                HostLog.Write("OnStartupComplete: VbaAesModulesPresent=" + present);
-                if (!present)
-                {
-                    HostLog.Write("OnStartupComplete: AES VBA modules missing — SyncAesVbaFromDisk");
-                    string result = SyncAesVbaFromDisk();
-                    HostLog.Write("OnStartupComplete auto-sync: " + (result ?? "").Replace("\r", " ").Replace("\n", " | "));
-                    if (result != null &&
-                        (result.IndexOf("Could not reach Application.VBE", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                         result.IndexOf("VBE", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                         result.IndexOf("Imported", StringComparison.OrdinalIgnoreCase) < 0))
-                    {
-                        OfferGuidedVbaImport(result);
-                    }
-                }
+                HostLog.Write("OnStartupComplete: no Outlook window; VBA check skipped");
+                return;
             }
-            catch (Exception ex)
-            {
-                HostLog.Write("OnStartupComplete auto-sync skipped: " + ex);
-            }
+            // <install root>\VBA is the source of truth. The importer exits at once
+            // when VbaProject.OTM exists and already matches those files.
+            string result = LaunchVbaImporter("-IfStale");
+            HostLog.Write("OnStartupComplete: " + result);
         }
 
         public void OnBeginShutdown(ref Array custom)
         {
             HostLog.Write("OnBeginShutdown");
-            TrySaveVbaProject();
             TryBackupOtm("shutdown");
             StopStateWatch();
             _ribbon = null;
@@ -357,345 +342,69 @@ namespace Aliniant.AesRibbonHost
         /// </summary>
         public void OnRepairVba(IRibbonControl control)
         {
-            string result;
-            try
-            {
-                result = SyncAesVbaFromDisk();
-            }
-            catch (Exception ex)
-            {
-                result = "Repair failed: " + ex.Message;
-                HostLog.Write("OnRepairVba FATAL: " + ex);
-            }
-
+            string result = SyncAesVbaFromDisk();
             System.Windows.Forms.MessageBox.Show(
-                (result ?? "(no result)") +
-                "\n\nNext: Debug → Compile in VBA if needed, then fully quit Outlook (tray too) " +
-                "so VbaProject.OTM is written. Run scripts\\Backup_VbaProject_OTM.bat afterward.",
-                "Aliniant AES — Repair VBA",
+                result + "\n\nYou will get a message when it finishes.",
+                "Aliniant AES \u2014 Repair VBA",
                 System.Windows.Forms.MessageBoxButtons.OK,
                 System.Windows.Forms.MessageBoxIcon.Information);
         }
 
         /// <summary>
-        /// Import every MSCAN* module from disk into the Outlook VBA project.
-        /// Callable from COM (COMAddIn.Object.SyncAesVbaFromDisk) and the ribbon.
+        /// Re-import every AES module from disk. Callable from COM
+        /// (COMAddIn.Object.SyncAesVbaFromDisk) and the ribbon. Starts the importer
+        /// and returns: it needs Outlook's UI thread free, so it cannot be awaited here.
         /// </summary>
         public string SyncAesVbaFromDisk()
         {
-            string root = InstallRoot();
-            if (string.IsNullOrEmpty(root))
-                return "No install root. Set it in GURI → Database → Install root.";
-
-            string vbaDir = Path.Combine(root, "VBA");
-            if (!Directory.Exists(vbaDir))
-                return "VBA folder missing: " + vbaDir;
-
-            if (_application == null)
-                return "Outlook Application not connected.";
-
-            object vbeObj = TryGetOutlookVbe(_application);
-            if (vbeObj == null)
-                return "Could not reach Application.VBE via IDispatch (AccessVBOM=" +
-                       ReadAccessVbom() + "). If AccessVBOM is 1, this is an interop issue — " +
-                       "use scripts\\Import_VBA_Guided.bat once, then Backup_VbaProject_OTM.bat.";
-
-            dynamic vbe = vbeObj;
-            dynamic proj = null;
-            try { proj = vbe.ActiveVBProject; } catch { }
-            if (proj == null)
-            {
-                try { proj = vbe.VBProjects.Item(1); } catch { }
-            }
-            if (proj == null)
-                return "No VBProject available.";
-
-            int ok = 0;
-            int fail = 0;
-            var report = new StringBuilder();
-            foreach (string file in AesVbaModuleFiles)
-            {
-                string path = Path.Combine(vbaDir, file);
-                string name = Path.GetFileNameWithoutExtension(file);
-                if (!File.Exists(path))
-                {
-                    fail++;
-                    report.AppendLine("MISSING " + file);
-                    continue;
-                }
-
-                TryRemoveVbComponent(proj, name);
-                try
-                {
-                    proj.VBComponents.Import(path);
-                    ok++;
-                }
-                catch (Exception ex)
-                {
-                    fail++;
-                    report.AppendLine("FAIL " + name + ": " + ex.Message);
-                    HostLog.Write("SyncAesVbaFromDisk import fail " + name + ": " + ex.Message);
-                }
-            }
-
-            try { SyncThisOutlookSessionCode(proj, vbaDir); }
-            catch (Exception ex)
-            {
-                fail++;
-                report.AppendLine("FAIL ThisOutlookSession: " + ex.Message);
-                HostLog.Write("SyncAesVbaFromDisk ThisOutlookSession: " + ex.Message);
-            }
-
-            TryCompileVbaProject(vbe);
-            TrySaveVbaProject();
-            TryBackupOtm("after-sync");
-
-            string summary = "Imported " + ok + " module(s), " + fail + " failed.";
-            HostLog.Write("SyncAesVbaFromDisk: " + summary);
-            if (report.Length > 0)
-                return summary + "\n" + report.ToString().TrimEnd();
-            return summary + "\nQuit Outlook fully so VbaProject.OTM is flushed (or rely on auto-sync next start).";
+            return LaunchVbaImporter("");
         }
 
-        private bool VbaAesModulesPresent()
+        private bool HasExplorerWindow()
         {
             try
             {
-                if (_application == null) return false;
-                object vbeObj = TryGetOutlookVbe(_application);
-                if (vbeObj == null)
-                {
-                    HostLog.Write("VbaAesModulesPresent: TryGetOutlookVbe returned null");
-                    return false;
-                }
-                dynamic vbe = vbeObj;
-                dynamic proj = null;
-                try { proj = vbe.ActiveVBProject; } catch { }
-                if (proj == null)
-                {
-                    try { proj = vbe.VBProjects.Item(1); } catch { }
-                }
-                if (proj == null)
-                {
-                    HostLog.Write("VbaAesModulesPresent: no VBProject");
-                    return false;
-                }
-                try
-                {
-                    dynamic comp = proj.VBComponents.Item("MSCANPaths");
-                    return comp != null;
-                }
-                catch
-                {
-                    return false;
-                }
+                dynamic app = _application;
+                return app != null && (int)app.Explorers.Count > 0;
             }
             catch (Exception ex)
             {
-                HostLog.Write("VbaAesModulesPresent: " + ex.Message);
+                HostLog.Write("HasExplorerWindow: " + ex.Message);
                 return false;
             }
         }
 
         /// <summary>
-        /// Outlook's primary interop assembly has no VBE property on ApplicationClass.
-        /// Even IDispatch fails until the VBA project host is loaded (open the editor once).
+        /// Application.VBE does not exist on this Outlook build, so the add-in cannot
+        /// import modules itself. scripts\Import_VBA_ViaUi.ps1 drives the VBA editor
+        /// through MSAA instead.
         /// </summary>
-        private static object TryGetOutlookVbe(object application)
+        private string LaunchVbaImporter(string args)
         {
-            if (application == null) return null;
-
-            object vbe = TryGetOutlookVbeCore(application, out Exception firstFail);
-            if (vbe != null) return vbe;
-
-            // Force the VBA project host to load (AccessVBOM=1 alone is not enough
-            // until VBE has been opened in this Outlook session).
             try
             {
-                HostLog.Write("TryGetOutlookVbe: nudging Visual Basic (ExecuteMso)");
-                dynamic app = application;
-                dynamic exp = null;
-                try { exp = app.ActiveExplorer(); } catch { }
-                if (exp != null)
+                string root = InstallRoot();
+                if (string.IsNullOrEmpty(root))
+                    return "No install root. Set it in GURI \u2192 Database \u2192 Install root.";
+                string script = Path.Combine(root, "scripts", "Import_VBA_ViaUi.ps1");
+                if (!File.Exists(script))
+                    return "VBA importer missing: " + script;
+                Process.Start(new ProcessStartInfo
                 {
-                    try { exp.CommandBars.ExecuteMso("VisualBasic"); }
-                    catch (Exception ex)
-                    {
-                        HostLog.Write("ExecuteMso VisualBasic: " + ex.Message);
-                        // Fallback: Alt+F11 into Outlook.
-                        try
-                        {
-                            var shell = new System.Diagnostics.Process();
-                            // use WScript.Shell SendKeys via COM
-                            Type shType = Type.GetTypeFromProgID("WScript.Shell");
-                            object sh = Activator.CreateInstance(shType);
-                            shType.InvokeMember("AppActivate", BindingFlags.InvokeMethod, null, sh,
-                                new object[] { (int)Process.GetCurrentProcess().Id });
-                            Thread.Sleep(200);
-                            shType.InvokeMember("SendKeys", BindingFlags.InvokeMethod, null, sh,
-                                new object[] { "%{F11}", true });
-                        }
-                        catch (Exception ex2)
-                        {
-                            HostLog.Write("Alt+F11 nudge failed: " + ex2.Message);
-                        }
-                    }
-                }
-                Thread.Sleep(1000);
-                vbe = TryGetOutlookVbeCore(application, out Exception secondFail);
-                if (vbe != null)
-                {
-                    try
-                    {
-                        dynamic d = vbe;
-                        d.MainWindow.Visible = false;
-                    }
-                    catch { }
-                    HostLog.Write("TryGetOutlookVbe: OK after VBE nudge");
-                    return vbe;
-                }
-                HostLog.Write("TryGetOutlookVbe still null after nudge: " +
-                    (secondFail ?? firstFail)?.Message);
+                    FileName = Path.Combine(Environment.SystemDirectory, @"WindowsPowerShell\v1.0\powershell.exe"),
+                    Arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"" + script +
+                                "\" -Root \"" + root + "\" -Notify " + args,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WorkingDirectory = root,
+                });
+                return "VBA importer started.";
             }
             catch (Exception ex)
             {
-                HostLog.Write("TryGetOutlookVbe nudge path: " + ex.Message);
+                HostLog.Write("LaunchVbaImporter: " + ex);
+                return "Could not start the VBA importer: " + ex.Message;
             }
-            return null;
-        }
-
-        private static object TryGetOutlookVbeCore(object application, out Exception last)
-        {
-            last = null;
-            try
-            {
-                return application.GetType().InvokeMember(
-                    "VBE",
-                    BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.Public,
-                    null,
-                    application,
-                    null);
-            }
-            catch (Exception ex) { last = ex; }
-
-            try
-            {
-                return NewLateBinding.LateGet(
-                    application, null, "VBE", new object[0], null, null, null);
-            }
-            catch (Exception ex) { last = ex; }
-
-            return null;
-        }
-
-        private static string ReadAccessVbom()
-        {
-            try
-            {
-                using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
-                    @"Software\Microsoft\Office\16.0\Outlook\Security"))
-                {
-                    if (key == null) return "(missing)";
-                    object v = key.GetValue("AccessVBOM");
-                    return v == null ? "(missing)" : v.ToString();
-                }
-            }
-            catch { return "(error)"; }
-        }
-
-        /// <summary>
-        /// This Outlook build never exposes Application.VBE to the COM add-in
-        /// (AccessVBOM=1, ExecuteMso nudge still fails). Fall back to guided import.
-        /// </summary>
-        private void OfferGuidedVbaImport(string syncResult)
-        {
-            try
-            {
-                string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                string flag = Path.Combine(local, "GeoFooter", "vba_guided_offer_day.txt");
-                string today = DateTime.Now.ToString("yyyy-MM-dd");
-                if (File.Exists(flag) && File.ReadAllText(flag).Trim() == today)
-                {
-                    HostLog.Write("OfferGuidedVbaImport: already offered today");
-                    return;
-                }
-                Directory.CreateDirectory(Path.GetDirectoryName(flag));
-                File.WriteAllText(flag, today);
-
-                string root = InstallRoot() ?? "";
-                string bat = Path.Combine(root, "scripts", "Import_VBA_Guided.bat");
-                var answer = System.Windows.Forms.MessageBox.Show(
-                    "Outlook is wiping the AES VBA project on every restart because " +
-                    "VbaProject.OTM never gets saved (and this Outlook build blocks " +
-                    "Application.VBE from the ribbon host even with AccessVBOM=1).\n\n" +
-                    syncResult + "\n\n" +
-                    "Click Yes to run the guided importer now.\n" +
-                    "After the last file: Debug → Compile → File → Save, " +
-                    "fully quit Outlook, then run Backup_VbaProject_OTM.bat.\n" +
-                    "Later starts: use Start_Outlook_AES.bat so OTM is restored first.",
-                    "Aliniant AES — VBA project missing",
-                    System.Windows.Forms.MessageBoxButtons.YesNo,
-                    System.Windows.Forms.MessageBoxIcon.Warning);
-                if (answer != System.Windows.Forms.DialogResult.Yes) return;
-                if (File.Exists(bat))
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = bat,
-                        UseShellExecute = true,
-                        WorkingDirectory = Path.GetDirectoryName(bat),
-                    });
-                    HostLog.Write("OfferGuidedVbaImport: launched " + bat);
-                }
-                else
-                {
-                    HostLog.Write("OfferGuidedVbaImport: missing " + bat);
-                }
-            }
-            catch (Exception ex)
-            {
-                HostLog.Write("OfferGuidedVbaImport: " + ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// Replace built-in ThisOutlookSession code with VBA\ThisOutlookSession.cls body.
-        /// </summary>
-        private static void SyncThisOutlookSessionCode(dynamic proj, string vbaDir)
-        {
-            string path = Path.Combine(vbaDir, "ThisOutlookSession.cls");
-            if (!File.Exists(path)) return;
-
-            string[] lines = File.ReadAllLines(path);
-            var body = new StringBuilder();
-            bool started = false;
-            foreach (string raw in lines)
-            {
-                string line = raw ?? "";
-                // Skip file header / Attribute lines used by File>Import of a .cls
-                if (!started)
-                {
-                    string t = line.Trim();
-                    if (t.StartsWith("VERSION ", StringComparison.OrdinalIgnoreCase)) continue;
-                    if (t.Equals("BEGIN", StringComparison.OrdinalIgnoreCase)) continue;
-                    if (t.Equals("END", StringComparison.OrdinalIgnoreCase)) continue;
-                    if (t.StartsWith("MultiUse", StringComparison.OrdinalIgnoreCase)) continue;
-                    if (t.StartsWith("Attribute ", StringComparison.OrdinalIgnoreCase)) continue;
-                    if (string.IsNullOrWhiteSpace(t)) continue;
-                    started = true;
-                }
-                body.AppendLine(line);
-            }
-            string code = body.ToString().TrimEnd() + "\r\n";
-            if (code.Length < 40) return;
-
-            dynamic comp = proj.VBComponents.Item("ThisOutlookSession");
-            dynamic cm = comp.CodeModule;
-            int count = (int)cm.CountOfLines;
-            if (count > 0)
-                cm.DeleteLines(1, count);
-            cm.AddFromString(code);
-            HostLog.Write("SyncThisOutlookSessionCode: wrote " + code.Length + " chars");
         }
 
         private void TryBackupOtm(string reason)
@@ -726,103 +435,6 @@ namespace Aliniant.AesRibbonHost
                 HostLog.Write("TryBackupOtm(" + reason + "): " + ex.Message);
             }
         }
-
-        private static void TryRemoveVbComponent(dynamic proj, string compName)
-        {
-            try
-            {
-                dynamic comp = proj.VBComponents.Item(compName);
-                if (comp == null) return;
-                // Document modules (ThisOutlookSession) cannot be removed.
-                try
-                {
-                    int t = (int)comp.Type;
-                    if (t == 100) return; // vbext_ct_Document
-                }
-                catch { }
-                try
-                {
-                    comp.Name = compName.Substring(0, Math.Min(20, compName.Length)) +
-                                "_old" + (Environment.TickCount & 0xFFFF);
-                }
-                catch { }
-                proj.VBComponents.Remove(comp);
-            }
-            catch { }
-        }
-
-        private void TryCompileVbaProject(dynamic vbe)
-        {
-            try
-            {
-                // VBE CommandBar control Id 578 = Debug > Compile
-                dynamic ctl = vbe.CommandBars.FindControl(Type.Missing, 578, Type.Missing, Type.Missing);
-                if (ctl != null && ctl.Enabled)
-                {
-                    ctl.Execute();
-                    HostLog.Write("TryCompileVbaProject: Compile executed");
-                }
-            }
-            catch (Exception ex)
-            {
-                HostLog.Write("TryCompileVbaProject: " + ex.Message);
-            }
-        }
-
-        private void TrySaveVbaProject()
-        {
-            try
-            {
-                if (_application == null) return;
-                object vbeObj = TryGetOutlookVbe(_application);
-                if (vbeObj == null)
-                {
-                    HostLog.Write("TrySaveVbaProject: no VBE");
-                    return;
-                }
-                dynamic vbe = vbeObj;
-                // VBE CommandBar control Id 3 = File > Save
-                dynamic ctl = vbe.CommandBars.FindControl(Type.Missing, 3, Type.Missing, Type.Missing);
-                if (ctl != null && ctl.Enabled)
-                {
-                    ctl.Execute();
-                    HostLog.Write("TrySaveVbaProject: Save executed");
-                }
-                else
-                {
-                    HostLog.Write("TrySaveVbaProject: Save control missing/disabled");
-                }
-            }
-            catch (Exception ex)
-            {
-                HostLog.Write("TrySaveVbaProject: " + ex.Message);
-            }
-        }
-
-        // Order matches VBA\IMPORT.txt (MSCANSelfUpdate last so it stays available).
-        private static readonly string[] AesVbaModuleFiles =
-        {
-            "MSCANPaths.bas",
-            "MSCANModLogging.bas",
-            "MSCANHealth.bas",
-            "MSCANIdle.bas",
-            "MSCANModQueueManager.bas",
-            "MSCANModWatchers.bas",
-            "MSCANModStatus.bas",
-            "MSCANSettings.bas",
-            "MSCANAppBootstrap.bas",
-            "MSCANClassificationDialog.bas",
-            "MSCANReadNotify.bas",
-            "MSCANPixel.bas",
-            "MSCANToolbar.bas",
-            "MSCANModSenderRules.bas",
-            "MSCANModule1.bas",
-            "MSCANCore.bas",
-            "MSCANEventHandlers.bas",
-            "MSCANDiagnostics.bas",
-            "MSCANEmailWatcher.cls",
-            "MSCANSelfUpdate.bas",
-        };
 
         private static string LoadRibbonXml(string tabIdMso)
         {
@@ -1261,18 +873,6 @@ namespace Aliniant.AesRibbonHost
             try
             {
                 dynamic app = _application;
-                try
-                {
-                    object vbeObj = TryGetOutlookVbe(_application);
-                    if (vbeObj != null)
-                    {
-                        dynamic vbe = vbeObj;
-                        string name = vbe.ActiveVBProject.Name as string;
-                        if (!string.IsNullOrEmpty(name)) project = name;
-                    }
-                }
-                catch { }
-
                 foreach (var candidate in new[] {
                     project + ".MSCANToolbar." + bare,
                     "MSCANToolbar." + bare,

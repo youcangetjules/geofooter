@@ -1082,8 +1082,10 @@ def run_dialog(ctx: DiagContext) -> int:
     stop_cap.setObjectName("secondary")
     open_cap = QPushButton("Open capture")
     open_cap.setObjectName("secondary")
-    open_log = QPushButton("Open main log")
+    # Lives here rather than on the ribbon.
+    open_log = QPushButton("View Logs")
     open_log.setObjectName("secondary")
+    open_log.setToolTip("Open the Aliniant Email Scanner VBA log.")
     refresh_tail = QPushButton("Refresh tail")
     refresh_tail.setObjectName("secondary")
 

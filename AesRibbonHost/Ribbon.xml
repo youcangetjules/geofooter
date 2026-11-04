@@ -61,20 +61,13 @@
                   onAction="OnSettings"
                   screentip="Settings"
                   supertip="Choose which email accounts Aliniant Email Scanner watches automatically."/>
-          <button id="AESViewLogs"
-                  label="View Logs"
-                  size="normal"
-                  getImage="GetViewLogsImage"
-                  onAction="OnViewLogs"
-                  screentip="View Logs"
-                  supertip="Open the Aliniant Email Scanner VBA log in Notepad."/>
           <button id="AESRepairVba"
                   label="Repair VBA"
                   size="normal"
                   imageMso="RefreshAll"
                   onAction="OnRepairVba"
                   screentip="Repair VBA"
-                  supertip="Re-import all AES VBA modules from disk into this Outlook project (uses in-process VBE). Then Compile/Save. Quit Outlook fully afterward so VbaProject.OTM is written."/>
+                  supertip="Re-import all AES VBA modules from disk, compile and save. You get a message when it finishes; then restart Outlook to load them."/>
         </group>
       </tab>
     </tabs>

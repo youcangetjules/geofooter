@@ -3,7 +3,7 @@
 Classic Outlook **COM add-in** that hosts Ribbon XML on **Home (Mail)** so AES can use:
 
 - Large icons for **AES ON/OFF**, **Short Scan**, **Full Scan**, **Deep Scan**, **GURI**, **Aura**
-- Stacked **Diagnostics / Settings / View Logs**
+- Stacked **Diagnostics / Settings / Repair VBA** (View Logs is inside Diagnostics)
 - **Live** ON/OFF label + green tick / red cross icons
 
 Actions call your existing VBA AES CommandBar buttons (`Execute`), so scan/settings/diagnostics logic stays in VBA.

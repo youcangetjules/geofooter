@@ -238,11 +238,6 @@ namespace Aliniant.AesRibbonHost
             return LoadIconPicture("aes_diagnostics.png");
         }
 
-        public object GetViewLogsImage(IRibbonControl control)
-        {
-            return LoadIconPicture("aes_view_logs.png");
-        }
-
         public void OnToggleService(IRibbonControl control)
         {
             ExecuteVbaButton("AES_SERVICE_TOGGLE", "ToggleService");
@@ -330,11 +325,6 @@ namespace Aliniant.AesRibbonHost
                 "Aliniant AES",
                 System.Windows.Forms.MessageBoxButtons.OK,
                 System.Windows.Forms.MessageBoxIcon.Warning);
-        }
-
-        public void OnViewLogs(IRibbonControl control)
-        {
-            ExecuteVbaButton("AES_LOGS", "ViewLogs");
         }
 
         /// <summary>

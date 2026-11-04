@@ -20,6 +20,16 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.71] — 2026-11-04
+
+### Changed
+
+- **View Logs** moved from the Outlook ribbon into the Diagnostics window, replacing its "Open main log" button, which opened the same log. Needs the new AesRibbonHost DLL.
+
+### Fixed
+
+- Repair VBA tooltip no longer describes the removed in-process import.
+
 ## [1.5.70] — 2026-11-04
 
 ### Fixed

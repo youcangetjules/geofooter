@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-04 — 1.5.71: View Logs moved into Diagnostics
+- `AesRibbonHost/Ribbon.xml`, `Connect.cs`, `README.md`: removed the ribbon button and its handlers; corrected the Repair VBA tooltip.
+- `aes/diagnostics_dialog.py`: "Open main log" renamed **View Logs**. It already opened `VBA_Log.txt`.
+- Why: user asked for View Logs to live in Diagnostics rather than the top ribbon.
+- Follow-up: left the VBA Add-ins toolbar's View Logs button and the legacy `MSCAN_Ribbon.xml` files alone.
+
 ### 2026-11-04 — 1.5.70: footer top row aligned; shimmer on the A
 - `aes/geolocate_headers.py`: `strip_separators` raises the top row's dots 2px; quip is 12px on the title's baseline, replacing the 11px quip raised 2px in 1.5.53.
 - `scripts/build_footer_strip_images.py`: `_add_shimmer` bakes the highlight into the mark. Only the mark was rebuilt.

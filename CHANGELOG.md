@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.68] — 2026-11-04
+
+### Fixed
+
+- `Import_VBA_ViaUi.ps1`: a run without `-Notify` no longer marks the daily Norton quarantine notice as shown.
+
 ## [1.5.67] — 2026-11-04
 
 ### Fixed

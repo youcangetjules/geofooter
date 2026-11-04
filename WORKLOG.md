@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-04 — 1.5.68: Norton exclusions verified; one AES startup miss still open
+- `scripts/Import_VBA_ViaUi.ps1`: a run without `-Notify` no longer marks the daily quarantine notice as shown.
+- Verified with the user's Norton exclusions: OTM and backup survive Outlook exit (no new quarantine entries in a 90 s watch); AES starts after restart; startup check reports no work when current; add-in auto-update ran end to end with AES running (20 modules, compile OK); a later direct-launch restart on that saved project started AES.
+- Still open: Outlook opened from Explorer at 10:20:55, 5 s after the previous session ended, loaded the project and fired `NewMailEx`, but never ran `Application_Startup`, so no AES toolbar. Launch method or quick relaunch not yet separated. See PERF/BUG-040 note.
+- Still open: certificate prompts return each Outlook start and stop Outlook exiting until answered; they stalled the trials.
+
 ### 2026-11-04 — 1.5.67: VBA auto-update works; the "wipe" is Norton quarantine
 - Why: user needs the VBA auto-update to work. Modules kept disappearing and every earlier fix assumed Outlook was at fault.
 - Found: Norton quarantine (`chest/index.xml`, `Cleaner.log`) holds `VbaProject.OTM` as `MO97:Downloader-YI [Trj]` at 2026-11-01 21:37, 11-02 14:11 and 11-04 09:56, plus my backup at 11-04 09:19 (7 s after writing). `Cleaner.log` also has it on 10-26 10:57, the minute AES stopped. Audit of `VBA\`: no HTTP client, no download code, no obfuscation; URLs are MAPI property names and `track.aliniant.net`. Likely a heuristic false positive on the WScript/PowerShell/ADODB.Stream helpers.

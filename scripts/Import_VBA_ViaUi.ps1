@@ -520,6 +520,7 @@ function Test-QuarantineBlocksImport {
 }
 
 function Show-QuarantineOncePerDay {
+    if (-not $Notify) { return }
     $flag = Join-Path $env:LOCALAPPDATA "GeoFooter\vba_quarantine_notice_day.txt"
     $today = (Get-Date).ToString("yyyy-MM-dd")
     if ((Test-Path $flag) -and ((Get-Content -LiteralPath $flag -TotalCount 1) -eq $today)) { return }

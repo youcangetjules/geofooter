@@ -10,6 +10,7 @@ Run from the install root:  python scripts/build_footer_strip_images.py
 
 from __future__ import annotations
 
+import math
 import os
 import sys
 from pathlib import Path
@@ -82,10 +83,41 @@ def build_letter(letter: str) -> Path:
     return path
 
 
+def _add_shimmer(rgba: Image.Image) -> Image.Image:
+    """Bake a static sheen into the A: a soft diagonal highlight over gentle depth.
+
+    Only the colour changes; alpha is kept, so the A's outline stays exact.
+    """
+    w, h = rgba.size
+    out = rgba.copy()
+    px = out.load()
+    highlight = (255, 240, 214)
+    shade = (196, 84, 8)
+    # Distance is measured across a band running up to the right. Shallower than
+    # the A's left leg, or the band lies along the leg and bleaches all of it.
+    tilt = 1.25
+    bands = ((0.42, 0.050, 0.68), (0.53, 0.014, 0.40))  # centre, softness, strength
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            if a == 0:
+                continue
+            pos = (x / w + (y / h) * tilt) / (1 + tilt)
+            depth = max(0.0, (y / h - 0.45) / 0.55) * 0.30
+            r, g, b = (round(c + (s - c) * depth) for c, s in zip((r, g, b), shade))
+            glow = max(
+                strength * math.exp(-(((pos - centre) / soft) ** 2))
+                for centre, soft, strength in bands
+            )
+            r, g, b = (round(c + (t - c) * glow) for c, t in zip((r, g, b), highlight))
+            px[x, y] = (r, g, b, a)
+    return out
+
+
 def build_mark() -> Path:
     src = Image.open(ROOT / "assets" / "brand" / "abyitself.ico")
     src.size = max(src.info["sizes"])  # type: ignore[misc]
-    rgba = src.convert("RGBA")
+    rgba = _add_shimmer(src.convert("RGBA"))
     flat = Image.new("RGBA", rgba.size, _rgb(AES_STRIP_BG) + (255,))
     flat.alpha_composite(rgba)
     size = (AES_STRIP_MARK_W * SCALE, AES_STRIP_MARK_H * SCALE)

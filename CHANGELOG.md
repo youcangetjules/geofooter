@@ -20,6 +20,16 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.70] — 2026-11-04
+
+### Fixed
+
+- Footer top row: separator dots sat 2px low and the quip 2px high. Dots are raised 2px; the quip is now 12px with no raise, on the title's baseline.
+
+### Changed
+
+- Footer orange A has a static diagonal shimmer, baked into `aes_mark_footer.png` by `scripts/build_footer_strip_images.py`.
+
 ## [1.5.69] — 2026-11-04
 
 ### Changed

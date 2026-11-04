@@ -892,10 +892,13 @@ def strip_separators(
         f"<td width='5' valign='middle'{height_attr} "
         "style='width:5px; font-size:1px; line-height:1px; padding:0;'>&nbsp;</td>"
     )
+    # Word seats the 8px dot on the 12px text's baseline, 2px below the capitals'
+    # centre. Raised only in the locked top row, whose exact line height absorbs it.
+    dot_glyph = "<span style='mso-text-raise:2px;'>&#9679;</span>" if line_height else "&#9679;"
     dot = (
         f"<td align='center' valign='middle'{height_attr} "
         f"style='color:{AES_STRIP_DOT}; font-family:{AES_STRIP_FONT}; "
-        f"font-size:8px; {lock}padding:0;'>&#9679;</td>"
+        f"font-size:8px; {lock}padding:0;'>{dot_glyph}</td>"
     )
     parts = (inner_html or "").split(" | ")
     narrow = (
@@ -5857,7 +5860,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         # The logo (+ optional A/E/S column) spans every row. The pad beside the
         # logo is only as wide as the quip minus that left block, so the middle
         # text stays centred on the full strip.
-        quip_px = _footer_text_px(quip, 11, italic=True)
+        quip_px = _footer_text_px(quip, 12, italic=True)
         # Rows 1 and 2 share one right-hand width (quip or AURA chip, whichever
         # is wider) so both centre on the same line.
         side_w = max(quip_px + 16, 78 + 16)
@@ -5868,12 +5871,11 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"align='right' style='width:{right_w}px; border-collapse:collapse;'><tr>"
             f"<td align='right' valign='middle' nowrap "
             f"style='white-space:nowrap; text-align:right; color:{risk_color}; "
-            f"font-family:{AES_STRIP_FONT}; font-size:11px; font-style:italic; "
+            # Same size and line as the title, so both sit on one baseline with
+            # no raise. An 11px quip could only land above or below its centre.
+            f"font-family:{AES_STRIP_FONT}; font-size:12px; font-style:italic; "
             f"font-weight:normal; line-height:16px; mso-line-height-rule:exactly;'>"
-            # The 11px quip shares the 12px title's baseline, so it read as
-            # sitting low in the row. Word raises it within the exact 16px line;
-            # padding instead made the row taller.
-            f"<span style='mso-text-raise:2px;'>{quip}</span></td>"
+            f"{quip}</td>"
             f"<td width='16' style='width:16px; font-size:1px; line-height:1px;'>&nbsp;</td>"
             f"</tr></table>"
         )

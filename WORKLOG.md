@@ -13,6 +13,13 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-04 — 1.5.70: footer top row aligned; shimmer on the A
+- `aes/geolocate_headers.py`: `strip_separators` raises the top row's dots 2px; quip is 12px on the title's baseline, replacing the 11px quip raised 2px in 1.5.53.
+- `scripts/build_footer_strip_images.py`: `_add_shimmer` bakes the highlight into the mark. Only the mark was rebuilt.
+- Why: user asked for all top-row text to align and a static shimmer. Measured from their screenshot: text centre 21, dots 23, quip 19.5.
+- Verified by rendering in Outlook's editor on an unsent, discarded draft: text and dots all centre on one row, and the quip shares the baseline.
+- Follow-up: none for VBA. Applies to newly scanned mail, not footers already in messages. Row 2's dots were not changed.
+
 ### 2026-11-04 — 1.5.69: VBA persistence verified; Norton mail certificates recorded
 - Five controlled restarts (Explorer and direct, 300 ms and 15 s gaps): AES started every time with 5 watchers and no certificate prompts. The 10:21 startup miss did not recur and stays unexplained.
 - `docs/bug_tracker.md`: BUG-040 fixed; new BUG-041.

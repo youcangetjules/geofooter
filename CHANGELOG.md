@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.7.12] — 2026-11-17
+
+### Changed
+
+- Links row in the scan analysis: after the heuristic result it now reads "Go look at the full scan for analysis", on both the clean and the flagged variants. The flagged variant also says "(heuristics)".
+
 ## [1.7.11] — 2026-11-17
 
 ### Added

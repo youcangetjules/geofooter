@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.7.12: Links row wording
+- `aes/geolocate_headers.py`: `_format_link_summary` appends the sentence after the heuristic result.
+- Why: user request, wording as given.
+- Verified by printing both variants. Not seen in a real scanned message.
+- Note: `pytest tests` as a whole stops at collection with `SystemExit: 1` from an existing test file; the suites for today's changes were run by name.
+
 ### 2026-11-17 — 1.7.11: BGP and tromboning evidence identified by hop
 - `aes/route_checks.py`: findings carry `kind` and `hops`; tromboning flags all three hops; `integrity_summary`. `aes/geolocate_headers.py`: `_route_integrity_html`, summary passed through display data. `tests/test_route_integrity.py` (4 tests).
 - Why: user asked that any BGP spoofing or tromboning evidence be identified. The checks and scoring existed; the evidence was only a small flag inside one table cell.

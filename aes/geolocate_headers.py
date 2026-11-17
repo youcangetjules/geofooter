@@ -4480,6 +4480,10 @@ class HTMLReportGenerator:
         def field(item: Any, key: str) -> Any:
             return getattr(item, key, None) if not isinstance(item, dict) else item.get(key)
 
+        # These are heuristic checks only; the reader is pointed at the full scan.
+        see_full = (
+            " <span style='color: #666666;'>Go look at the full scan for analysis</span>"
+        )
         total = len(link_findings or [])
         if total == 0:
             return (
@@ -4501,13 +4505,14 @@ class HTMLReportGenerator:
         if not highs and not meds:
             detail = (
                 f"<span style='color: #008000;'>{total} link{'s' if total != 1 else ''} checked "
-                f"&#10003; no heuristic flags</span>"
+                f"&#10003; no heuristic flags.</span>{see_full}"
             )
             return (pieces, detail)
 
         parts = [
             f"<span style='color: {'#FF0000' if highs else '#CC7A00'};'>"
-            f"{total} checked &mdash; {len(highs)} high risk, {len(meds)} suspicious</span>"
+            f"{total} checked &mdash; {len(highs)} high risk, {len(meds)} suspicious "
+            f"(heuristics).</span>{see_full}"
         ]
         for item in (highs + meds)[:4]:
             host = html.escape(str(field(item, "host") or field(item, "url") or "?"))

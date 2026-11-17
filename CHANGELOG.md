@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.7.5] — 2026-11-17
+
+### Fixed
+
+- `Import_VBA_ViaUi.ps1` crashed (access violation in clr.dll) while saving the clipboard, just after placing the send hold, which left sends held until the import was re-run. The generic copy of every clipboard format (added in 1.5.72) is replaced by typed handling of text, images and copied files only.
+
 ## [1.7.4] — 2026-11-17
 
 ### Fixed

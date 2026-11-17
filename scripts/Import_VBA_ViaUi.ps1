@@ -458,30 +458,41 @@ function Get-ThisOutlookSessionCode {
     return (($lines[$i..($lines.Length - 1)]) -join "`r`n") + "`r`n"
 }
 
-# Every format on the clipboard (text, images, copied files), so it can be put back.
+# Text, images and copied files on the clipboard, so they can be put back.
+# Only these three, through their typed calls. Copying every format generically
+# crashed PowerShell (access violation in clr.dll, 2026-11-17 11:15) when the
+# clipboard held something handle-based, and that left the send hold in place.
 function Save-ClipboardData {
+    $saved = @{}
     try {
         Add-Type -AssemblyName System.Windows.Forms
-        $data = [Windows.Forms.Clipboard]::GetDataObject()
-        if (-not $data) { return $null }
-        $copy = New-Object Windows.Forms.DataObject
-        $kept = 0
-        foreach ($format in $data.GetFormats($false)) {
-            try {
-                $value = $data.GetData($format, $false)
-                if ($null -ne $value) { $copy.SetData($format, $false, $value); $kept++ }
-            } catch {}
+        $clip = [Windows.Forms.Clipboard]
+        $text = @{}
+        foreach ($format in "UnicodeText", "Rtf", "Html") {
+            $kind = [Windows.Forms.TextDataFormat]$format
+            if ($clip::ContainsText($kind)) { $text[$format] = $clip::GetText($kind) }
         }
-        if ($kept) { return $copy }
+        if ($text.Count) { $saved.Text = $text }
+        if ($clip::ContainsFileDropList()) { $saved.Files = $clip::GetFileDropList() }
+        if ($clip::ContainsImage()) { $saved.Image = $clip::GetImage() }
     } catch {}
-    return $null
+    return $saved
 }
 
 function Restore-ClipboardData {
     param($Data)
     try {
-        if ($Data) { [Windows.Forms.Clipboard]::SetDataObject($Data, $true) }
-        else { [Windows.Forms.Clipboard]::Clear() }
+        $clip = [Windows.Forms.Clipboard]
+        if (-not $Data -or $Data.Count -eq 0) { $clip::Clear(); return }
+        $object = New-Object Windows.Forms.DataObject
+        if ($Data.Text) {
+            foreach ($format in $Data.Text.Keys) {
+                $object.SetText($Data.Text[$format], [Windows.Forms.TextDataFormat]$format)
+            }
+        }
+        if ($Data.Files) { $object.SetFileDropList($Data.Files) }
+        if ($Data.Image) { $object.SetImage($Data.Image) }
+        $clip::SetDataObject($object, $true)
     } catch {}
 }
 

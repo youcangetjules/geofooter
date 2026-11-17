@@ -13,6 +13,13 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.7.5: importer clipboard crash
+- `scripts/Import_VBA_ViaUi.ps1`: `Save-ClipboardData` / `Restore-ClipboardData` use `ContainsText/GetText`, `GetFileDropList`, `GetImage` instead of copying every format.
+- Why: the import for 1.7.3/1.7.4 died at 11:15:55 with exit 139 after "Holding sends". Event log: powershell.exe, clr.dll, 0xc0000005. Sends were held for about two minutes until the re-run at 11:16.
+- Verified: the re-run completed end to end, including the first real run of the in-place save check. The crash itself was not reproduced, so the cause (a handle-based clipboard format) is inferred.
+- Correction to 1.6.0 notes: the OTM timestamp did change on this save (11:17:45), so "saves never change the timestamp" is too strong. The content hash remains the check.
+- Follow-up: a crash, unlike a caught error, skips the failure path, so a send hold placed before it stays silent. Whatever was on the clipboard at 11:15 was lost.
+
 ### 2026-11-17 — 1.7.4: footer write hold after wake and after slow saves
 - `VBA/MSCANHealth.bas`: `NotePulse`, `FooterWritesOnHold`, `StartFooterHold`; `EndOp` starts a hold on a sleep-straddling operation or a `CommitMailHtml` of 4s+. `VBA/MSCANModule1.bas`: `ReconcileAsyncJobs` skips automatic jobs during a hold (checked per job, so one slow save stops the batch); `JobIsAutomatic`; pulse in `NudgeAsyncWork`.
 - Why: review of Outlook stalls. Slow saves after wake are probably the mail stores reconnecting; that cause is inferred, not shown by the log.

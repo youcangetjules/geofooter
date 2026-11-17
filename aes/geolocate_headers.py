@@ -609,6 +609,11 @@ AES_STRIP_MARK_CELL_W = 12 + AES_STRIP_MARK_W + 4
 # 14px letter centred in the row leaves about 4px above and below.
 AES_STRIP_AES_COLOR = "#5a6671"
 AES_STRIP_LETTER_H = 14
+# The E and S sat 2px high in their rows (2px above, 6px below). Extra cell or
+# gap height makes the whole strip taller, and Word anchors the image by its
+# bottom edge, so padding inside the image does nothing. Word's text-lowering on
+# a span around the image is what moves it.
+AES_STRIP_LETTER_DROP = {"E": 2, "S": 2}
 AES_STRIP_AES_COL = 16
 # Outlook drops padding on a div. This row is the gap above the strip.
 AES_FOOTER_GAP_HTML = (
@@ -653,11 +658,15 @@ def _footer_aes_letter_img(letter: str) -> str:
     h = AES_STRIP_LETTER_H
     w = max(1, round(px_w * h / px_h))
     cid = name.replace("_", "")
-    return (
+    img = (
         f"<!-- AES-Inline-Img: {cid}|{path} -->"
         f"<img src='cid:{cid}' width='{w}' height='{h}' alt='{letter}' "
         f"style='display:block; border:0; outline:none; width:{w}px; height:{h}px;' />"
     )
+    drop = AES_STRIP_LETTER_DROP.get(letter.upper(), 0)
+    if drop:
+        return f"<span style='mso-text-raise:-{drop}px;'>{img}</span>"
+    return img
 
 
 def _footer_aes_letters_column() -> str:

@@ -13,6 +13,13 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.7.1: footer E and S letters centred
+- `aes/geolocate_headers.py`: `AES_STRIP_LETTER_DROP` and a lowering span in `_footer_aes_letter_img`.
+- Why: user saw the E about 2px off. Measured in an Outlook render: E had 2px above and 6px below, S 1px and 5px.
+- Two approaches failed first: a taller gap row made the whole strip 2px taller, and padding inside the image did nothing because Word anchors the image by its bottom edge.
+- Verified in Outlook's editor on a discarded draft: E 4/4, S 3/3, A unchanged at 5/4, strip still 67px.
+- Follow-up: none. Applies to newly scanned mail. Version stamps for 1.6.0 and 1.7.0 were typed ahead of the clock by up to 30 minutes; stamps now come from the clock.
+
 ### 2026-11-17 — 1.7.0: lookalike sender domain check
 - `aes/header_intel.py`: `lookalike_signals`, `reference_domains` and helpers; added to `run_all` after Identity. `tests/test_header_intel.py`: 12 new tests (38 pass).
 - Why: user asked what more headers could give. My first answer listed signals that `header_intel.py` already had (thread hijack among them); lookalike domains were a real gap, and they catch an impostor replying into a real thread without needing thread participant memory.

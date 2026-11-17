@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.7.1] — 2026-11-17
+
+### Fixed
+
+- Footer: the E and S in the stacked A/E/S sat 2px high in their rows. Both are lowered 2px with `mso-text-raise` on a span around the letter image. Strip height is unchanged.
+
 ## [1.7.0] — 2026-11-17
 
 ### Added

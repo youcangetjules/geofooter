@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.7.4: footer write hold after wake and after slow saves
+- `VBA/MSCANHealth.bas`: `NotePulse`, `FooterWritesOnHold`, `StartFooterHold`; `EndOp` starts a hold on a sleep-straddling operation or a `CommitMailHtml` of 4s+. `VBA/MSCANModule1.bas`: `ReconcileAsyncJobs` skips automatic jobs during a hold (checked per job, so one slow save stops the batch); `JobIsAutomatic`; pulse in `NudgeAsyncWork`.
+- Why: review of Outlook stalls. Slow saves after wake are probably the mail stores reconnecting; that cause is inferred, not shown by the log.
+- Verified: imported, compiles, AES starts. NOT observed: no hold has fired yet. It logs `HEALTH | automatic footer writes paused for Ns: reason`.
+- Follow-up: held jobs still count as in flight, so no new automatic scans start during a hold.
+
 ### 2026-11-17 — 1.7.3: catch-up sweep time budget and idle gate
 - `VBA/MSCANModQueueManager.bas`: `CATCHUP_BUDGET_MS`, `CATCHUP_INPUT_IDLE_MS`, `CATCHUP_MAX_DEFERRALS`, a cursor so a pass resumes at the next inbox, short heartbeat while a round is unfinished. `VBA/MSCANIdle.bas`: `MsSinceLastInput` made public. `VBA/MSCANHealth.bas`: `ElapsedSince`.
 - Why: review of Outlook stalls; the sweep walked all five scanned inboxes in one go every 1.5-4 minutes and only deferred while a message was being composed.

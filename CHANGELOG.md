@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.7.4] — 2026-11-17
+
+### Fixed
+
+- After the PC woke on 7 November, 23 queued footers were saved back to back at 2-21s each. Automatic footer writes now pause for 2 minutes after 10 minutes without AES activity (a sleep), and for 3 minutes after any save that takes 4s or more. Full, Deep and forced scans are not held. Needs the VBA update.
+
 ## [1.7.3] — 2026-11-17
 
 ### Fixed

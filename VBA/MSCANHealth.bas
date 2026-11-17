@@ -30,6 +30,17 @@ Private Const CONFLICT_STORM As Long = 3
 Private Const QUEUE_BACKLOG_WARN As Long = 25
 Private Const SNAPSHOT_EVERY_MS As Long = 300000
 
+' Footer writes pause when saving is likely to be slow. On 2026-11-07 the PC
+' woke at 01:17 and 23 queued footers were saved back to back at 2-21s each,
+' holding Outlook for most of five minutes.
+' No AES activity for this long means the PC slept or Outlook sat idle.
+Private Const QUIET_GAP_SEC As Long = 600
+' After such a gap, give the mail stores this long to reconnect.
+Private Const WAKE_HOLD_SEC As Long = 120
+' One save this slow means the next ones will be too.
+Private Const SLOW_SAVE_MS As Long = 4000
+Private Const SLOW_SAVE_HOLD_SEC As Long = 180
+
 Private m_SessionStart As Date
 Private m_Started As Boolean
 
@@ -58,6 +69,10 @@ Private m_UiBusyMs As Double
 
 Private m_LastSnapshotTick As Long
 
+Private m_LastPulse As Date
+Private m_HoldUntil As Date
+Private m_FooterHolds As Long
+
 Public Sub StartSession()
     m_SessionStart = Now
     m_Started = True
@@ -80,6 +95,9 @@ Public Sub StartSession()
     m_WorstStallMs = 0
     m_WorstStallOp = ""
     m_UiBusyMs = 0
+    m_LastPulse = 0
+    m_HoldUntil = 0
+    m_FooterHolds = 0
     m_LastSnapshotTick = ApiGetTickCount()
     MSCANModLogging.WriteLog "HEALTH | session counters reset"
 End Sub
@@ -102,9 +120,13 @@ Public Sub EndOp(ByVal opName As String, ByVal startTick As Long)
     If elapsed > SUSPEND_CUTOFF_MS Then
         MSCANModLogging.WriteLog "HEALTH | " & opName & " spanned " & CStr(elapsed \ 1000) & _
             "s, most likely a system sleep; not counted as a UI stall"
+        StartFooterHold WAKE_HOLD_SEC, opName & " straddled a system sleep"
         Exit Sub
     End If
     m_UiBusyMs = m_UiBusyMs + elapsed
+    If elapsed >= SLOW_SAVE_MS And opName = "CommitMailHtml" Then
+        StartFooterHold SLOW_SAVE_HOLD_SEC, "a footer save took " & CStr(elapsed) & "ms"
+    End If
 
     If elapsed < STALL_WARN_MS Then Exit Sub
 
@@ -121,6 +143,44 @@ End Sub
 ' For callers that budget their own time on the Outlook thread.
 Public Function ElapsedSince(ByVal startTick As Long) As Long
     ElapsedSince = ElapsedMs(startTick)
+End Function
+
+'------------------------------------------------------------------------
+' Footer write hold - the "Outlook froze after the PC woke up" guard
+'------------------------------------------------------------------------
+
+' Call from anything that runs regularly. A long gap between calls is how a
+' sleep shows up: nothing in VBA is told that Windows resumed.
+Public Sub NotePulse()
+    On Error Resume Next
+    Dim gap As Long
+    If m_LastPulse > 0 Then
+        gap = DateDiff("s", m_LastPulse, Now)
+        If gap >= QUIET_GAP_SEC Then
+            StartFooterHold WAKE_HOLD_SEC, "no AES activity for " & CStr(gap \ 60) & _
+                " min (sleep or a long idle spell)"
+        End If
+    End If
+    m_LastPulse = Now
+End Sub
+
+Private Sub StartFooterHold(ByVal seconds As Long, ByVal reason As String)
+    On Error Resume Next
+    Dim untilAt As Date
+    untilAt = DateAdd("s", seconds, Now)
+    If untilAt <= m_HoldUntil Then Exit Sub
+    m_HoldUntil = untilAt
+    m_FooterHolds = m_FooterHolds + 1
+    MSCANModLogging.WriteLogWarn "HEALTH | automatic footer writes paused for " & CStr(seconds) & _
+        "s: " & reason
+End Sub
+
+' True while automatic footers should wait. Scans the user asked for ignore it.
+Public Function FooterWritesOnHold() As Boolean
+    On Error Resume Next
+    NotePulse
+    FooterWritesOnHold = False
+    If m_HoldUntil > 0 Then FooterWritesOnHold = (Now < m_HoldUntil)
 End Function
 
 ' GetTickCount wraps roughly every 49 days; treat a wrap as no elapsed time

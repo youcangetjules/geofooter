@@ -126,6 +126,13 @@ Public Sub ReconcileAsyncJobs()
         If m_AsyncJobs.Exists(keys(i)) Then
             Set job = m_AsyncJobs(keys(i))
 
+            ' Automatic footers wait out a hold (just woke up, or the last save
+            ' was slow). Checked per job, so one slow save stops the batch behind
+            ' it. The job stays pending and is picked up when the hold ends.
+            If JobIsAutomatic(job) Then
+                If MSCANHealth.FooterWritesOnHold() Then GoTo NextReconcileJob
+            End If
+
             ' The deadline is for a scan that never produced a usable footer.
             ' A finished footer is applied anyway: failing it at 90s threw the
             ' result away whenever the message was still selected.
@@ -163,6 +170,7 @@ Public Sub ReconcileAsyncJobs()
                 FailAsyncFooter CStr(keys(i))
             End If
         End If
+NextReconcileJob:
     Next i
 
     m_ReconcilingJobs = False
@@ -171,6 +179,22 @@ EH:
     m_ReconcilingJobs = False
     MSCANModLogging.WriteLog "ReconcileAsyncJobs error: #" & Err.Number & " - " & Err.Description
 End Sub
+
+' A compact scan AES started itself. Full, Deep and forced rescans come from a
+' ribbon click, and the user is waiting for those.
+Private Function JobIsAutomatic(ByVal job As Object) As Boolean
+    On Error Resume Next
+    JobIsAutomatic = False
+    If job Is Nothing Then Exit Function
+    Dim modeName As String
+    modeName = "compact"
+    If job.Exists("Mode") Then modeName = LCase$(CStr(job("Mode")))
+    If modeName <> "compact" And Len(modeName) > 0 Then Exit Function
+    If job.Exists("Force") Then
+        If CBool(job("Force")) Then Exit Function
+    End If
+    JobIsAutomatic = True
+End Function
 
 ' Ribbon getters call this to colour the AES control, so it must stay read-only.
 Public Function IsScanBusy() As Boolean
@@ -235,6 +259,7 @@ Public Sub NudgeAsyncWork()
         m_NudgeWiredLogged = True
         MSCANModLogging.WriteLog "NudgeAsyncWork: ItemLoad wiring active."
     End If
+    MSCANHealth.NotePulse
     MSCANSettings.ApplyPendingSettingsResult
     ' Writing a message owns the UI thread. Footer apply and queue work read and
     ' rewrite HTMLBody, which stalls the editor and drops keystrokes. Leave the

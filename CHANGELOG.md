@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.7.2] — 2026-11-17
+
+### Changed
+
+- Footer orange A: the diagonal shimmer is replaced by a static "screen" effect: horizontal scanlines, a cyan fringe on the left and magenta on the right, and two thin glitch slices. Baked into `aes_mark_footer.png` by `scripts/build_footer_strip_images.py` (`_add_cyber`).
+
 ## [1.7.1] — 2026-11-17
 
 ### Fixed

@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.7.2: cyber-style effect on the footer A
+- `scripts/build_footer_strip_images.py`: `_add_cyber` replaces `_add_shimmer`; sizes are set in displayed pixels so the effect survives the 2x downscale. Rebuilt `assets/icons/aes_mark_footer.png` only.
+- Why: user asked for the A's effect to look "slightly more cyber".
+- Verified in Outlook's editor on a discarded draft. Scanline darkness eased from 0.66 to 0.72 after the first render.
+- Follow-up: taste call; strength is three numbers in `_add_cyber` (scanline 0.72, fringe shift 1.2px, slice offsets). Applies to newly scanned mail.
+
 ### 2026-11-17 — 1.7.1: footer E and S letters centred
 - `aes/geolocate_headers.py`: `AES_STRIP_LETTER_DROP` and a lowering span in `_footer_aes_letter_img`.
 - Why: user saw the E about 2px off. Measured in an Outlook render: E had 2px above and 6px below, S 1px and 5px.

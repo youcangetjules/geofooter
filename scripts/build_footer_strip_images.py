@@ -10,7 +10,6 @@ Run from the install root:  python scripts/build_footer_strip_images.py
 
 from __future__ import annotations
 
-import math
 import os
 import sys
 from pathlib import Path
@@ -83,41 +82,61 @@ def build_letter(letter: str) -> Path:
     return path
 
 
-def _add_shimmer(rgba: Image.Image) -> Image.Image:
-    """Bake a static sheen into the A: a soft diagonal highlight over gentle depth.
+def _tinted(rgba: Image.Image, colour: tuple[int, int, int], strength: float) -> Image.Image:
+    """The A's silhouette in one flat colour, at a fraction of its opacity."""
+    alpha = rgba.getchannel("A").point(lambda v: round(v * strength))
+    layer = Image.new("RGBA", rgba.size, colour + (0,))
+    layer.putalpha(alpha)
+    return layer
 
-    Only the colour changes; alpha is kept, so the A's outline stays exact.
+
+def _add_cyber(rgba: Image.Image) -> Image.Image:
+    """Static "screen" treatment for the A: scanlines, colour fringes and two glitch slices.
+
+    Sizes are in displayed pixels (the mark is drawn AES_STRIP_MARK_H tall) so
+    the effect survives the downscale instead of blurring into flat orange.
     """
     w, h = rgba.size
-    out = rgba.copy()
-    px = out.load()
-    highlight = (255, 240, 214)
-    shade = (196, 84, 8)
-    # Distance is measured across a band running up to the right. Shallower than
-    # the A's left leg, or the band lies along the leg and bleaches all of it.
-    tilt = 1.25
-    bands = ((0.42, 0.050, 0.68), (0.53, 0.014, 0.40))  # centre, softness, strength
+    unit = h / AES_STRIP_MARK_H  # source pixels per displayed pixel
+
+    # Scanlines: one darker displayed row in every three, on a top-lit orange.
+    lit = rgba.copy()
+    px = lit.load()
+    period, dark_rows = 3 * unit, 1 * unit
     for y in range(h):
+        in_dark = (y % period) < dark_rows
+        lift = 0.16 * (1 - y / h)          # brighter towards the top
         for x in range(w):
-            r, g, b, a = px[x, y]
-            if a == 0:
+            r, g, b, alpha = px[x, y]
+            if alpha == 0:
                 continue
-            pos = (x / w + (y / h) * tilt) / (1 + tilt)
-            depth = max(0.0, (y / h - 0.45) / 0.55) * 0.30
-            r, g, b = (round(c + (s - c) * depth) for c, s in zip((r, g, b), shade))
-            glow = max(
-                strength * math.exp(-(((pos - centre) / soft) ** 2))
-                for centre, soft, strength in bands
-            )
-            r, g, b = (round(c + (t - c) * glow) for c, t in zip((r, g, b), highlight))
-            px[x, y] = (r, g, b, a)
+            r, g, b = (round(c + (255 - c) * lift) for c in (r, g, b))
+            if in_dark:
+                r, g, b = (round(c * 0.72) for c in (r, g, b))
+            px[x, y] = (r, g, b, alpha)
+
+    # Colour fringes: cyan pulled left and magenta pulled right, behind the orange.
+    shift = round(1.2 * unit)
+    out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    out.alpha_composite(_tinted(rgba, (0, 229, 255), 0.85), (0, 0), (shift, 0))
+    magenta = _tinted(rgba, (255, 43, 214), 0.75)
+    out.alpha_composite(magenta.crop((0, 0, w - shift, h)), (shift, 0))
+    out.alpha_composite(lit)
+
+    # Glitch slices: two thin bands knocked sideways.
+    for top, height, dx in ((0.30, 2.0, 2.0), (0.68, 1.5, -2.5)):
+        y0, y1 = round(top * h), round(top * h + height * unit)
+        band = out.crop((0, y0, w, y1))
+        out.paste((0, 0, 0, 0), (0, y0, w, y1))
+        out.alpha_composite(band, (max(0, round(dx * unit)), y0),
+                            (max(0, round(-dx * unit)), 0))
     return out
 
 
 def build_mark() -> Path:
     src = Image.open(ROOT / "assets" / "brand" / "abyitself.ico")
     src.size = max(src.info["sizes"])  # type: ignore[misc]
-    rgba = _add_shimmer(src.convert("RGBA"))
+    rgba = _add_cyber(src.convert("RGBA"))
     flat = Image.new("RGBA", rgba.size, _rgb(AES_STRIP_BG) + (255,))
     flat.alpha_composite(rgba)
     size = (AES_STRIP_MARK_W * SCALE, AES_STRIP_MARK_H * SCALE)

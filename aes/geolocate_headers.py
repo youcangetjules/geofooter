@@ -1132,12 +1132,19 @@ def _footer_float(side: str, inner_html: str, *, width: int = 0, height: int = 1
     )
 
 
-def _footer_flow_row(centre_html: str, right_html: str, mirror_px: int, v_pad: str) -> str:
+def _footer_flow_row(
+    centre_html: str, right_html: str, mirror_px: int, v_pad: str, *, right_px: int = 0
+) -> str:
     """One strip row: centred inline text, right-hand item floated, mirrored spacer on the left.
 
     The spacer is one pixel tall. It shortens only the first line, so that line
     stays centred on the whole strip when there is room, and it costs one pixel
     rather than a blank line when the row has wrapped.
+
+    The text is centred on the strip when the space reserved on the left (logo
+    block plus spacer) equals the space reserved on the right (the floated
+    item). ``right_px`` pins the float's width for an item narrower than the
+    logo block; wider items size themselves and the spacer makes up the rest.
     """
     top, bottom = v_pad.split()
     spacer = _footer_float("left", "&nbsp;", width=mirror_px, height=1) if mirror_px > 0 else ""
@@ -1147,7 +1154,7 @@ def _footer_flow_row(centre_html: str, right_html: str, mirror_px: int, v_pad: s
         f"padding:{top} 16px {bottom} 16px; text-align:center; vertical-align:middle; "
         f"font-family:{AES_STRIP_FONT}; font-size:12px; line-height:16px; "
         f"mso-line-height-rule:at-least;'>"
-        f"{spacer}{_footer_float('right', right_html)}{centre_html}</td>"
+        f"{spacer}{_footer_float('right', right_html, width=right_px)}{centre_html}</td>"
     )
 
 
@@ -6253,11 +6260,16 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             + f"</tr>"
             f"{rule_row}"
             f"<tr>"
-            + _footer_flow_row(summary_line2, right_aura, max(0, side_w - logo_col), "2px 2px")
+            # The AURA chip (78px) is narrower than the logo block, so its float
+            # is widened to match it and no spacer is needed. Using the quip's
+            # width here pushed this row's text 78px right of the other rows.
+            + _footer_flow_row(summary_line2, right_aura, 0, "2px 2px", right_px=max(78, logo_col))
             + f"</tr>"
             f"{rule_row}"
             f"<tr>"
-            + _footer_flow_row(quick_actions, right_copy, max(0, copy_px - logo_col), "0px 2px")
+            # +3: Word draws the copyright line about 3px wider than the font
+            # metrics predict; without it this row sat 1.5px left of the others.
+            + _footer_flow_row(quick_actions, right_copy, max(0, copy_px + 3 - logo_col), "0px 2px")
             + f"</tr>"
             f"</table>"
         )

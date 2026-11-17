@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.6] — 2026-11-17
+
+### Fixed
+
+- Footer: the middle row's text sat 78px to the right of the other two rows (1.8.0). Each row now reserves the same width on its left and right, so all three centre on the strip.
+
 ## [1.8.5] — 2026-11-17
 
 ### Fixed

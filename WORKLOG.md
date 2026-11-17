@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.8.6: footer rows centred on one line
+- `aes/geolocate_headers.py`: `_footer_flow_row` takes `right_px`; row 2 pins the AURA float to the logo block's width with no spacer; row 3's spacer is 3px wider.
+- Why: user screenshot of a real 1.8.4 footer. Row 2 was using the quip's width for its left spacer while its right-hand item was the 78px AURA chip.
+- Verified in Outlook's editor on a discarded draft at 1900px: rows 1, 2 and 3 are each within half a pixel of the strip's centre.
+- That screenshot also confirmed 1.8.2 on a real message: the rescanned mail now shows the plain orange A.
+
 ### 2026-11-17 — 1.8.5: safety net for a failed VBA update
 - `scripts/Import_VBA_ViaUi.ps1`: `Restore-AfterFailure`, `Get-ThisOutlookSessionCodeFromEditor`; the previous code and state file are captured before the send hold; `Get-GuardCode -Failed` now asks per send; `-SelfTest`.
 - Why: user approved a safety net after sends were held for 10 minutes. I had described it as "put the previous working code back"; that is only possible before modules are removed, because afterwards the old modules exist nowhere but the saved project file, which only a restart reloads. The second path (ask per send) is the fallback I chose for that case.

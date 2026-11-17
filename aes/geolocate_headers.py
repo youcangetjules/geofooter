@@ -863,6 +863,26 @@ def _footer_prefix_for_px(text: str, target: int, *, italic: bool) -> str:
     return best
 
 
+def _chip_link_label(code: str, *, inner_px: int = 75) -> str:
+    """Chip code padded with non-breaking spaces so the link fills the chip.
+
+    Outlook only makes a link's own text clickable, so a bare "SL" was a 12px
+    target in a 78px button. The padding is part of the link. It stops short
+    of the 76px interior: text wider than the cell would stretch the chip.
+    """
+    try:
+        from PIL import ImageFont
+
+        font = ImageFont.truetype(r"C:\Windows\Fonts\segoeuib.ttf", 10)
+        space = float(font.getlength("\u00a0")) or 2.7
+        text = float(font.getlength(code))
+    except Exception:
+        space, text = 2.7, 6.5 * len(code)
+    each_side = max(0, int((inner_px - text) / 2 / space))
+    pad = "&nbsp;" * each_side
+    return f"{pad}{code}{pad}"
+
+
 # Quick Action chips on that strip. Default is a white pill with slate text.
 AES_CHIP_BG = "#ffffff"
 AES_CHIP_FG = "#0f1f2a"
@@ -4632,7 +4652,8 @@ class HTMLReportGenerator:
                 f"<a href='{href}' title='{title}' "
                 f"style='color:{fg}; font-family:{AES_STRIP_FONT}; font-size:10px; "
                 f"font-weight:bold; letter-spacing:0; line-height:16px; "
-                f"mso-line-height-rule:exactly; text-decoration:none;'>{code}</a>"
+                f"mso-line-height-rule:exactly; text-decoration:none;'>"
+                f"{_chip_link_label(code)}</a>"
                 "</td></tr></table>"
             )
 

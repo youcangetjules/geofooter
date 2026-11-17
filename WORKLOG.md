@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.7.6: whole footer button clickable
+- `aes/geolocate_headers.py`: `_chip_link_label` pads each chip code inside its link; used by `chip()` in `_build_quick_actions_row_html`.
+- Why: user reported only the text was clickable. Outlook's Word engine makes only a link's own text a target; a cell cannot be a link.
+- Verified in Outlook's editor on a discarded draft by tinting the links: before 11-13px wide, after 71-73px by 16px, button size unchanged. Not verified by actually clicking one.
+- Follow-up: applies to newly scanned mail. The AURA chip was already an image link.
+
 ### 2026-11-17 — 1.7.5: importer clipboard crash
 - `scripts/Import_VBA_ViaUi.ps1`: `Save-ClipboardData` / `Restore-ClipboardData` use `ContainsText/GetText`, `GetFileDropList`, `GetImage` instead of copying every format.
 - Why: the import for 1.7.3/1.7.4 died at 11:15:55 with exit 139 after "Holding sends". Event log: powershell.exe, clr.dll, 0xc0000005. Sends were held for about two minutes until the re-run at 11:16.

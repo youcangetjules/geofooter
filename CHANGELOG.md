@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.7.6] — 2026-11-17
+
+### Fixed
+
+- Footer Quick Action buttons (SL, BA, BB, TS/ST, NT) were only clickable on their two letters, about 12 of 78 pixels. The link text is now padded with non-breaking spaces so it fills the button: 71-73 pixels wide and the full height.
+
 ## [1.7.5] — 2026-11-17
 
 ### Fixed

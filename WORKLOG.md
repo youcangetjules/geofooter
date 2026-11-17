@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.7.13: footer A: orange with a cyber-blue outline
+- `scripts/build_footer_strip_images.py`: `_add_outline` replaces `_add_cyber` and `_tinted`. Rebuilt `assets/icons/aes_mark_footer.png`.
+- Why: user request, third iteration of the A's look today.
+- Verified in Outlook's editor on a discarded draft. The thin slit inside the swoosh is narrower than two outlines, so it fills with blue.
+
 ### 2026-11-17 — 1.7.12: Links row wording
 - `aes/geolocate_headers.py`: `_format_link_summary` appends the sentence after the heuristic result.
 - Why: user request, wording as given.

@@ -82,35 +82,34 @@ def build_letter(letter: str) -> Path:
     return path
 
 
-def _tinted(rgba: Image.Image, colour: tuple[int, int, int], strength: float) -> Image.Image:
-    """The A's silhouette in one flat colour, at a fraction of its opacity."""
-    alpha = rgba.getchannel("A").point(lambda v: round(v * strength))
-    layer = Image.new("RGBA", rgba.size, colour + (0,))
-    layer.putalpha(alpha)
-    return layer
+CYBER_BLUE = (0, 229, 255)
 
 
-def _add_cyber(rgba: Image.Image) -> Image.Image:
-    """Solid orange A with a faint colour fringe: cyan on the left edges, magenta on the right.
+def _add_outline(rgba: Image.Image) -> Image.Image:
+    """Plain orange A with a one-pixel cyber-blue outline.
 
-    The scanlines and glitch slices of the first version were too much. The A
-    itself is untouched; the fringes sit behind it, under one displayed pixel wide.
+    One pixel as displayed, so the line is drawn AES_STRIP_MARK_H-relative in
+    the source. The A is shrunk by that margin first: it touches the edges of
+    its canvas, and an outline drawn outside the canvas would be cut off.
     """
+    from PIL import ImageFilter
+
     w, h = rgba.size
-    unit = h / AES_STRIP_MARK_H  # source pixels per displayed pixel
-    shift = max(1, round(0.8 * unit))
-    out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    out.alpha_composite(_tinted(rgba, (0, 229, 255), 0.55), (0, 0), (shift, 0))
-    magenta = _tinted(rgba, (255, 43, 214), 0.45)
-    out.alpha_composite(magenta.crop((0, 0, w - shift, h)), (shift, 0))
-    out.alpha_composite(rgba)
+    line = max(1, round(h / AES_STRIP_MARK_H))      # source pixels per displayed pixel
+    inner = rgba.resize((w - 2 * line, h - 2 * line), Image.Resampling.LANCZOS)
+    letter = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    letter.paste(inner, (line, line))
+    grown = letter.getchannel("A").filter(ImageFilter.MaxFilter(2 * line + 1))
+    out = Image.new("RGBA", (w, h), CYBER_BLUE + (0,))
+    out.putalpha(grown)
+    out.alpha_composite(letter)
     return out
 
 
 def build_mark() -> Path:
     src = Image.open(ROOT / "assets" / "brand" / "abyitself.ico")
     src.size = max(src.info["sizes"])  # type: ignore[misc]
-    rgba = _add_cyber(src.convert("RGBA"))
+    rgba = _add_outline(src.convert("RGBA"))
     flat = Image.new("RGBA", rgba.size, _rgb(AES_STRIP_BG) + (255,))
     flat.alpha_composite(rgba)
     size = (AES_STRIP_MARK_W * SCALE, AES_STRIP_MARK_H * SCALE)

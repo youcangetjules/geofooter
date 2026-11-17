@@ -877,6 +877,45 @@ _SHARE_NOTE = (
 )
 
 
+_PTR_CACHE: Dict[str, str] = {}
+
+
+def hostname_for_ip(ip: str, hops: Optional[List[Dict[str, Any]]] = None, *, timeout: float = 1.5) -> str:
+    """Host name for *ip*: from the relay hops if one names it, else a reverse-DNS lookup.
+
+    Returns "" when nothing is found. The lookup is one query with a short
+    deadline, so it is cheap enough for a compact scan.
+    """
+    ip = (ip or "").strip()
+    if not ip:
+        return ""
+    blank = {"", "unknown", "n/a", "none", "-", "\u2014"}
+    for hop in hops or []:
+        hop_ip = str(hop.get("ip") or "").split()[0] if hop.get("ip") else ""
+        if hop_ip.lower() != ip.lower():
+            continue
+        for key in ("reverse_dns", "hostname", "host", "name"):
+            value = str(hop.get(key) or "").strip().rstrip(".")
+            if value.lower() not in blank and value.lower() != ip.lower():
+                return value
+    if ip in _PTR_CACHE:
+        return _PTR_CACHE[ip]
+    name = ""
+    try:
+        import dns.resolver
+        import dns.reversename
+
+        resolver = dns.resolver.Resolver()
+        resolver.lifetime = timeout
+        resolver.timeout = timeout
+        answer = resolver.resolve(dns.reversename.from_address(ip), "PTR")
+        name = str(answer[0]).rstrip(".")
+    except Exception:
+        name = ""
+    _PTR_CACHE[ip] = name
+    return name
+
+
 def report_attachment_enabled() -> bool:
     """On unless %LOCALAPPDATA%\\GeoFooter\\aes_report_attachment.json says {"enabled": false}."""
     try:
@@ -3316,6 +3355,10 @@ class HTMLReportGenerator:
         # Routing info: hostnames and ASNs traversed
         routing_info = self._extract_routing_info(headers)
         per_hop_analysis = self._extract_hop_details(headers, lite=lite)
+        if ip_to_display and not (hostname_to_display or "").strip():
+            found_host = hostname_for_ip(str(ip_to_display), per_hop_analysis)
+            if found_host:
+                ip_display = self._format_ip_display(ip_to_display, found_host)
 
         # Header intelligence runs before route risk: a trusted ESP tenant
         # marks its shared-IP hops so they are not scored as a risky route.

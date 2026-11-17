@@ -53,3 +53,49 @@ def test_off_switch(tmp_path, monkeypatch):
     assert gh.report_attachment_enabled() is False
     (cfg / "aes_report_attachment.json").write_text("not json", encoding="utf-8")
     assert gh.report_attachment_enabled() is True
+
+
+# --- host name on the report's IP line ----------------------------------------
+
+def test_hostname_comes_from_the_matching_hop():
+    hops = [
+        {"ip": "198.51.100.7", "reverse_dns": "Unknown", "hostname": "mx1.example.net."},
+        {"ip": "203.0.113.9 (internal)", "reverse_dns": "relay.example.org"},
+    ]
+    assert gh.hostname_for_ip("198.51.100.7", hops) == "mx1.example.net"
+    assert gh.hostname_for_ip("203.0.113.9", hops) == "relay.example.org"
+
+
+def test_hostname_falls_back_to_reverse_dns_and_caches(monkeypatch):
+    import dns.resolver
+
+    calls = []
+
+    class FakeResolver:
+        lifetime = timeout = 0
+
+        def resolve(self, name, kind):
+            calls.append((str(name), kind))
+            return ["host.example.com."]
+
+    monkeypatch.setattr(dns.resolver, "Resolver", FakeResolver)
+    gh._PTR_CACHE.clear()
+    assert gh.hostname_for_ip("192.0.2.44", []) == "host.example.com"
+    assert gh.hostname_for_ip("192.0.2.44", []) == "host.example.com"
+    assert calls == [("44.2.0.192.in-addr.arpa.", "PTR")]
+
+
+def test_no_hostname_is_empty_not_an_error(monkeypatch):
+    import dns.resolver
+
+    class Failing:
+        lifetime = timeout = 0
+
+        def resolve(self, name, kind):
+            raise dns.resolver.NXDOMAIN()
+
+    monkeypatch.setattr(dns.resolver, "Resolver", Failing)
+    gh._PTR_CACHE.clear()
+    assert gh.hostname_for_ip("192.0.2.45", None) == ""
+    assert gh.hostname_for_ip("", None) == ""
+

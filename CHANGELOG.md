@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.7.10] — 2026-11-17
+
+### Changed
+
+- Full scan report, IP row: when the headers gave no host name for the sender IP, AES now takes it from the matching relay hop, or failing that from a reverse-DNS lookup (one query, 1.5s limit, cached). Shown as `IP address (host name)` as before.
+
 ## [1.7.9] — 2026-11-17
 
 ### Added

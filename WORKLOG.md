@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.7.10: host name on the report's IP line
+- `aes/geolocate_headers.py`: `hostname_for_ip`; `_prepare_display_data` fills `ip_display` once the hops are parsed. 3 tests added to `tests/test_report_attachment.py`.
+- Why: user asked for the host name on the IP line whenever available. It already appeared when the Received header named one; it was blank when AES fell back to the geolocated IP.
+- Verified: unit tests and one live lookup (8.8.8.8 -> dns.google, 0.01s). Not checked on a real scanned message.
+- Follow-up: the footer's "Sender IP" line is unchanged, to keep that row short.
+
 ### 2026-11-17 — 1.7.9: full scan report attached to each scanned email
 - `aes/geolocate_headers.py`: `write_shareable_report`, `report_attachment_enabled`, an `AES-Report-Attach` marker in the compact footer payload. `VBA/MSCANModule1.bas`: `AttachAesReport` on both footer-apply paths, `IsAesReportAttachment`. `VBA/MSCANModSenderRules.bas`: quarantine skips AES's own report. `tests/test_report_attachment.py`.
 - Why: user wants the full scan available to people without AES, attached to each email. I offered attach-on-forward and a hidden attachment as alternatives; the user did not pick, so this follows the original instruction.

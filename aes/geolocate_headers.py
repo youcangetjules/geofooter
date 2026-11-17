@@ -6234,8 +6234,10 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         copy_plain = f"\u00a9 2026 Aliniant Labs{_ver_bit}"
         copy_px = _footer_text_px(copy_plain, 11, italic=False)
         right_copy = (
+            # Lowered 2px at the user's request; Word's text-lowering moves it
+            # without changing the row height.
             f"<span style='color:{AES_STRIP_MUTED}; font-family:{AES_STRIP_FONT}; font-size:11px; "
-            f"font-weight:normal; line-height:16px;'>"
+            f"font-weight:normal; line-height:16px; mso-text-raise:-2px;'>"
             f"{_nb_text(html.escape(copy_plain))}</span>"
         )
 

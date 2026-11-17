@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.8.4: copyright line lowered 2px
+- `aes/geolocate_headers.py`: `mso-text-raise:-2px` on the copyright span.
+- Why: user request.
+- Verified in Outlook's editor on a discarded draft: text rows 50-57 before, 52-59 after; buttons span rows 47-63; strip still 68px.
+
 ### 2026-11-17 — 1.8.3: importer retries after a failed update left sends held
 - `scripts/Import_VBA_ViaUi.ps1`: `Invoke-EditCommand` retries a failed command until its deadline; the final `ThisOutlookSession` write retries 3 times; `Import-Module-File` asks for the dialog 4 times.
 - What happened (12:10-12:20): the import for 1.8.2 failed at "Edit > Select All" on the last step, so sends were held with the explanatory message. Three re-runs then failed because that Outlook session would no longer open the editor's Import File dialog at all: no window appeared, while Tools > Options still opened. Cause unknown. Sends were held for about 10 minutes.

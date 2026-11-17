@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.4] — 2026-11-17
+
+### Changed
+
+- Footer copyright line ("(c) 2026 Aliniant Labs v.X") sits 2px lower, which puts its text on the same centre line as the buttons. Strip height is unchanged.
+
 ## [1.8.3] — 2026-11-17
 
 ### Fixed

@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.7.14: footer A moved up 4px
+- `aes/geolocate_headers.py`: mark cell `valign` top, `AES_STRIP_MARK_PAD_TOP` 2.
+- Why: user request, after the 1.7.8 centring.
+- Verified in Outlook's editor on a discarded draft, trying padding 3, 2 and 1: 2 gives exactly 4px up (orange starts at row 3) and leaves all three letters at 4/4. The A is no longer centred: 3px above, 11px below.
+
 ### 2026-11-17 — 1.7.13: footer A: orange with a cyber-blue outline
 - `scripts/build_footer_strip_images.py`: `_add_outline` replaces `_add_cyber` and `_tinted`. Rebuilt `assets/icons/aes_mark_footer.png`.
 - Why: user request, third iteration of the A's look today.

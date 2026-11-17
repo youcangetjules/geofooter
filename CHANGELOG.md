@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.7.16] — 2026-11-17
+
+### Changed
+
+- Footer orange A: plain brand orange, no outline and no effect. Removes the cyber-blue outline from 1.7.13.
+
 ## [1.7.15] — 2026-11-17
 
 ### Added

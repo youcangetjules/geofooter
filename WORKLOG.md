@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.7.16: footer A back to plain orange
+- `scripts/build_footer_strip_images.py`: `build_mark` uses the brand A as is; `_add_outline` removed. Rebuilt `assets/icons/aes_mark_footer.png`.
+- Why: user request. Shimmer (1.5.70), scanlines (1.7.2), fringes (1.7.7) and outline (1.7.13) have each been tried and dropped.
+- Note: the logo is attached to each message when it is scanned, so mail scanned under an earlier version keeps that version's A until it is rescanned. The user's screenshot showed the 1.7.2 scanline A for that reason.
+
 ### 2026-11-17 — 1.7.15: ASPR and RN indicators on the footer
 - `aes/geolocate_headers.py`: `aspr_active`, `readnotify_category`, `_footer_status_cells`, appended in `_build_quick_actions_row_html`. Two tests added to `tests/test_report_attachment.py`.
 - Why: user request; they confirmed the indicators should show their own settings.

@@ -17,8 +17,8 @@ SemVer (MAJOR.MINOR.PATCH) — almost everything is a PATCH:
 from __future__ import annotations
 
 # Semver: MAJOR.MINOR.PATCH
-VERSION = "1.7.16"
-VERSION_TUPLE = (1, 7, 16)
+VERSION = "1.7.17"
+VERSION_TUPLE = (1, 7, 17)
 # Local release / build timestamp for this VERSION (YYYY-MM-DD HH:MM)
 VERSION_STAMP = "2026-11-17 11:48"
 
@@ -34,6 +34,11 @@ COPYRIGHT_YEAR = "2026"
 # Short release notes for the About tab (newest first).
 # Each entry: (version, timestamp, notes)
 RELEASE_NOTES = (
+    (
+        "1.7.17",
+        "2026-11-17 11:48",
+        "Footer A is vertically centred again.",
+    ),
     (
         "1.7.16",
         "2026-11-17 11:48",

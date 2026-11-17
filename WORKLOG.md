@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.7.17: footer A centred again
+- `aes/geolocate_headers.py`: mark cell back to `valign` middle, `AES_STRIP_MARK_PAD_TOP` 1.
+- Why: user request, with the plain-orange change.
+- Verified in Outlook's editor on a discarded draft.
+
 ### 2026-11-17 — 1.7.16: footer A back to plain orange
 - `scripts/build_footer_strip_images.py`: `build_mark` uses the brand A as is; `_add_outline` removed. Rebuilt `assets/icons/aes_mark_footer.png`.
 - Why: user request. Shimmer (1.5.70), scanlines (1.7.2), fringes (1.7.7) and outline (1.7.13) have each been tried and dropped.

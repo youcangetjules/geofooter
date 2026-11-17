@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.7.17] — 2026-11-17
+
+### Changed
+
+- Footer orange A is vertically centred again: 6px above and 5px below, undoing the 4px raise from 1.7.14. The strip is 67px tall and the A, E and S letters sit at 3/4, 4/4 and 4/4.
+
 ## [1.7.16] — 2026-11-17
 
 ### Changed

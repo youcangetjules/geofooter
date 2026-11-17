@@ -598,7 +598,7 @@ AES_STRIP_ROW_H = 20
 # Word gives any extra rowspan height to row 1. Word also adds ~3px of line
 # descent under the inline image, so the cell pads 3px above and none below.
 AES_STRIP_MARK_H = 3 * AES_STRIP_ROW_H + 2 - 6  # 56
-AES_STRIP_MARK_PAD_TOP = 2
+AES_STRIP_MARK_PAD_TOP = 1
 AES_STRIP_MARK_W = 59  # brand A is 256x242
 AES_STRIP_MARK_CELL_W = 12 + AES_STRIP_MARK_W + 4
 # Stacked A/E/S at the left end of the strip rules, a little lighter than the
@@ -6169,11 +6169,11 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         letters_cell = ""
         if mark:
             logo_cell = (
-                f"<td rowspan='5' width='{AES_STRIP_MARK_CELL_W}' valign='top' "
+                f"<td rowspan='5' width='{AES_STRIP_MARK_CELL_W}' valign='middle' "
                 f"bgcolor='{AES_STRIP_BG}' style='width:{AES_STRIP_MARK_CELL_W}px; "
                 f"padding:{AES_STRIP_MARK_PAD_TOP}px 4px 0 12px; "
                 f"background:{AES_STRIP_BG}; "
-                f"vertical-align:top;'>"
+                f"vertical-align:middle;'>"
                 f"{mark}</td>"
             )
             letters_cell = _footer_aes_letters_column()

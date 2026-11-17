@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.7.3] — 2026-11-17
+
+### Fixed
+
+- Inbox catch-up sweep stalled Outlook for 1.2-2.2s (11 logged stalls, 4-12 November). A pass now stops after 300ms and the next pass continues from the following inbox, and it waits for 3s without keyboard or mouse input (at most two skipped passes in a row). Needs the VBA update, which Outlook applies at its next start.
+
 ## [1.7.2] — 2026-11-17
 
 ### Changed

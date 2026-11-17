@@ -48,6 +48,16 @@ Private Const CATCHUP_HEARTBEAT_MS As Long = 90000
 ' inbox is not hammering the UI thread every 90s while idle (BUG-036).
 Private Const CATCHUP_HEARTBEAT_IDLE_MS As Long = 240000
 Private Const CATCHUP_PER_INBOX As Long = 15
+' One pass used to walk every inbox and held Outlook 1.2-2.2s (11 logged stalls
+' in a week). A pass now stops after this long and the next one carries on from
+' the following inbox.
+Private Const CATCHUP_BUDGET_MS As Long = 300
+' Only sweep in a pause: no key or mouse input for this long.
+Private Const CATCHUP_INPUT_IDLE_MS As Long = 3000
+' ...but never skip more than this many passes in a row.
+Private Const CATCHUP_MAX_DEFERRALS As Long = 2
+Private m_CatchUpCursor As Long
+Private m_CatchUpDeferrals As Long
 Private Const CATCHUP_WINDOW_MIN As Long = 90
 Private Const CATCHUP_UNREAD_MAX_MIN As Long = 120
 Private Const CATCHUP_READ_MAX_MIN As Long = 20
@@ -845,7 +855,18 @@ Public Sub CatchUpMissedInboxMail(Optional ByVal force As Boolean = False)
         If m_LastCatchUpAt > 0 Then
             If DateDiff("s", m_LastCatchUpAt, Now) < CATCHUP_MIN_INTERVAL_SEC Then Exit Sub
         End If
+        ' The sweep holds Outlook's thread, so wait for a pause in typing and
+        ' clicking. A message click is itself what often triggers this.
+        If m_CatchUpDeferrals < CATCHUP_MAX_DEFERRALS Then
+            If MSCANIdle.MsSinceLastInput() < CATCHUP_INPUT_IDLE_MS Then
+                m_CatchUpDeferrals = m_CatchUpDeferrals + 1
+                m_CatchUpIdleStreak = 0
+                LaunchCatchUpHeartbeat
+                Exit Sub
+            End If
+        End If
     End If
+    m_CatchUpDeferrals = 0
     m_LastCatchUpAt = Now
 
     If m_MailQueue Is Nothing Then InitializeQueueManager
@@ -877,7 +898,19 @@ Public Sub CatchUpMissedInboxMail(Optional ByVal force As Boolean = False)
     opTick = MSCANHealth.BeginOp()
     opActive = True
 
+    Dim accIndex As Long
+    Dim accTotal As Long
+    Dim startAfter As Long
+    Dim roundDone As Boolean
+    accTotal = Application.Session.Accounts.Count
+    startAfter = m_CatchUpCursor
+    If force Or startAfter >= accTotal Then startAfter = 0
+    roundDone = True
+    accIndex = 0
+
     For Each acc In Application.Session.Accounts
+        accIndex = accIndex + 1
+        If accIndex <= startAfter Then GoTo NextCatchUpAccount
         On Error Resume Next
         Set inboxFolder = Nothing
         If Not MSCANSettings.IsAccountScanEnabled(acc) Then
@@ -953,20 +986,34 @@ NextCatchUpItem:
             On Error GoTo EH
         Loop
 
+        ' Out of time for this pass: carry on from the next inbox on the next one.
+        If Not force And accIndex < accTotal Then
+            If MSCANHealth.ElapsedSince(opTick) >= CATCHUP_BUDGET_MS Then
+                m_CatchUpCursor = accIndex
+                roundDone = False
+                Exit For
+            End If
+        End If
+
 NextCatchUpAccount:
         Err.Clear
         On Error GoTo EH
     Next acc
+    If roundDone Then m_CatchUpCursor = 0
 
     m_LastCatchUpResult = "inboxes=" & scannedInboxes & " queued=" & queued & _
         " already_scanned=" & skippedScanned & " too_old=" & skippedOld & _
         " accounts_off=" & skippedAccount
+    If Not roundDone Then m_LastCatchUpResult = m_LastCatchUpResult & " (round continues next pass)"
     MSCANModLogging.WriteLog "CatchUpMissedInboxMail: " & m_LastCatchUpResult
 
     m_LastCatchUpQueued = queued
     If queued > 0 Then
         m_CatchUpIdleStreak = 0
         If Not m_IsProcessing And Not IsStartupQuiet() Then ScheduleDeferredProcessQueue
+    ElseIf Not roundDone Then
+        ' More inboxes to check: come back on the short heartbeat.
+        m_CatchUpIdleStreak = 0
     Else
         m_CatchUpIdleStreak = m_CatchUpIdleStreak + 1
     End If

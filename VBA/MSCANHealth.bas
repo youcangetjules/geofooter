@@ -118,6 +118,11 @@ Public Sub EndOp(ByVal opName As String, ByVal startTick As Long)
     MaybeSnapshot
 End Sub
 
+' For callers that budget their own time on the Outlook thread.
+Public Function ElapsedSince(ByVal startTick As Long) As Long
+    ElapsedSince = ElapsedMs(startTick)
+End Function
+
 ' GetTickCount wraps roughly every 49 days; treat a wrap as no elapsed time
 ' rather than reporting a negative or absurd duration.
 Private Function ElapsedMs(ByVal startTick As Long) As Long

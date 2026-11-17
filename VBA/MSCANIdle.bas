@@ -184,7 +184,8 @@ End Function
 ' Milliseconds since the last keyboard or mouse input anywhere in the session.
 ' GetTickCount wraps every ~49.7 days and both values are unsigned DWORDs held
 ' in signed Longs, so the subtraction is done in Double.
-Private Function MsSinceLastInput() As Double
+' Public: the catch-up sweep waits for a pause in input too.
+Public Function MsSinceLastInput() As Double
     On Error Resume Next
     Const TWO_32 As Double = 4294967296#
     Dim lii As LASTINPUTINFO

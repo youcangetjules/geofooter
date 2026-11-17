@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.7.3: catch-up sweep time budget and idle gate
+- `VBA/MSCANModQueueManager.bas`: `CATCHUP_BUDGET_MS`, `CATCHUP_INPUT_IDLE_MS`, `CATCHUP_MAX_DEFERRALS`, a cursor so a pass resumes at the next inbox, short heartbeat while a round is unfinished. `VBA/MSCANIdle.bas`: `MsSinceLastInput` made public. `VBA/MSCANHealth.bas`: `ElapsedSince`.
+- Why: review of Outlook stalls; the sweep walked all five scanned inboxes in one go every 1.5-4 minutes and only deferred while a message was being composed.
+- Verified: imported into Outlook, compiles, AES starts. NOT observed running: scanning was OFF, so no sweep ran. Watch `VBA_Log.txt` for "(round continues next pass)" and for `UI stall: CatchUpMissedInboxMail` no longer appearing.
+- Follow-up: a full round of inboxes can now take several passes (up to ~7 minutes); read mail older than 20 minutes is still skipped, as before.
+
 ### 2026-11-17 — 1.7.2: cyber-style effect on the footer A
 - `scripts/build_footer_strip_images.py`: `_add_cyber` replaces `_add_shimmer`; sizes are set in displayed pixels so the effect survives the 2x downscale. Rebuilt `assets/icons/aes_mark_footer.png` only.
 - Why: user asked for the A's effect to look "slightly more cyber".

@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.2] — 2026-11-17
+
+### Fixed
+
+- A rescanned message kept whatever A logo it was first given, so mail scanned during the striped or outlined versions still showed those. The scanner now names the logo file after its content (`aes_mark_footer_<hash>.png`), and VBA replaces a message's logo when the name differs. An unchanged logo is still left alone, so rescans do not re-add attachments each time (BUG-030). Needs the VBA update.
+
 ## [1.8.1] — 2026-11-17
 
 ### Fixed

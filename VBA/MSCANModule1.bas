@@ -3357,6 +3357,21 @@ End Function
 
 ' Inline the footer A. Same cid pattern as the status strip, separate file prefix
 ' so a banner refresh does not delete it.
+' True when the message already carries a mark image with exactly this file name.
+Private Function AesMarkFileAttached(ByVal mail As Object, ByVal wantName As String) As Boolean
+    Dim i As Long
+    On Error Resume Next
+    AesMarkFileAttached = False
+    If mail Is Nothing Or Len(wantName) = 0 Then Exit Function
+    For i = 1 To mail.Attachments.Count
+        If StrComp(CStr(mail.Attachments.Item(i).FileName), wantName, vbTextCompare) = 0 Then
+            AesMarkFileAttached = True
+            Exit Function
+        End If
+        Err.Clear
+    Next i
+End Function
+
 Private Function AesCidAttached(ByVal mail As Object, ByVal wantCid As String) As Boolean
     Const PR_ATTACH_CONTENT_ID As String = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
     Dim i As Long
@@ -3436,7 +3451,11 @@ Private Function EmbedAesFooterMark(ByVal mail As Object, ByVal footerHtml As St
     ' Rescans used to delete and re-add every aes_mark_* part on each apply.
     ' That dirties the IMAP item before CommitMailHtml, races the store, and
     ' leaves unsaved half-written HTML that Outlook shows as text-only (BUG-030).
-    needAttach = (Not AesCidAttached(mail, AES_MARK_CID)) Or (Not AesInlineCidsAttached(mail, footerHtml))
+    ' ...but a mark whose file name differs is an older design and is replaced.
+    ' The scanner names the file after its content, so this happens once per
+    ' redesign, not on every rescan.
+    needAttach = (Not AesCidAttached(mail, AES_MARK_CID)) Or (Not AesInlineCidsAttached(mail, footerHtml)) _
+                 Or (Not AesMarkFileAttached(mail, fso.GetFileName(pngPath)))
     If Not needAttach Then
         EmbedAesFooterMark = footerHtml
         Exit Function
@@ -3450,7 +3469,7 @@ Private Function EmbedAesFooterMark(ByVal mail As Object, ByVal footerHtml As St
     Next i
 
     stage = "Attachments.Add"
-    Set att = mail.Attachments.Add(pngPath, olByValue, 0, "aes_mark_footer.png")
+    Set att = mail.Attachments.Add(pngPath, olByValue, 0, fso.GetFileName(pngPath))
     stage = "set Content-ID"
     att.PropertyAccessor.SetProperty PR_ATTACH_CONTENT_ID, AES_MARK_CID
     On Error Resume Next

@@ -625,6 +625,24 @@ AES_FOOTER_GAP_HTML = (
 )
 
 
+def _versioned_mark_path(source: Path) -> Path:
+    """Copy of the mark named after its content, e.g. aes_mark_footer_1a2b3c4d.png.
+
+    VBA keeps a message's existing mark on a rescan unless the file name differs
+    (re-adding attachments every time raced IMAP stores, BUG-030). Naming the
+    file by its content means a redesigned mark replaces the old one once, and
+    an unchanged mark is left alone. The name keeps the aes_mark_ prefix VBA
+    uses to recognise AES's own attachments.
+    """
+    digest = hashlib.sha1(source.read_bytes()).hexdigest()[:8]
+    folder = Path(os.environ.get("LOCALAPPDATA", "")) / "GeoFooter" / "cache"
+    target = folder / f"aes_mark_footer_{digest}.png"
+    if not target.is_file():
+        folder.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(source.read_bytes())
+    return target
+
+
 def _footer_mark_html() -> str:
     """Orange A on the left. Outlook paints it from the attached cid image."""
     try:
@@ -635,6 +653,10 @@ def _footer_mark_html() -> str:
         return ""
     if not path.is_file():
         return ""
+    try:
+        path = _versioned_mark_path(path)
+    except Exception:
+        pass  # the plain file still works; a rescan just keeps the older mark
     w, h = AES_STRIP_MARK_W, AES_STRIP_MARK_H
     return (
         f"<!-- AES-Mark-Img: {path} -->"

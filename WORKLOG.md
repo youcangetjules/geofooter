@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.8.2: rescans replace an outdated footer logo
+- `aes/geolocate_headers.py`: `_versioned_mark_path`, used by `_footer_mark_html`. `VBA/MSCANModule1.bas`: `AesMarkFileAttached`; `EmbedAesFooterMark` re-attaches when the file name differs and attaches under the real file name. 2 tests.
+- Why: user screenshot of a 1.8.0 footer still showing the 1.7.2 striped A. VBA only checked that an attachment with the mark's Content-ID existed.
+- Verified: unit tests; VBA imported, compiles, AES starts with 5 watchers. NOT verified: a rescan of that message actually swapping the logo.
+- Follow-up: a message keeps its old logo until it is rescanned.
+
 ### 2026-11-17 — 1.8.1: line through the footer buttons
 - `aes/geolocate_headers.py`: `chip()` drops the border and the 1px text raise.
 - Why: user screenshot of a real 1.8.0 footer. The same line was in my own 1.8.0 renders; I did not zoom in on the buttons before committing.

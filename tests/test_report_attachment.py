@@ -178,3 +178,28 @@ def test_strip_has_no_fixed_width_content(monkeypatch):
         if code != "SL":                                          # SL needs a links report
             assert f"{code}&nbsp;" in rows
     assert "&#8203;" in rows                                      # break points between chips
+
+
+# --- footer mark named after its content --------------------------------------
+
+def test_mark_file_name_follows_its_content(tmp_path, monkeypatch):
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    first = tmp_path / "a.png"
+    first.write_bytes(b"design one")
+    one = gh._versioned_mark_path(first)
+    assert one.name.startswith("aes_mark_footer_") and one.suffix == ".png"
+    assert one.read_bytes() == b"design one"
+    assert gh._versioned_mark_path(first) == one                 # unchanged image, same name
+    first.write_bytes(b"design two")
+    two = gh._versioned_mark_path(first)
+    assert two != one and two.read_bytes() == b"design two"      # redesign, new name
+
+
+def test_footer_marker_points_at_the_versioned_file(tmp_path, monkeypatch):
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    out = gh._footer_mark_html()
+    assert "cid:aesfootermark" in out
+    import re
+    path = re.search(r"AES-Mark-Img: (.*?) -->", out).group(1)
+    assert Path(path).name.startswith("aes_mark_footer_") and Path(path).is_file()
+

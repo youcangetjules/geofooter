@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.7.11] — 2026-11-17
+
+### Added
+
+- Full scan report: a **Route Integrity** block above the Route Table. It lists each BGP or tromboning finding with the hops involved (for example "Hops 1 -> 2 -> 3: Tromboning"), strongest first, or states that none was found and how much was checked. Tromboning now marks the hop where the detour leaves and the hop where it returns, not only the far one.
+
 ## [1.7.10] — 2026-11-17
 
 ### Changed

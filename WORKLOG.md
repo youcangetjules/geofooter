@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.7.11: BGP and tromboning evidence identified by hop
+- `aes/route_checks.py`: findings carry `kind` and `hops`; tromboning flags all three hops; `integrity_summary`. `aes/geolocate_headers.py`: `_route_integrity_html`, summary passed through display data. `tests/test_route_integrity.py` (4 tests).
+- Why: user asked that any BGP spoofing or tromboning evidence be identified. The checks and scoring existed; the evidence was only a small flag inside one table cell.
+- Limits stated in the block itself: a Basic scan checks BGP on the sending exit hop only (Full checks up to six), and "clean" is only claimed when at least three relays were located or a BGP check ran.
+- Verified: unit tests with synthetic hops and a stubbed BGP lookup. Not seen on a real scanned message.
+
 ### 2026-11-17 — 1.7.10: host name on the report's IP line
 - `aes/geolocate_headers.py`: `hostname_for_ip`; `_prepare_display_data` fills `ip_display` once the hops are parsed. 3 tests added to `tests/test_report_attachment.py`.
 - Why: user asked for the host name on the IP line whenever available. It already appeared when the Received header named one; it was blank when AES fell back to the geolocated IP.

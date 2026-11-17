@@ -99,7 +99,13 @@ def check_tromboning(hops: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             )
             if 1 <= far["hop"] <= len(hops):
                 hops[far["hop"] - 1].setdefault("route_flags", []).append(text)
+            for stop, role in ((a, "detour leaves the region after this hop"),
+                               (c, "detour returns to the region at this hop")):
+                if stop["hop"] != far["hop"] and 1 <= stop["hop"] <= len(hops):
+                    hops[stop["hop"] - 1].setdefault("route_flags", []).append(role)
             findings.append({
+                "kind": "tromboning",
+                "hops": sorted({a["hop"], far["hop"], c["hop"]}),
                 "label": f"Mail path tromboning: {text}",
                 "points": 5,
                 "note": (
@@ -197,6 +203,7 @@ def check_bgp(hops: List[Dict[str, Any]], *, lite: bool) -> List[Dict[str, Any]]
     if lite:
         targets = [h for h in targets if h.get("exit_hop")][:1]
     for hop in targets[:6]:
+        hop_no = next((n for n, h in enumerate(hops, 1) if h is hop), 0)
         ip = _public_ip(hop) or ""
         info = bgp_origin_info(ip, want_peers=not lite)
         if not info:
@@ -213,6 +220,8 @@ def check_bgp(hops: List[Dict[str, Any]], *, lite: bool) -> List[Dict[str, Any]]
         if invalid:
             lines.append(f"RPKI INVALID for AS{', AS'.join(invalid)}")
             findings.append({
+                "kind": "bgp-rpki-invalid",
+                "hops": [hop_no],
                 "label": f"BGP: {info['prefix']} ({ip}) announced by AS{invalid[0]} "
                          "which RPKI does not authorise",
                 "points": 20,
@@ -227,6 +236,8 @@ def check_bgp(hops: List[Dict[str, Any]], *, lite: bool) -> List[Dict[str, Any]]
         if len(origins) > 1:
             lines.append(f"MOAS: {len(origins)} origin ASes")
             findings.append({
+                "kind": "bgp-multiple-origins",
+                "hops": [hop_no],
                 "label": f"BGP: {info['prefix']} ({ip}) has {len(origins)} origin ASes "
                          f"({', '.join('AS' + a for a in origins)})",
                 "points": 5,
@@ -247,6 +258,8 @@ def check_bgp(hops: List[Dict[str, Any]], *, lite: bool) -> List[Dict[str, Any]]
             if origins and asn not in origins:
                 lines.append(f"{source} says AS{asn}, not announcing")
                 findings.append({
+                    "kind": "bgp-origin-mismatch",
+                    "hops": [hop_no],
                     "label": f"BGP: {ip} expected AS{asn} ({source}) but announced by "
                              f"AS{', AS'.join(origins)}",
                     "points": 0,
@@ -259,6 +272,29 @@ def check_bgp(hops: List[Dict[str, Any]], *, lite: bool) -> List[Dict[str, Any]]
         if info["upstreams"]:
             hop["bgp_peers"] = [f"{u} (upstream)" for u in info["upstreams"]]
     return findings
+
+
+def integrity_summary(hops: List[Dict[str, Any]], findings: List[Dict[str, Any]],
+                      *, lite: bool) -> Dict[str, Any]:
+    """What the route checks covered and what they found, for the report.
+
+    ``items`` are the findings that name a hop, strongest first. ``clean`` is
+    only True when something was actually checked: no evidence because nothing
+    could be located is not a clean result.
+    """
+    rank = {"bgp-rpki-invalid": 0, "tromboning": 1, "bgp-multiple-origins": 2,
+            "bgp-origin-mismatch": 3}
+    items = sorted((f for f in findings if f.get("kind")),
+                   key=lambda f: rank.get(str(f.get("kind")), 9))
+    located = len(_stops(hops))
+    bgp_checked = sum(1 for h in hops if h.get("bgp"))
+    return {
+        "items": items,
+        "located": located,
+        "bgp_checked": bgp_checked,
+        "lite": bool(lite),
+        "clean": not items and (located >= 3 or bgp_checked > 0),
+    }
 
 
 def check_routing(hops: List[Dict[str, Any]], *, lite: bool) -> List[Dict[str, Any]]:

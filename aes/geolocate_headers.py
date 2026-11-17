@@ -877,6 +877,51 @@ _SHARE_NOTE = (
 )
 
 
+_ROUTE_KIND_LABELS = {
+    "bgp-rpki-invalid": "BGP hijack or route leak suspected",
+    "tromboning": "Tromboning (path leaves the region and returns)",
+    "bgp-multiple-origins": "BGP: several networks announce this address block",
+    "bgp-origin-mismatch": "BGP: announced by a different network than expected",
+}
+
+
+def _route_integrity_html(summary: Dict[str, Any]) -> str:
+    """Report block above the Route Table: which hops show BGP or tromboning evidence."""
+    if not summary:
+        return ""
+    items = summary.get("items") or []
+    located = int(summary.get("located") or 0)
+    bgp_checked = int(summary.get("bgp_checked") or 0)
+    covered = (f"Geography compared across {located} located relay(s); "
+               f"BGP origin checked on {bgp_checked} hop(s).")
+    if summary.get("lite"):
+        covered += " A Basic scan checks BGP on the sending exit hop only; a Full Scan checks up to six."
+    head = "<div style='font-weight:bold; font-size:11px; margin:8px 0 2px 0;'>Route Integrity</div>"
+    box = "margin:0 0 6px 0; padding:5px 8px; font-size:11px; border-radius:3px;"
+    if not items:
+        if summary.get("clean"):
+            return (head + f"<div style='{box} background:#e8f5e9; border:1px solid #b7dfb9; color:#1b5e20;'>"
+                    f"No BGP hijack or tromboning evidence found. {html.escape(covered)}</div>")
+        return (head + f"<div style='{box} background:#f3f5f6; border:1px solid #d5dee3; color:#444;'>"
+                f"Not enough route data to judge. {html.escape(covered)}</div>")
+    serious = any(str(i.get("kind")) == "bgp-rpki-invalid" for i in items)
+    colours = ("background:#fdecea; border:1px solid #f5b7b1; color:#7a1c13;" if serious
+               else "background:#fff8e1; border:1px solid #f0d98a; color:#5f4700;")
+    rows = ""
+    for item in items:
+        hops = [int(h) for h in item.get("hops") or [] if int(h or 0) > 0]
+        where = ("Hops " + " \u2192 ".join(str(h) for h in hops)) if len(hops) > 1 else (
+            f"Hop {hops[0]}" if hops else "Route")
+        kind = _ROUTE_KIND_LABELS.get(str(item.get("kind")), "Route finding")
+        note = html.escape(str(item.get("note") or ""))
+        rows += (f"<div style='margin:2px 0;'>&#9888; <b>{html.escape(where)}: {html.escape(kind)}</b><br>"
+                 f"{html.escape(str(item.get('label') or ''))}"
+                 + (f"<br><span style='font-size:10px;'>{note}</span>" if note else "") + "</div>")
+    return (head + f"<div style='{box} {colours}'>{rows}"
+            f"<div style='margin-top:3px; font-size:10px;'>{html.escape(covered)} "
+            f"Affected hops are marked &#9888; in the table below.</div></div>")
+
+
 _PTR_CACHE: Dict[str, str] = {}
 
 
@@ -3404,6 +3449,8 @@ class HTMLReportGenerator:
             security_assessment = SecurityAssessor().apply_extra_factors(
                 security_assessment, "Timestamps", time_findings
             )
+        route_findings: List[Dict[str, Any]] = []
+        route_integrity: Dict[str, Any] = {}
         if route_checks is not None and per_hop_analysis:
             try:
                 route_findings = route_checks.check_routing(per_hop_analysis, lite=lite)
@@ -3413,6 +3460,12 @@ class HTMLReportGenerator:
             security_assessment = SecurityAssessor().apply_extra_factors(
                 security_assessment, "Routing / BGP", route_findings
             )
+            try:
+                route_integrity = route_checks.integrity_summary(
+                    per_hop_analysis, route_findings, lite=lite
+                )
+            except Exception as exc:
+                self.logger.warning("Route integrity summary failed: %s", exc)
             # BGP network-info often has a better prefix than RDAP for M365 IPv6.
             for hop in per_hop_analysis:
                 bgp = hop.get("bgp") or {}
@@ -3736,6 +3789,7 @@ class HTMLReportGenerator:
             "factors": security_assessment.factors,
             "risk_components": security_assessment.components,
             "per_hop_analysis": per_hop_analysis,
+            "route_integrity": route_integrity,
             "guri": guri,
             "attachment_count": attachment_count,
             "attachment_ok": attachment_ok,
@@ -7045,6 +7099,7 @@ Sender: {sender} | Domain: {domain} | Created: {created}</div>
         # Per-Hop Analysis Table
         per_hop_html = ""
         if data.get('per_hop_analysis'):
+            per_hop_html += _route_integrity_html(data.get('route_integrity') or {})
             per_hop_html += "<div style='font-weight:bold; font-size:11px; margin:8px 0 2px 0;'>Route Table</div>"
             # table-layout:fixed + per-column widths keep long hostnames /
             # reverse-DNS strings wrapping inside the table instead of

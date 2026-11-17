@@ -285,7 +285,9 @@ def handle_restore_html(params: dict, logger: logging.Logger) -> int:
     try:
         import win32com.client  # type: ignore
 
-        outlook = win32com.client.Dispatch("Outlook.Application")
+        from geofooter.outlook_com import attach_outlook
+
+        outlook = attach_outlook()
         ns = outlook.GetNamespace("MAPI")
         if store_id:
             item = ns.GetItemFromID(entry_id, store_id)
@@ -749,7 +751,9 @@ def _outlook_mail_item():
     """Open inspector message, or the explorer selection."""
     import win32com.client  # type: ignore
 
-    outlook = win32com.client.Dispatch("Outlook.Application")
+    from geofooter.outlook_com import attach_outlook
+
+    outlook = attach_outlook()
     item = None
     insp = outlook.ActiveInspector
     if insp is not None:
@@ -939,7 +943,9 @@ def _refresh_open_mail_action_buttons(
         import win32com.client  # type: ignore
         import re as _re
 
-        outlook = win32com.client.Dispatch("Outlook.Application")
+        from geofooter.outlook_com import attach_outlook
+
+        outlook = attach_outlook()
         item = None
         insp = outlook.ActiveInspector
         if insp is not None:

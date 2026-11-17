@@ -163,6 +163,32 @@ public static class VbeUi {
     if (failure != null) throw new Exception(menu + " > " + item + ": " + failure.Message);
   }
 
+  // Runs a command that may take a while (Compile). Returns the editor message box
+  // it raised, or Zero once the command has finished without one.
+  public static IntPtr InvokeWait(IntPtr vbe, string menu, string item, int pid, string titlePrefix, int ms) {
+    if (!MenuEnabled(vbe, menu, item)) throw new Exception("Menu item is disabled: " + menu + " > " + item);
+    Exception failure = null;
+    var t = new Thread(() => {
+      try { MenuItem(vbe, menu, item).accDoDefaultAction(0); }
+      catch (Exception ex) { failure = ex; }
+    });
+    t.IsBackground = true;
+    t.SetApartmentState(ApartmentState.STA);
+    t.Start();
+    var until = DateTime.UtcNow.AddMilliseconds(ms);
+    while (DateTime.UtcNow < until) {
+      var h = FindDialog(pid, titlePrefix);
+      if (h != IntPtr.Zero) return h;
+      if (!t.IsAlive) {
+        if (failure != null) throw new Exception(menu + " > " + item + ": " + failure.Message);
+        Thread.Sleep(300);
+        return FindDialog(pid, titlePrefix);
+      }
+      Thread.Sleep(50);
+    }
+    throw new Exception(menu + " > " + item + " did not finish in " + (ms / 1000) + " seconds");
+  }
+
   // --- dialogs ---------------------------------------------------------------
   public static IntPtr FindDialog(int pid, string titlePrefix) {
     foreach (var h in Tops(pid))
@@ -313,7 +339,8 @@ function Get-ModuleFiles {
     param([string]$VbaDir)
     $files = @()
     foreach ($line in Get-Content (Join-Path $VbaDir "IMPORT.txt")) {
-        if ($line -match '^\s*VBA\\(MSCAN[^\s\\]+\.(?:bas|cls))\s*$') { $files += $Matches[1] }
+        # A file listed twice would import twice, as MSCANPaths and MSCANPaths1.
+        if ($line -match '^\s*VBA\\(MSCAN[^\s\\]+\.(?:bas|cls))\s*$' -and $files -notcontains $Matches[1]) { $files += $Matches[1] }
     }
     if (-not $files) { throw "No VBA\MSCAN* modules listed in IMPORT.txt" }
     return $files
@@ -431,18 +458,61 @@ function Get-ThisOutlookSessionCode {
     return (($lines[$i..($lines.Length - 1)]) -join "`r`n") + "`r`n"
 }
 
-function Sync-ThisOutlookSession {
-    param([IntPtr]$Vbe, [int]$OutlookPid, [string]$Path)
-    $code = Get-ThisOutlookSessionCode -Path $Path
-    $saved = $null
-    try { $saved = Get-Clipboard -Raw -ErrorAction Stop } catch {}
+# Every format on the clipboard (text, images, copied files), so it can be put back.
+function Save-ClipboardData {
+    try {
+        Add-Type -AssemblyName System.Windows.Forms
+        $data = [Windows.Forms.Clipboard]::GetDataObject()
+        if (-not $data) { return $null }
+        $copy = New-Object Windows.Forms.DataObject
+        $kept = 0
+        foreach ($format in $data.GetFormats($false)) {
+            try {
+                $value = $data.GetData($format, $false)
+                if ($null -ne $value) { $copy.SetData($format, $false, $value); $kept++ }
+            } catch {}
+        }
+        if ($kept) { return $copy }
+    } catch {}
+    return $null
+}
+
+function Restore-ClipboardData {
+    param($Data)
+    try {
+        if ($Data) { [Windows.Forms.Clipboard]::SetDataObject($Data, $true) }
+        else { [Windows.Forms.Clipboard]::Clear() }
+    } catch {}
+}
+
+# While modules are being replaced, the real ThisOutlookSession would call code
+# that is not there. This stand-in calls nothing and holds any send, so mail cannot
+# leave unclassified. -Failed adds the explanation once no automation is running:
+# a MsgBox during the import would block the editor and fail it.
+function Get-GuardCode {
+    param([switch]$Failed)
+    $say = ""
+    if ($Failed) {
+        $say = "    MsgBox ""The AES update did not finish, so this send was cancelled."" & vbCrLf & vbCrLf & _`r`n" +
+               "           ""Close and reopen Outlook, then send again."", vbExclamation, ""AES""`r`n"
+    }
+    return "Option Explicit`r`n" +
+        "' AES modules are being replaced (scripts\Import_VBA_ViaUi.ps1). No module calls here.`r`n" +
+        "Private Sub Application_ItemSend(ByVal Item As Object, Cancel As Boolean)`r`n" +
+        "    Cancel = True`r`n" + $say +
+        "End Sub`r`n"
+}
+
+function Set-ThisOutlookSessionCode {
+    param([IntPtr]$Vbe, [string]$Code)
+    $saved = Save-ClipboardData
     try {
         [VbeUi]::SelectNode($Vbe, "ThisOutlookSession")
         [VbeUi]::Invoke($Vbe, "View", "Code")
         Start-Sleep -Milliseconds 500
         [VbeUi]::Invoke($Vbe, "Edit", "Select All")
         Start-Sleep -Milliseconds 200
-        Set-Clipboard -Value $code
+        Set-Clipboard -Value $Code
         Start-Sleep -Milliseconds 150
         [VbeUi]::Invoke($Vbe, "Edit", "Paste")
         Start-Sleep -Milliseconds 500
@@ -453,11 +523,11 @@ function Sync-ThisOutlookSession {
         [VbeUi]::Invoke($Vbe, "Edit", "Copy")
         Start-Sleep -Milliseconds 300
         $back = Get-Clipboard -Raw
-        if (($back -replace '\s+', '') -ne ($code -replace '\s+', '')) {
+        if (($back -replace '\s+', '') -ne ($Code -replace '\s+', '')) {
             throw "ThisOutlookSession code did not match after paste"
         }
     } finally {
-        if ($saved) { try { Set-Clipboard -Value $saved } catch {} }
+        Restore-ClipboardData $saved
     }
 }
 
@@ -528,10 +598,19 @@ function Show-QuarantineOncePerDay {
     Show-Result -Text (Get-NortonAdvice) -Icon 48
 }
 
+# Queued, then shown once the import lock is released: a popup left open must
+# not make the next run report "already running".
+$script:PendingPopup = $null
 function Show-Result {
     param([string]$Text, [int]$Icon)
-    if (-not $Notify) { return }
-    try { [void](New-Object -ComObject WScript.Shell).Popup($Text, 0, "Aliniant AES - VBA update", $Icon) } catch {}
+    if ($Notify) { $script:PendingPopup = @{ Text = $Text; Icon = $Icon } }
+}
+
+function Show-PendingPopup {
+    $p = $script:PendingPopup
+    $script:PendingPopup = $null
+    if (-not $p) { return }
+    try { [void](New-Object -ComObject WScript.Shell).Popup($p.Text, 0, "Aliniant AES - VBA update", $p.Icon) } catch {}
 }
 
 # A macro running (AES startup, say) greys out the editor's menus until it ends.
@@ -547,10 +626,22 @@ function Wait-EditorIdle {
 
 # --- main ---
 $mutex = New-Object Threading.Mutex($false, "Local\GeoFooter_VbaImport")
-if (-not $mutex.WaitOne(0)) { Log "Another VBA import is already running."; exit 1 }
+$haveLock = $false
+try { $haveLock = $mutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $haveLock = $true }
+if (-not $haveLock) {
+    Log "Another VBA import is already running."
+    # Someone pressed Repair VBA or ran the .bat: tell them. The startup check stays quiet.
+    if (-not $IfStale) {
+        Show-Result -Text "An AES VBA update is already running. You will get a message when it finishes." -Icon 64
+        Show-PendingPopup
+    }
+    exit 1
+}
 
 $tempDir = $null
 $exitCode = 1
+$guardOn = $false
+$vbe = [IntPtr]::Zero
 try {
     $rootPath = Resolve-InstallRoot -Hint $Root
     $vbaDir = Join-Path $rootPath "VBA"
@@ -578,6 +669,18 @@ try {
     }
 
     Log "=== VBA import start: root=$rootPath modules=$($files.Count)"
+    $statePath = Join-Path $env:LOCALAPPDATA "GeoFooter\vba_sync_state.json"
+    $fingerprint = Get-VbaFingerprint -VbaDir $vbaDir -Files (@($files) + "ThisOutlookSession.cls")
+    $realCode = Get-ThisOutlookSessionCode -Path $tos
+    # If this run fails and the half-built project gets saved, the next start must
+    # not see the old fingerprint and call it current.
+    if (Test-Path $statePath) {
+        try {
+            $old = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json
+            @{ fingerprint = "import-in-progress"; version = $old.version; imported_at = $old.imported_at; compiled = $false } |
+                ConvertTo-Json | Set-Content -LiteralPath $statePath -Encoding ASCII
+        } catch { Remove-Item -LiteralPath $statePath -Force -ErrorAction SilentlyContinue }
+    }
     $ol = Get-InteractiveOutlook
     $olPid = [int]$ol.Id
     $vbe = Open-Editor -OutlookPid $olPid
@@ -589,6 +692,9 @@ try {
     New-Item -ItemType Directory -Force -Path $tempDir | Out-Null
 
     [VbeUi]::ExpandTree($vbe)
+    Log "Holding sends while modules are replaced"
+    Set-ThisOutlookSessionCode -Vbe $vbe -Code (Get-GuardCode)
+    $guardOn = $true
     $stale = @("UserForm1", "frmClassification", "MSCANSecurityRatingForm", "ThisOutlookSession1", "ThisOutlookSession2")
     $wanted = @($files | ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) })
     $existing = @([VbeUi]::TreeNames($vbe) | Where-Object { $_ -like "MSCAN*" -or $stale -contains $_ })
@@ -611,13 +717,17 @@ try {
     Log "All $($wanted.Count) modules are in the project"
 
     Log "Writing built-in ThisOutlookSession"
-    Sync-ThisOutlookSession -Vbe $vbe -OutlookPid $olPid -Path $tos
+    Set-ThisOutlookSessionCode -Vbe $vbe -Code $realCode
+    $guardOn = $false
 
     Log "Compiling"
     $compileError = ""
     if ([VbeUi]::MenuEnabled($vbe, "Debug", "Compile")) {
-        [VbeUi]::Invoke($vbe, "Debug", "Compile")
-        $compileError = Read-EditorMessage -OutlookPid $olPid -WaitMs 6000
+        # Waits for the compile itself, however long: a fixed wait reported a slow
+        # error as "Compile OK".
+        if ([VbeUi]::InvokeWait($vbe, "Debug", "Compile", $olPid, "Microsoft Visual Basic", 180000) -ne [IntPtr]::Zero) {
+            $compileError = Read-EditorMessage -OutlookPid $olPid
+        }
         if ($compileError) { Log "COMPILE ERROR: $compileError" } else { Log "Compile OK" }
     }
 
@@ -649,11 +759,11 @@ try {
     }
 
     @{
-        fingerprint = Get-VbaFingerprint -VbaDir $vbaDir -Files (@($files) + "ThisOutlookSession.cls")
+        fingerprint = $fingerprint
         version     = (Get-Content (Join-Path $rootPath "VERSION") -TotalCount 1).Trim()
         imported_at = (Get-Date).ToString("s")
         compiled    = (-not $compileError)
-    } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $env:LOCALAPPDATA "GeoFooter\vba_sync_state.json") -Encoding ASCII
+    } | ConvertTo-Json | Set-Content -LiteralPath $statePath -Encoding ASCII
 
     if (-not $KeepEditor) {
         try { [VbeUi]::Invoke($vbe, "File", "Close and Return") } catch { Log "Editor left open: $($_.Exception.Message)" }
@@ -674,10 +784,16 @@ try {
     }
 } catch {
     Log "VBA import FAILED: $($_.Exception.Message)"
-    Show-Result -Text "AES VBA update failed. Nothing further was saved, so the last saved project is still in place.`n`n$($_.Exception.Message)`n`nLog: $script:LogPath" -Icon 16
+    if ($guardOn) {
+        # Modules are incomplete, so sends stay held. Say why from now on.
+        try { Set-ThisOutlookSessionCode -Vbe $vbe -Code (Get-GuardCode -Failed); Log "Sends stay held until Outlook is restarted" }
+        catch { Log "Could not update the send guard: $($_.Exception.Message)" }
+    }
+    Show-Result -Text "AES VBA update failed. Nothing was saved, so the last saved project is still on disk.`n`nClose and reopen Outlook to go back to it. If Outlook asks to save the VBA project, choose No.`n`n$($_.Exception.Message)`n`nLog: $script:LogPath" -Icon 16
     $exitCode = 1
 } finally {
     if ($tempDir -and (Test-Path $tempDir)) { Remove-Item -LiteralPath $tempDir -Recurse -Force -ErrorAction SilentlyContinue }
     $mutex.ReleaseMutex()
+    Show-PendingPopup
 }
 exit $exitCode

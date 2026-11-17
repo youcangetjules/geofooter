@@ -91,6 +91,9 @@ namespace Aliniant.AesRibbonHost
             HostLog.Write("OnStartupComplete");
             StartStateWatch();
             InvalidateAesRibbon();
+            // Outlook does not call OnBeginShutdown (never logged), so the project
+            // saved by the last session is backed up here instead.
+            TryBackupOtm("startup");
             // A COM client's headless Outlook has no window to host the VBA editor.
             if (!HasExplorerWindow())
             {
@@ -376,6 +379,8 @@ namespace Aliniant.AesRibbonHost
                 string root = InstallRoot();
                 if (string.IsNullOrEmpty(root))
                     return "No install root. Set it in GURI \u2192 Database \u2192 Install root.";
+                // "C:\GeoFooter\" would end the argument in \" and swallow -Notify / -IfStale.
+                root = root.TrimEnd('\\', '/');
                 string script = Path.Combine(root, "scripts", "Import_VBA_ViaUi.ps1");
                 if (!File.Exists(script))
                     return "VBA importer missing: " + script;
@@ -414,6 +419,16 @@ namespace Aliniant.AesRibbonHost
                 }
                 Directory.CreateDirectory(bakDir);
                 var info = new FileInfo(otm);
+                // Same size and not newer than the latest backup: already covered.
+                FileInfo newest = null;
+                foreach (var f in new DirectoryInfo(bakDir).GetFiles("*.otm"))
+                    if (newest == null || f.LastWriteTimeUtc > newest.LastWriteTimeUtc) newest = f;
+                if (newest != null && newest.Length == info.Length &&
+                    newest.LastWriteTimeUtc >= info.LastWriteTimeUtc)
+                {
+                    HostLog.Write("TryBackupOtm(" + reason + "): unchanged since " + newest.Name);
+                    return;
+                }
                 string dest = Path.Combine(
                     bakDir,
                     "VbaProject_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + "_" + info.Length + ".otm");
@@ -794,9 +809,8 @@ namespace Aliniant.AesRibbonHost
             HostLog.Write("ExecuteVbaButton: no matching button/macro for tag=" + tag + " hint=" + onActionHint);
             System.Windows.Forms.MessageBox.Show(
                 "AES button '" + onActionHint + "' was not found on the VBA toolbar." +
-                "\n\nAfter a VBA re-import: Alt+F11 → Debug → Compile VBAProject," +
-                "\nthen Alt+F8 → run RecoverAesUi (or restart Outlook)." +
-                "\n\nIf Compile fails, fix errors first (remove duplicate ThisOutlookSession under Modules).",
+                "\n\nAES starts when Outlook opens. Close and reopen Outlook." +
+                "\n\nIf it is still missing after that, press Repair VBA and wait for its message.",
                 "Aliniant AES",
                 System.Windows.Forms.MessageBoxButtons.OK,
                 System.Windows.Forms.MessageBoxIcon.Warning);

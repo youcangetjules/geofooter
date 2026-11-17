@@ -13,6 +13,14 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.5.72: fixes from the review of the VBA auto-update work
+- Why: user asked for a flaw review of this month's changes, then for every finding to be fixed.
+- `scripts/Import_VBA_ViaUi.ps1`: popup after lock release; "already running" notice; `InvokeWait` for Compile; full clipboard save/restore; duplicate module lines ignored; state marked `import-in-progress` during a run; send guard in `ThisOutlookSession` while modules are replaced.
+- `AesRibbonHost/Connect.cs`: trims the root's trailing backslash; startup OTM backup that skips unchanged files; updated "button not found" text.
+- `geofooter/outlook_com.py` (new): `attach_outlook`, `outlook_is_running`. Used by `guri/outlook_scraper.py`, `aura/automation.py`, `aes/diagnostics_dialog.py`, `aes/action_handler.py`, `aes/geolocate_headers.py`. Test fails if any other file dispatches Outlook itself.
+- Tested offline: argument quoting, lock, clipboard (image, files, empty), duplicates, guard text, 6 Python tests, add-in build.
+- NOT yet tested: a live import with the new send guard and compile wait, and the new DLL (not installed: Outlook was open with 3 item windows). Follow-up: run one import and restart Outlook when the user is free.
+
 ### 2026-11-04 — 1.5.71: View Logs moved into Diagnostics
 - `AesRibbonHost/Ribbon.xml`, `Connect.cs`, `README.md`: removed the ribbon button and its handlers; corrected the Repair VBA tooltip.
 - `aes/diagnostics_dialog.py`: "Open main log" renamed **View Logs**. It already opened `VBA_Log.txt`.

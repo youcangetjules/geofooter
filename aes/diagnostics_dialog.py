@@ -267,7 +267,8 @@ def test_outlook(_ctx: DiagContext) -> TestResult:
             "Install pywin32 in the Python used for AES dialogs to enable Outlook tests.",
         )
     try:
-        app = win32com.client.Dispatch("Outlook.Application")
+        from geofooter.outlook_com import attach_outlook
+        app = attach_outlook()
         ns = app.GetNamespace("MAPI")
         lines = [
             f"Outlook version: {app.Version}",
@@ -723,7 +724,8 @@ def test_mailitem_create(_ctx: DiagContext) -> TestResult:
             "Install pywin32 in the Python used for AES dialogs.",
         )
     try:
-        app = win32com.client.Dispatch("Outlook.Application")
+        from geofooter.outlook_com import attach_outlook
+        app = attach_outlook()
         mail = app.CreateItem(0)  # olMailItem
         mail.Close(1)  # olDiscard
         return TestResult("pass", "MailItem creation", "Created a draft MailItem and discarded it.")
@@ -741,7 +743,8 @@ def test_mailitem_properties(_ctx: DiagContext) -> TestResult:
             "Install pywin32 in the Python used for AES dialogs.",
         )
     try:
-        app = win32com.client.Dispatch("Outlook.Application")
+        from geofooter.outlook_com import attach_outlook
+        app = attach_outlook()
         mail = app.CreateItem(0)
         mail.Subject = "MSCAN Diagnostic Test"
         mail.To = "test@example.com"

@@ -7,11 +7,12 @@ import json
 import logging
 import os
 import re
-import subprocess
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+from geofooter.outlook_com import attach_outlook, outlook_is_running  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -305,39 +306,9 @@ def save_aes_account_configs(configs: List[AesAccountScanConfig]) -> Path:
     return ini_path
 
 
-def outlook_is_running() -> bool:
-    """True when an OUTLOOK.EXE process exists for this session."""
-    try:
-        out = subprocess.run(
-            ["tasklist", "/FI", "IMAGENAME eq OUTLOOK.EXE", "/NH", "/FO", "CSV"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-        ).stdout
-    except Exception as exc:
-        logger.debug("tasklist failed: %s", exc)
-        return False
-    return "outlook.exe" in (out or "").lower()
-
-
 def _outlook_app():
-    """Attach to the Outlook the user has open. Never start one.
-
-    Dispatch on a closed Outlook starts a headless ``OUTLOOK.EXE -Embedding``
-    that exits when COM is released. GURI's 5-minute scrape did that around the
-    clock: add-ins and VBA startup ran with no window, and the add-in DLL stayed
-    locked (BUG-040).
-    """
-    import win32com.client  # type: ignore
-
-    try:
-        return win32com.client.GetObject(Class="Outlook.Application")
-    except Exception:
-        # GetObject can miss a running Outlook; Dispatch then attaches to it.
-        if not outlook_is_running():
-            raise RuntimeError("Outlook is not open") from None
-        return win32com.client.Dispatch("Outlook.Application")
+    """Attach to the open Outlook; never start one (see geofooter.outlook_com)."""
+    return attach_outlook()
 
 
 def _safe_str(value: Any, limit: int = 0) -> str:

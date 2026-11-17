@@ -8609,7 +8609,8 @@ def _embed_footer_mark_job(job_path: str) -> None:
     time.sleep(2)
     try:
         import win32com.client  # type: ignore
-        outlook = win32com.client.Dispatch("Outlook.Application")
+        from geofooter.outlook_com import attach_outlook
+        outlook = attach_outlook()
     except Exception as exc:
         _mark_log(f"Outlook unavailable: {exc}")
         return

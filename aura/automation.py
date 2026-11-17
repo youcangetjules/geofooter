@@ -124,12 +124,9 @@ class OutlookDrafts:
     """Outlook COM draft operations. Call from a thread inside ``_com_apartment``."""
 
     def __init__(self) -> None:
-        import win32com.client  # type: ignore
+        from geofooter.outlook_com import attach_outlook
 
-        try:
-            self._app = win32com.client.GetObject(Class="Outlook.Application")
-        except Exception:
-            self._app = win32com.client.Dispatch("Outlook.Application")
+        self._app = attach_outlook()
         self._ns = self._app.GetNamespace("MAPI")
 
     def _account(self, smtp: str) -> Any:

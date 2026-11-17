@@ -20,6 +20,23 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.5.72] — 2026-11-17
+
+### Fixed
+
+- AesRibbonHost: an install root ending in a backslash swallowed the importer's `-Notify` and `-IfStale` switches, so every Outlook start would have re-imported silently.
+- `Import_VBA_ViaUi.ps1`: the result popup no longer holds the import lock; a manual run that finds one already running now says so.
+- `Import_VBA_ViaUi.ps1`: waits for Compile to finish instead of a fixed 6 seconds.
+- `Import_VBA_ViaUi.ps1`: restores images and copied files on the clipboard, not only text; ignores duplicate `IMPORT.txt` lines; a failed run no longer leaves the project marked current.
+- All Python Outlook access goes through `geofooter/outlook_com.py`, which attaches to an open Outlook and never starts one. Covers Aura drafts, Diagnostics, `aes://` actions and the footer mark, as well as GURI.
+- GURI: the Outlook-open check is a window lookup instead of `tasklist` on the UI thread.
+- AesRibbonHost: stale "RecoverAesUi" advice replaced.
+
+### Changed
+
+- While modules are being replaced (about a minute), sends are held: the importer puts a stand-in `ThisOutlookSession` in place that cancels `ItemSend`. Sending again after the update works. If the update fails, sends stay held with an explanation until Outlook is restarted.
+- AesRibbonHost backs up `VbaProject.OTM` at startup when it has changed. Outlook never calls `OnBeginShutdown`, so the shutdown backup never ran.
+
 ## [1.5.71] — 2026-11-04
 
 ### Changed

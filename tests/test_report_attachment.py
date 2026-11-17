@@ -203,3 +203,28 @@ def test_footer_marker_points_at_the_versioned_file(tmp_path, monkeypatch):
     path = re.search(r"AES-Mark-Img: (.*?) -->", out).group(1)
     assert Path(path).name.startswith("aes_mark_footer_") and Path(path).is_file()
 
+
+# --- origin from the relay hops when the headers name no sender IP -------------
+
+INTERNAL_HOPS = [
+    {"ip": "fe80::72ab:5895:eaa8:7a9c (internal)", "fqdn": "AM0PR08MB4275.eurprd08.prod.outlook.com",
+     "hop_kind": "internal", "asn": "\u2014", "city": "Amsterdam", "country": "NL"},
+    {"ip": "2603:10a6:208:140::11", "fqdn": "AM0PR08MB4275.eurprd08.prod.outlook.com",
+     "hop_kind": "public", "asn": "AS8075", "city": "Amsterdam", "country": "NL"},
+    {"fqdn": "DB8PR08MB5355.eurprd08.prod.outlook.com", "hop_kind": "unknown", "city": "Dublin", "country": "IE"},
+]
+
+
+def test_origin_uses_the_first_public_hop():
+    origin = gh.origin_from_hops(INTERNAL_HOPS)
+    assert origin["ip"] == "2603:10a6:208:140::11"
+    assert origin["host"] == "AM0PR08MB4275.eurprd08.prod.outlook.com"
+    assert (origin["city"], origin["country"], origin["asn"]) == ("Amsterdam", "NL", "AS8075")
+    assert origin["org"]                                          # filled from the host name
+
+
+def test_origin_without_a_public_hop_gives_location_but_no_ip():
+    origin = gh.origin_from_hops([INTERNAL_HOPS[0], INTERNAL_HOPS[2]])
+    assert origin["ip"] == "" and origin["city"] == "Amsterdam"
+    assert gh.origin_from_hops([]) == {} and gh.origin_from_hops([{"hop_kind": "unknown"}]) == {}
+

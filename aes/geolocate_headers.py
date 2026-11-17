@@ -944,6 +944,51 @@ def _route_integrity_html(summary: Dict[str, Any]) -> str:
             f"Affected hops are marked &#9888; in the table below.</div></div>")
 
 
+def origin_from_hops(hops: Optional[List[Dict[str, Any]]]) -> Dict[str, str]:
+    """Where the message entered the relay chain, when the headers name no sender IP.
+
+    Mail sent inside one Exchange Online tenant (or from webmail) records no
+    client address at all, so "Unknown" was shown for IP, location, organisation
+    and ASN even though the first mail server is fully identified. This returns
+    that server: the earliest hop with a public address, else the earliest hop
+    with a known location. It describes the sending server, not the person's
+    device, and callers must label it that way.
+    """
+    blank = {"", "unknown", "n/a", "none", "-", "\u2014"}
+
+    def val(hop: Dict[str, Any], key: str) -> str:
+        text = str(hop.get(key) or "").strip()
+        return "" if text.lower() in blank else text
+
+    hops = [h for h in (hops or []) if isinstance(h, dict)]
+    chosen = next((h for h in hops if h.get("hop_kind") == "public" and val(h, "ip")), None)
+    if chosen is None:
+        chosen = next((h for h in hops if val(h, "city") or val(h, "country")), None)
+    if chosen is None:
+        return {}
+    ip = val(chosen, "ip").split()[0] if val(chosen, "ip") else ""
+    if chosen.get("hop_kind") != "public":
+        ip = ""                                   # link-local / private: not worth showing
+    host = val(chosen, "fqdn") or val(chosen, "reverse_dns")
+    asn = val(chosen, "asn")
+    org = val(chosen, "org") or val(chosen, "org_bgp")
+    if host and (not asn or not org):
+        try:
+            import aes.addr_decode as _addr_decode
+
+            h_asn, h_org = _addr_decode.provider_asn_for_host(host)
+            if not asn and h_asn:
+                asn = str(h_asn) if str(h_asn).upper().startswith("AS") else f"AS{h_asn}"
+            if not org and h_org:
+                org = str(h_org)
+        except Exception:
+            pass
+    return {
+        "ip": ip, "host": host, "asn": asn, "org": org,
+        "city": val(chosen, "city"), "country": val(chosen, "country"),
+    }
+
+
 _PTR_CACHE: Dict[str, str] = {}
 
 
@@ -3579,6 +3624,30 @@ class HTMLReportGenerator:
             if found_host:
                 ip_display = self._format_ip_display(ip_to_display, found_host)
 
+        # No sender IP in the headers at all (internal Exchange mail, webmail):
+        # report the first mail server instead of four rows of "Unknown".
+        asn_display = self._format_asn(geo_result.asn)
+        server_origin: Dict[str, str] = {}
+        if not sender_ip and not geo_result.success:
+            server_origin = origin_from_hops(per_hop_analysis)
+        if server_origin:
+            note = "<span style='color:#2e7d32;'>(sending mail server \u2014 the sender's own IP is not in the headers)</span>"
+            host_part = f" ({html.escape(server_origin['host'])})" if server_origin.get("host") else ""
+            if server_origin.get("ip"):
+                ip_display = f"{html.escape(server_origin['ip'])}{host_part} {note}"
+            elif server_origin.get("host"):
+                ip_display = f"Not recorded{host_part} {note}"
+            place = ", ".join(x for x in (server_origin.get("city"), server_origin.get("country")) if x)
+            if place:
+                location_display = (
+                    f"{html.escape(place)} <span style='color:#2e7d32;'>"
+                    f"(mail server location \u2014 not the sender's device)</span>"
+                )
+            if server_origin.get("org") and (not org_display or org_display == "Unknown"):
+                org_display = server_origin["org"]
+            if server_origin.get("asn") and asn_display == "Unknown":
+                asn_display = self._format_asn(server_origin["asn"])
+
         # Header intelligence runs before route risk: a trusted ESP tenant
         # marks its shared-IP hops so they are not scored as a risky route.
         intel_sections: List[Any] = []
@@ -3899,8 +3968,11 @@ class HTMLReportGenerator:
         # Military DTG: YYYYMMDDHHmmz (UTC)
         created_zulu = datetime.now(pytz.utc).strftime('%Y%m%d%H%M') + 'z'
 
-        sender_ip_plain = html.escape(sender_ip or "Unknown")
-        sender_host_plain = html.escape(sender_hostname.strip()) if sender_hostname and sender_hostname.strip() else ""
+        # Footer line: fall back to the first mail server too, so it is not "Unknown".
+        footer_ip = sender_ip or server_origin.get("ip") or ""
+        footer_host = sender_hostname if sender_ip else (server_origin.get("host") or "")
+        sender_ip_plain = html.escape(footer_ip or "Unknown")
+        sender_host_plain = html.escape(footer_host.strip()) if footer_host and footer_host.strip() else ""
         if sender_host_plain and sender_host_plain.lower() == sender_ip_plain.lower():
             sender_host_plain = ""
 
@@ -3942,7 +4014,7 @@ class HTMLReportGenerator:
             "routing_info": routing_info,
             "location": location_display,
             "organization": org_display,
-            "asn": self._format_asn(geo_result.asn),
+            "asn": asn_display,
             "whois": whois_display,
             "cert_history": cert_display,
             "header_intel": [

@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.8.7: origin fields from the first mail server
+- `aes/geolocate_headers.py`: `origin_from_hops`; `_prepare_display_data` uses it when there is no sender IP and geolocation failed; the footer's "Sender IP" falls back the same way. 2 tests.
+- Why: user screenshot of a report for an internal Exchange Online message with four "Unknown" rows while the Route row named Amsterdam and Dublin datacentres. The headers have `AuthAs: Internal` and no client address; the first hop's public address is 2603:10a6:208:140::11.
+- Verified: unit tests, and `origin_from_hops` on that message's real headers gives the Amsterdam server, AS8075, Microsoft. NOT verified: a full rescan showing the four rows filled.
+- Limit: this is the mail server, not the person. Exchange Online does not record the sender's own IP for internal mail, so that cannot be recovered.
+
 ### 2026-11-17 — 1.8.6: footer rows centred on one line
 - `aes/geolocate_headers.py`: `_footer_flow_row` takes `right_px`; row 2 pins the AURA float to the logo block's width with no spacer; row 3's spacer is 3px wider.
 - Why: user screenshot of a real 1.8.4 footer. Row 2 was using the quip's width for its left spacer while its right-hand item was the 78px AURA chip.

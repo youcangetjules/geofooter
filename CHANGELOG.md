@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.7] — 2026-11-17
+
+### Fixed
+
+- Scan report and footer showed "Unknown" for IP, Location, Organization and A.S.N on mail whose headers carry no sender IP: mail sent inside one Exchange Online tenant, and some webmail. The first mail server in the relay chain was already fully identified in the Route row. Those four fields now come from that server (earliest hop with a public address, else earliest hop with a known location), each labelled as the sending mail server rather than the sender's device.
+
 ## [1.8.6] — 2026-11-17
 
 ### Fixed

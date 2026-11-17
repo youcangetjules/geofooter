@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.7.8: footer A centred vertically
+- `aes/geolocate_headers.py`: `AES_STRIP_MARK_PAD_TOP` 3 -> 1; `AES_STRIP_LETTER_DROP` S 2 -> 3.
+- Why: user saw the A 3-4px low. Measured on a render with real buttons: 9px above, 5px below.
+- Verified in Outlook's editor on a discarded draft: A 6/5; letters A 3/4, E 4/4, S 4/4; buttons unchanged at 78px with 71-73px clickable.
+- Follow-up: the strip is 2px shorter. Top-row text alignment was not re-measured after this change; text and dots share one cell, so their relative positions should be unchanged.
+
 ### 2026-11-17 — 1.7.7: footer A back to solid orange, subtler
 - `scripts/build_footer_strip_images.py`: `_add_cyber` now only adds the two fringes (0.8px, 55% and 45% strength) behind an untouched A. Rebuilt `assets/icons/aes_mark_footer.png`.
 - Why: user found the 1.7.2 effect too much and asked for solid orange, a little more subtle.

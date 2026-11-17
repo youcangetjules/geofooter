@@ -598,7 +598,7 @@ AES_STRIP_ROW_H = 20
 # Word gives any extra rowspan height to row 1. Word also adds ~3px of line
 # descent under the inline image, so the cell pads 3px above and none below.
 AES_STRIP_MARK_H = 3 * AES_STRIP_ROW_H + 2 - 6  # 56
-AES_STRIP_MARK_PAD_TOP = 3
+AES_STRIP_MARK_PAD_TOP = 1
 AES_STRIP_MARK_W = 59  # brand A is 256x242
 AES_STRIP_MARK_CELL_W = 12 + AES_STRIP_MARK_W + 4
 # Stacked A/E/S at the left end of the strip rules, a little lighter than the
@@ -613,7 +613,7 @@ AES_STRIP_LETTER_H = 14
 # gap height makes the whole strip taller, and Word anchors the image by its
 # bottom edge, so padding inside the image does nothing. Word's text-lowering on
 # a span around the image is what moves it.
-AES_STRIP_LETTER_DROP = {"E": 2, "S": 2}
+AES_STRIP_LETTER_DROP = {"E": 2, "S": 3}
 AES_STRIP_AES_COL = 16
 # Outlook drops padding on a div. This row is the gap above the strip.
 AES_FOOTER_GAP_HTML = (

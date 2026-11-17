@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.7.8] — 2026-11-17
+
+### Fixed
+
+- Footer orange A sat low: 9px above it and 5px below. Its cell's top padding drops from 3px to 1px, giving 6px above and 5px below. The padding had also been stretching the strip, which is now 67px rather than 69px, with the top row 21px instead of 23px. The S letter is lowered one more pixel to stay centred (4px each side).
+
 ## [1.7.7] — 2026-11-17
 
 ### Changed

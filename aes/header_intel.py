@@ -1,4 +1,4 @@
-"""Header intelligence: identity, sending platform, signing, transport, threads.
+"""Header intelligence: identity, lookalikes, sending platform, signing, transport, threads.
 
 Each check takes the raw header block and returns an :class:`IntelSection`:
 ``rows`` are plain-text lines for the Full Scan report and ``findings`` are
@@ -858,6 +858,213 @@ def thread_signals(
     return sec
 
 
+# --------------------------------------------------------------------------- #
+# Lookalike sender domains (impostor of a domain the user already trusts)
+# --------------------------------------------------------------------------- #
+
+LOOKALIKE_MIN_LABEL = 5
+LOOKALIKE_MAX_POINTS = 25
+ESTABLISHED_MIN_COUNT = 5
+ESTABLISHED_MIN_DAYS = 30
+
+KIND_OWN = "your own domain"
+KIND_CONTACT = "a domain you write to"
+KIND_ESTABLISHED = "a long-standing sender"
+KIND_SERVICE = "a well-known service"
+_KIND_RANK = {KIND_OWN: 3, KIND_CONTACT: 2, KIND_ESTABLISHED: 1, KIND_SERVICE: 0}
+# Service names that are also everyday words: "abbotts-office.com" is not Microsoft.
+_EVERYDAY_NAMES = frozenset({"office", "apple"})
+
+# Letters from other alphabets that render like ASCII ones in a lower-case domain.
+_CONFUSABLES = str.maketrans({
+    "а": "a", "е": "e", "о": "o", "р": "p", "с": "c",
+    "х": "x", "у": "y", "і": "i", "ј": "j", "ѕ": "s",
+    "һ": "h", "ԁ": "d", "ԛ": "q", "ԝ": "w",
+    "ο": "o", "α": "a", "ν": "v", "ι": "i", "ı": "i",
+})
+_ASCII_FOLD = str.maketrans({"0": "o", "1": "l", "i": "l", "3": "e", "5": "s"})
+
+
+def _unicode_host(host: str) -> str:
+    """Decode punycode labels (xn--...) so they can be compared as displayed."""
+    out = []
+    for label in (host or "").lower().split("."):
+        if label.startswith("xn--"):
+            try:
+                label = label.encode("ascii").decode("idna")
+            except Exception:
+                pass
+        out.append(label)
+    return ".".join(out)
+
+
+def _split_registrable(reg: str) -> Tuple[str, str]:
+    """('aliniant', 'com') or ('lloydsbank', 'co.uk')."""
+    labels = reg.split(".")
+    if len(labels) < 2:
+        return reg, ""
+    return labels[0], ".".join(labels[1:])
+
+
+def _skeleton(label: str) -> str:
+    """What the label looks like at a glance: rn reads as m, 0 as o, 1 and i as l."""
+    import unicodedata
+
+    text = label.translate(_CONFUSABLES)
+    text = "".join(c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c))
+    return text.replace("rn", "m").replace("vv", "w").translate(_ASCII_FOLD)
+
+
+def _one_edit_apart(a: str, b: str) -> bool:
+    """One insertion, deletion, substitution or adjacent swap between a and b."""
+    if a == b or abs(len(a) - len(b)) > 1:
+        return False
+    if len(a) > len(b):
+        a, b = b, a
+    i = 0
+    while i < len(a) and a[i] == b[i]:
+        i += 1
+    if len(a) == len(b):
+        if a[i + 1:] == b[i + 1:]:
+            return True
+        return i + 1 < len(a) and a[i] == b[i + 1] and a[i + 1] == b[i] and a[i + 2:] == b[i + 2:]
+    return a[i:] == b[i + 1:]
+
+
+def _established_domains(history: Optional[Dict[str, Any]]) -> List[str]:
+    """Domains with enough mail over enough time that an impostor could not have built it."""
+    from datetime import datetime, timedelta
+
+    totals: Dict[str, List[Any]] = {}
+    for addr, rec in ((history or {}).get("senders") or {}).items():
+        reg = registrable_domain(_domain_of(addr))
+        if not reg or not isinstance(rec, dict):
+            continue
+        entry = totals.setdefault(reg, [0, ""])
+        entry[0] += int(rec.get("count", 0) or 0)
+        first = str(rec.get("first_seen") or "")
+        if first and (not entry[1] or first < entry[1]):
+            entry[1] = first
+    cutoff = (datetime.now() - timedelta(days=ESTABLISHED_MIN_DAYS)).strftime("%Y-%m-%d %H:%M:%S")
+    return [d for d, (count, first) in totals.items()
+            if count >= ESTABLISHED_MIN_COUNT and first and first <= cutoff]
+
+
+def reference_domains(
+    history: Optional[Dict[str, Any]],
+    known_contacts: Iterable[str] = (),
+    own_domains: Iterable[str] = (),
+) -> Dict[str, str]:
+    """Registrable domain -> why the user trusts it. Stronger reasons win."""
+    refs: Dict[str, str] = {}
+    for d in FREE_MAIL_DOMAINS:
+        refs[registrable_domain(d)] = KIND_SERVICE
+    for allowed in BRAND_DOMAINS.values():
+        for d in allowed:
+            refs[registrable_domain(d)] = KIND_SERVICE
+    for d in _established_domains(history):
+        refs[d] = KIND_ESTABLISHED
+    for addr in known_contacts:
+        d = registrable_domain(_domain_of(addr))
+        if d:
+            refs[d] = KIND_CONTACT
+    for d in own_domains:
+        d = registrable_domain(d)
+        if d:
+            refs[d] = KIND_OWN
+    refs.pop("", None)
+    return refs
+
+
+def _lookalike_match(host: str, refs: Dict[str, str]) -> Optional[Tuple[int, str, str, str]]:
+    """Best (points, trusted domain, kind, how) for *host*, or None."""
+    shown = _unicode_host(host)
+    reg = registrable_domain(shown)
+    if not reg or reg in refs or registrable_domain(host) in refs:
+        return None
+    sld, suffix = _split_registrable(reg)
+    skeleton = _skeleton(sld)
+    tokens = set(re.split(r"[-_]", sld))
+    best: Optional[Tuple[int, str, str, str]] = None
+    for ref, kind in refs.items():
+        r_sld, r_suffix = _split_registrable(ref)
+        hit: Optional[Tuple[int, str]] = None
+        if f".{shown}".find(f".{ref}.") >= 0:
+            hit = (15, f"{ref} appears as a subdomain of {reg}")
+        elif sld == r_sld:
+            # Companies often own several endings (notion.com and notion.so), so
+            # this only scores against the user's own and contacts' domains.
+            # Elsewhere it is reported with no points.
+            if len(r_sld) >= 4:
+                scored = kind in (KIND_OWN, KIND_CONTACT)
+                hit = (8 if scored else 0,
+                       f"same name with a different ending (.{suffix} for .{r_suffix})")
+        elif skeleton == _skeleton(r_sld):
+            hit = (20 if suffix == r_suffix else 15, "look-alike characters swapped in")
+        elif len(r_sld) >= LOOKALIKE_MIN_LABEL and suffix == r_suffix and _one_edit_apart(sld, r_sld):
+            hit = (15, "one character different")
+        elif (len(r_sld) >= LOOKALIKE_MIN_LABEL and kind in (KIND_OWN, KIND_SERVICE)
+              and r_sld in tokens and r_sld not in _EVERYDAY_NAMES):
+            hit = (10, "the trusted name with extra words added")
+        if hit is None:
+            continue
+        cand = (hit[0], ref, kind, hit[1])
+        if best is None or (cand[0], _KIND_RANK[kind]) > (best[0], _KIND_RANK[best[2]]):
+            best = cand
+    return best
+
+
+def lookalike_signals(
+    headers: str,
+    *,
+    history: Optional[Dict[str, Any]] = None,
+    known_contacts: Iterable[str] = (),
+    own_domains: Iterable[str] = (),
+) -> IntelSection:
+    """Sender or Reply-To domain that imitates one the user already trusts.
+
+    Header-only and offline. Authentication does not catch this: a look-alike
+    domain passes SPF, DKIM and DMARC as itself.
+    """
+    sec = IntelSection("Lookalike domain")
+    from_host = _domain_of(_addr(first_header(headers, "From"))[1])
+    if not from_host:
+        return sec
+    reply_host = _domain_of(_addr(first_header(headers, "Reply-To"))[1])
+    refs = reference_domains(history, known_contacts, own_domains)
+    is_reply = bool(
+        _REPLY_PREFIX.match(_decoded_subject(headers))
+        or header_values(headers, "In-Reply-To")
+        or header_values(headers, "References")
+    )
+    total = 0
+    seen_hosts = set()
+    for which, host in (("Sender", from_host), ("Reply-To", reply_host)):
+        if not host or host in seen_hosts:
+            continue
+        seen_hosts.add(host)
+        shown = _unicode_host(host)
+        if shown != host:
+            sec.rows.append(f"{which} domain is internationalised: {host} displays as {shown}")
+        match = _lookalike_match(host, refs)
+        if match is None:
+            continue
+        points, ref, kind, how = match
+        reg = registrable_domain(shown)
+        note = (f"{how.capitalize()}. {ref} is {kind}. Passing SPF, DKIM and DMARC "
+                f"does not clear this: {reg} authenticates as itself.")
+        if is_reply and points:
+            points += 5
+            note += " It arrives as a reply, which is how an impostor steps into a conversation."
+        points = max(0, min(points, LOOKALIKE_MAX_POINTS - total))
+        total += points
+        sec.rows.append(f"{which} domain {reg} resembles {ref} ({kind}): {how}")
+        if match[0] == 0:
+            continue
+        sec.add(f"{which} domain {reg} imitates {ref}", points, note)
+    return sec
+
+
 def load_own_domains() -> List[str]:
     """Important domains configured in GURI (datastore/important_domains.txt)."""
     try:
@@ -896,9 +1103,11 @@ def run_all(
     if not headers:
         return []
     own = list(own_domains) if own_domains is not None else load_own_domains()
+    contacts = load_known_contacts()
     esp = esp_fingerprint(headers, hops)
     sections = [
         identity_signals(headers, dmarc=dmarc, own_domains=own),
+        lookalike_signals(headers, history=history, known_contacts=contacts, own_domains=own),
         esp,
         signing_signals(headers, lite=lite),
         transport_signals(hops),
@@ -911,7 +1120,7 @@ def run_all(
                 headers,
                 sender_email=sender_email,
                 history=history,
-                known_contacts=load_known_contacts(),
+                known_contacts=contacts,
                 own_domains=own,
             )
         )

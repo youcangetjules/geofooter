@@ -13,6 +13,13 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.7.0: lookalike sender domain check
+- `aes/header_intel.py`: `lookalike_signals`, `reference_domains` and helpers; added to `run_all` after Identity. `tests/test_header_intel.py`: 12 new tests (38 pass).
+- Why: user asked what more headers could give. My first answer listed signals that `header_intel.py` already had (thread hijack among them); lookalike domains were a real gap, and they catch an impostor replying into a real thread without needing thread participant memory.
+- Tuned on the real sender history (483 sending hosts, 249 reference domains): first cut flagged 6, all false. "Same name, different ending" now scores only against own and contact domains, and everyday-word brand names (office, apple) are excluded from the extra-words rule. After tuning: 0 scored, 5 report-only rows. About 0.4 ms per host.
+- Not tested: a real lookalike mail through a full Outlook scan. The check reaches the score through the same `apply_extra_factors` path as the other header sections.
+- Follow-up: only 3 contact domains come from `recipients.txt`, so contact coverage is thin. Remaining header gaps: Microsoft antispam verdicts, ARC results, thread participant memory.
+
 ### 2026-11-17 — 1.6.0: live test of the importer fixes; two more fixes; minor bump
 - Live import 1 (1.5.72 code): send guard, 20 modules, compile wait and save all ran; exit 0. Outlook restarted with the new DLL: AES started, startup backup logged "unchanged", `-IfStale` did nothing.
 - Found in `VbaImport.log`: updates failed on 2026-11-05 16:09 and 2026-11-10 11:19 at `Edit > Select All` (code pane not focused yet). Added `Invoke-EditCommand`, which waits and re-opens the pane.

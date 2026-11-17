@@ -20,6 +20,22 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.7.0] — 2026-11-17
+
+### Added
+
+- **Lookalike domain check** (`aes/header_intel.py`, `lookalike_signals`): scores a sender or Reply-To domain that imitates one you trust. Trusted means your important domains, domains you write to, senders with 5+ mails over 30+ days, and well-known services. Header-only and offline, so it runs on compact scans.
+
+  | Pattern | Example | Points |
+  | --- | --- | --- |
+  | Look-alike characters, incl. punycode | `a1iniant.com`, `rnicrosoft.com` | 20 (15 if the ending also differs) |
+  | One character different | `alinaint.com` | 15 |
+  | Trusted domain used as a subdomain | `aliniant.com.secure-login.net` | 15 |
+  | Trusted name with extra words | `paypal-billing.com` | 10 |
+  | Same name, different ending | `aliniant.co` | 8, own and contact domains only |
+
+  Arriving as a reply adds 5. The section is capped at 25.
+
 ## [1.6.0] — 2026-11-17
 
 Minor bump at the user's request, covering the VBA auto-update work since 1.5.67.

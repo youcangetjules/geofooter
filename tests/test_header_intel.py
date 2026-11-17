@@ -274,3 +274,94 @@ def test_return_path_mismatch_scored_only_without_dmarc_pass():
     h = "Return-Path: <x@bounce.other.com>\nFrom: A <a@alpha.com>\n"
     assert hi.identity_signals(h, dmarc="pass").findings == []
     assert [f["points"] for f in hi.identity_signals(h, dmarc="fail").findings] == [5]
+
+
+# --- lookalike sender domains ------------------------------------------------
+
+OWN = ["aliniant.com"]
+CONTACTS = ["pat@harbourlegal.co.uk"]
+
+
+def _look(from_addr, *, subject="Quarterly figures", extra="", history=None):
+    headers = f"From: Someone <{from_addr}>\nSubject: {subject}\n{extra}"
+    return hi.lookalike_signals(headers, history=history, known_contacts=CONTACTS, own_domains=OWN)
+
+
+def _points(sec):
+    return [f["points"] for f in sec.findings]
+
+
+def test_trusted_domains_are_never_flagged():
+    for addr in ("a@aliniant.com", "pat@harbourlegal.co.uk", "x@gmail.com", "y@mail.paypal.com"):
+        assert _look(addr).findings == [], addr
+
+
+def test_unrelated_domain_is_not_flagged():
+    assert _look("sales@northwind-traders.com").findings == []
+
+
+def test_one_character_off_own_domain():
+    for addr in ("ceo@alinaint.com", "ceo@aliniantt.com", "ceo@alinant.com", "ceo@aliniamt.com"):
+        assert _points(_look(addr)) == [15], addr
+
+
+def test_lookalike_characters_score_highest():
+    assert _points(_look("ceo@a1iniant.com")) == [20]      # 1 for l
+    assert _points(_look("billing@paypa1.com")) == [20]
+    assert _points(_look("it@rnicrosoft.com")) == [20]     # rn for m
+
+
+def test_punycode_homoglyph_is_decoded_and_flagged():
+    cyrillic = "\u0430liniant.com"                           # Cyrillic a
+    puny = cyrillic.encode("idna").decode("ascii")
+    sec = _look(f"ceo@{puny}")
+    assert _points(sec) == [20]
+    assert any("internationalised" in r for r in sec.rows)
+
+
+def test_different_ending_scores_for_own_and_contact_domains_only():
+    assert _points(_look("ceo@aliniant.co")) == [8]
+    assert _points(_look("pat@harbourlegal.com")) == [8]
+    history = _history(days_old=90, senders={"news@notion.so": {
+        "count": 9, "first_seen": _history(days_old=90)["senders"]["old@friend.com"]["first_seen"]}})
+    sec = _look("team@notion.com", history=history)
+    assert sec.findings == []                                # two endings, one company
+    assert any("resembles notion.so" in r for r in sec.rows)
+
+
+def test_trusted_name_as_subdomain_or_with_extra_words():
+    assert _points(_look("pay@aliniant.com.secure-login.net")) == [15]
+    assert _points(_look("pay@aliniant-payments.com")) == [10]
+    assert _points(_look("help@paypal-billing.com")) == [10]
+    assert _look("hello@abbotts-office.com").findings == []  # everyday word
+
+
+def test_reply_adds_five_and_total_is_capped():
+    assert _points(_look("ceo@alinaint.com", subject="RE: Invoice 4471")) == [20]
+    sec = _look("ceo@a1iniant.com", subject="RE: Invoice", extra="Reply-To: Pay <pay@alinaint.com>\n")
+    assert _points(sec) == [25, 0]
+    assert sum(_points(sec)) == hi.LOOKALIKE_MAX_POINTS
+
+
+def test_reply_to_lookalike_is_caught_when_sender_is_clean():
+    sec = _look("x@gmail.com", extra="Reply-To: CEO <ceo@alinaint.com>\n")
+    assert _points(sec) == [15]
+    assert sec.findings[0]["label"].startswith("Reply-To domain")
+
+
+def test_new_impostor_cannot_count_as_established():
+    recent = _history(days_old=3)["senders"]["old@friend.com"]["first_seen"]
+    history = {"senders": {"a@alinaint.com": {"count": 40, "first_seen": recent}}, "seen": {}}
+    assert _points(_look("a@alinaint.com", history=history)) == [15]
+
+
+def test_short_names_do_not_match_by_one_edit():
+    history = _history(days_old=90, senders={"n@bbc.co.uk": {
+        "count": 9, "first_seen": _history(days_old=90)["senders"]["old@friend.com"]["first_seen"]}})
+    assert _look("n@bbd.co.uk", history=history).findings == []
+
+
+def test_run_all_includes_lookalike_section():
+    titles = [s.title for s in hi.run_all("From: a <a@alinaint.com>\nSubject: hi\n", own_domains=OWN)]
+    assert "Lookalike domain" in titles
+

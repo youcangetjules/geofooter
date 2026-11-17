@@ -13,6 +13,13 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.8.5: safety net for a failed VBA update
+- `scripts/Import_VBA_ViaUi.ps1`: `Restore-AfterFailure`, `Get-ThisOutlookSessionCodeFromEditor`; the previous code and state file are captured before the send hold; `Get-GuardCode -Failed` now asks per send; `-SelfTest`.
+- Why: user approved a safety net after sends were held for 10 minutes. I had described it as "put the previous working code back"; that is only possible before modules are removed, because afterwards the old modules exist nowhere but the saved project file, which only a restart reloads. The second path (ask per send) is the fallback I chose for that case.
+- Policy note: the ask-per-send path lets mail leave unclassified if the user answers Yes. That is a deliberate exception to "never send unmarked mail", limited to a session where AES is already broken.
+- Verified live with both self-tests: the previous code and state file came back after a failure before removal; the after-failure code compiles. Outlook restarted afterwards; AES started with 5 watchers.
+- Not verified: the ask-per-send prompt appearing on a real send; a failure after modules are removed.
+
 ### 2026-11-17 — 1.8.4: copyright line lowered 2px
 - `aes/geolocate_headers.py`: `mso-text-raise:-2px` on the copyright span.
 - Why: user request.

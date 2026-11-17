@@ -20,6 +20,20 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.5] — 2026-11-17
+
+### Fixed
+
+- A failed VBA update left every send held until Outlook was restarted (about 10 minutes on 2026-11-17). Now:
+  - If the update fails before any module has been replaced, the previous `ThisOutlookSession` code is put straight back and AES carries on as if nothing happened.
+  - If modules were already being replaced, AES is off for that session, and each send asks "Send it anyway, without a classification?" with No as the default, instead of being held.
+  - Only if neither can be written do sends stay held, and the failure message says so.
+- The failure message now says which of these applies.
+
+### Added
+
+- `Import_VBA_ViaUi.ps1 -SelfTest FailBeforeRemove | CompileFailedGuard` rehearses the failure paths against a live Outlook without saving anything.
+
 ## [1.8.4] — 2026-11-17
 
 ### Changed

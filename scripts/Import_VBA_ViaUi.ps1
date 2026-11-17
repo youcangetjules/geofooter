@@ -31,7 +31,14 @@ param(
     [switch]$DryRun,
     [switch]$KeepEditor,
     [switch]$IfStale,
-    [switch]$Notify
+    [switch]$Notify,
+    # Rehearsals of the failure paths. Both change the code in the running
+    # session only; nothing is saved. Restart Outlook afterwards (answer No to
+    # "save the VBA project?").
+    #   FailBeforeRemove    stop after the send hold is placed; expect the previous code back
+    #   CompileFailedGuard  check that the after-failure code compiles, then put the previous code back
+    [ValidateSet("", "FailBeforeRemove", "CompileFailedGuard")]
+    [string]$SelfTest = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -45,6 +52,7 @@ if ($PSVersionTable.PSEdition -eq "Core") {
     if ($KeepEditor) { $relay += "-KeepEditor" }
     if ($IfStale) { $relay += "-IfStale" }
     if ($Notify) { $relay += "-Notify" }
+    if ($SelfTest) { $relay += @("-SelfTest", $SelfTest) }
     & $winPs @relay
     exit $LASTEXITCODE
 }
@@ -509,16 +517,68 @@ function Restore-ClipboardData {
 # a MsgBox during the import would block the editor and fail it.
 function Get-GuardCode {
     param([switch]$Failed)
-    $say = ""
-    if ($Failed) {
-        $say = "    MsgBox ""The AES update did not finish, so this send was cancelled."" & vbCrLf & vbCrLf & _`r`n" +
-               "           ""Close and reopen Outlook, then send again."", vbExclamation, ""AES""`r`n"
+    if (-not $Failed) {
+        # During the update: hold the send, say nothing. A MsgBox here would
+        # block the editor and fail the import. Sending again afterwards works.
+        return "Option Explicit`r`n" +
+            "' AES modules are being replaced (scripts\Import_VBA_ViaUi.ps1). No module calls here.`r`n" +
+            "Private Sub Application_ItemSend(ByVal Item As Object, Cancel As Boolean)`r`n" +
+            "    Cancel = True`r`n" +
+            "End Sub`r`n"
     }
+    # After a failed update AES cannot classify until Outlook is restarted. A
+    # silent or unconditional hold trapped the user's mail for 10 minutes on
+    # 2026-11-17, so the user decides per message. No is the default button.
     return "Option Explicit`r`n" +
-        "' AES modules are being replaced (scripts\Import_VBA_ViaUi.ps1). No module calls here.`r`n" +
+        "' The AES update did not finish (scripts\Import_VBA_ViaUi.ps1). No module calls here.`r`n" +
         "Private Sub Application_ItemSend(ByVal Item As Object, Cancel As Boolean)`r`n" +
-        "    Cancel = True`r`n" + $say +
+        "    Dim answer As VbMsgBoxResult`r`n" +
+        "    answer = MsgBox(""The AES update did not finish, so AES cannot classify this message."" & vbCrLf & vbCrLf & _`r`n" +
+        "        ""Send it anyway, without a classification?"" & vbCrLf & vbCrLf & _`r`n" +
+        "        ""To get AES back, close and reopen Outlook. If it asks to save the VBA project, choose No."", _`r`n" +
+        "        vbExclamation + vbYesNo + vbDefaultButton2, ""AES"")`r`n" +
+        "    Cancel = (answer <> vbYes)`r`n" +
         "End Sub`r`n"
+}
+
+# What the built-in ThisOutlookSession holds right now, read back from the editor.
+function Get-ThisOutlookSessionCodeFromEditor {
+    param([IntPtr]$Vbe)
+    $saved = Save-ClipboardData
+    try {
+        Invoke-EditCommand -Vbe $Vbe -Item "Select All"
+        Start-Sleep -Milliseconds 150
+        Set-Clipboard -Value " "
+        Invoke-EditCommand -Vbe $Vbe -Item "Copy"
+        Start-Sleep -Milliseconds 300
+        $text = Get-Clipboard -Raw
+        if ($null -eq $text) { return "" }
+        return [string]$text
+    } finally {
+        Restore-ClipboardData $saved
+    }
+}
+
+# Called when the update fails with the send hold in place. Leaves the session in
+# the best state available and returns a sentence for the user.
+function Restore-AfterFailure {
+    param([IntPtr]$Vbe, [string]$PreviousCode, [bool]$ModulesTouched, [string]$OldState, [string]$StatePath)
+    if (-not $ModulesTouched -and $PreviousCode.Trim().Length -gt 40) {
+        try {
+            Set-ThisOutlookSessionCode -Vbe $Vbe -Code $PreviousCode
+            if ($OldState) { Set-Content -LiteralPath $StatePath -Value $OldState -Encoding ASCII }
+            Log "No module had been replaced: the previous code is back and AES carries on as before"
+            return "Nothing had been replaced yet, so the previous AES code was put back and sending works as before."
+        } catch { Log "Could not put the previous code back: $($_.Exception.Message)" }
+    }
+    try {
+        Set-ThisOutlookSessionCode -Vbe $Vbe -Code (Get-GuardCode -Failed)
+        Log "AES is off for this session: each send now asks before going without a classification"
+        return "AES is off until Outlook is restarted. Until then each send asks whether to go without a classification."
+    } catch {
+        Log "Could not replace the send hold: $($_.Exception.Message). Sends are held until Outlook is restarted."
+        return "Sends are HELD until Outlook is restarted, because the update could not undo its send hold."
+    }
 }
 
 # Edit commands are greyed out until the code pane has focus, which can take
@@ -697,6 +757,9 @@ if (-not $haveLock) {
 $tempDir = $null
 $exitCode = 1
 $guardOn = $false
+$modulesTouched = $false
+$previousCode = ""
+$oldState = ""
 $vbe = [IntPtr]::Zero
 try {
     $rootPath = Resolve-InstallRoot -Hint $Root
@@ -732,7 +795,8 @@ try {
     # not see the old fingerprint and call it current.
     if (Test-Path $statePath) {
         try {
-            $old = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json
+            $oldState = Get-Content -LiteralPath $statePath -Raw
+            $old = $oldState | ConvertFrom-Json
             @{ fingerprint = "import-in-progress"; version = $old.version; imported_at = $old.imported_at; compiled = $false } |
                 ConvertTo-Json | Set-Content -LiteralPath $statePath -Encoding ASCII
         } catch { Remove-Item -LiteralPath $statePath -Force -ErrorAction SilentlyContinue }
@@ -748,12 +812,37 @@ try {
     New-Item -ItemType Directory -Force -Path $tempDir | Out-Null
 
     [VbeUi]::ExpandTree($vbe)
+    # Kept so a failure before any module is touched can be undone completely.
+    [VbeUi]::SelectNode($vbe, "ThisOutlookSession")
+    [VbeUi]::Invoke($vbe, "View", "Code")
+    $previousCode = Get-ThisOutlookSessionCodeFromEditor -Vbe $vbe
+
+    if ($SelfTest -eq "CompileFailedGuard") {
+        Log "SELF-TEST: compiling the after-failure code"
+        Set-ThisOutlookSessionCode -Vbe $vbe -Code (Get-GuardCode -Failed)
+        $guardOn = $true
+        $problem = ""
+        if ([VbeUi]::MenuEnabled($vbe, "Debug", "Compile")) {
+            if ([VbeUi]::InvokeWait($vbe, "Debug", "Compile", $olPid, "Microsoft Visual Basic", 180000) -ne [IntPtr]::Zero) {
+                $problem = Read-EditorMessage -OutlookPid $olPid
+            }
+        }
+        Set-ThisOutlookSessionCode -Vbe $vbe -Code $previousCode
+        $guardOn = $false
+        if ($oldState) { Set-Content -LiteralPath $statePath -Value $oldState -Encoding ASCII }
+        if ($problem) { Log "SELF-TEST FAILED: after-failure code does not compile: $problem"; $exitCode = 1 }
+        else { Log "SELF-TEST OK: after-failure code compiles; previous code restored"; $exitCode = 0 }
+        exit $exitCode
+    }
+
     Log "Holding sends while modules are replaced"
     Set-ThisOutlookSessionCode -Vbe $vbe -Code (Get-GuardCode)
     $guardOn = $true
+    if ($SelfTest -eq "FailBeforeRemove") { throw "self-test: stopping before any module is removed" }
     $stale = @("UserForm1", "frmClassification", "MSCANSecurityRatingForm", "ThisOutlookSession1", "ThisOutlookSession2")
     $wanted = @($files | ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) })
     $existing = @([VbeUi]::TreeNames($vbe) | Where-Object { $_ -like "MSCAN*" -or $stale -contains $_ })
+    $modulesTouched = $true
     foreach ($name in $existing) {
         Log "Removing $name"
         Remove-Module -Vbe $vbe -OutlookPid $olPid -Name $name
@@ -855,13 +944,14 @@ try {
         $exitCode = 0
     }
 } catch {
-    Log "VBA import FAILED: $($_.Exception.Message)"
+    $why = $_.Exception.Message
+    Log "VBA import FAILED: $why"
+    $outcome = "The send hold had not been placed, so sending was never affected."
     if ($guardOn) {
-        # Modules are incomplete, so sends stay held. Say why from now on.
-        try { Set-ThisOutlookSessionCode -Vbe $vbe -Code (Get-GuardCode -Failed); Log "Sends stay held until Outlook is restarted" }
-        catch { Log "Could not update the send guard: $($_.Exception.Message)" }
+        $outcome = Restore-AfterFailure -Vbe $vbe -PreviousCode $previousCode -ModulesTouched $modulesTouched `
+            -OldState $oldState -StatePath $statePath
     }
-    Show-Result -Text "AES VBA update failed. Nothing was saved, so the last saved project is still on disk.`n`nClose and reopen Outlook to go back to it. If Outlook asks to save the VBA project, choose No.`n`n$($_.Exception.Message)`n`nLog: $script:LogPath" -Icon 16
+    Show-Result -Text "AES VBA update failed. Nothing was saved, so the last saved project is still on disk.`n`n$outcome`n`nReason: $why`n`nLog: $script:LogPath" -Icon 16
     $exitCode = 1
 } finally {
     if ($tempDir -and (Test-Path $tempDir)) { Remove-Item -LiteralPath $tempDir -Recurse -Force -ErrorAction SilentlyContinue }

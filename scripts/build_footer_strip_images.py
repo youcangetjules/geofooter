@@ -91,45 +91,19 @@ def _tinted(rgba: Image.Image, colour: tuple[int, int, int], strength: float) ->
 
 
 def _add_cyber(rgba: Image.Image) -> Image.Image:
-    """Static "screen" treatment for the A: scanlines, colour fringes and two glitch slices.
+    """Solid orange A with a faint colour fringe: cyan on the left edges, magenta on the right.
 
-    Sizes are in displayed pixels (the mark is drawn AES_STRIP_MARK_H tall) so
-    the effect survives the downscale instead of blurring into flat orange.
+    The scanlines and glitch slices of the first version were too much. The A
+    itself is untouched; the fringes sit behind it, under one displayed pixel wide.
     """
     w, h = rgba.size
     unit = h / AES_STRIP_MARK_H  # source pixels per displayed pixel
-
-    # Scanlines: one darker displayed row in every three, on a top-lit orange.
-    lit = rgba.copy()
-    px = lit.load()
-    period, dark_rows = 3 * unit, 1 * unit
-    for y in range(h):
-        in_dark = (y % period) < dark_rows
-        lift = 0.16 * (1 - y / h)          # brighter towards the top
-        for x in range(w):
-            r, g, b, alpha = px[x, y]
-            if alpha == 0:
-                continue
-            r, g, b = (round(c + (255 - c) * lift) for c in (r, g, b))
-            if in_dark:
-                r, g, b = (round(c * 0.72) for c in (r, g, b))
-            px[x, y] = (r, g, b, alpha)
-
-    # Colour fringes: cyan pulled left and magenta pulled right, behind the orange.
-    shift = round(1.2 * unit)
+    shift = max(1, round(0.8 * unit))
     out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    out.alpha_composite(_tinted(rgba, (0, 229, 255), 0.85), (0, 0), (shift, 0))
-    magenta = _tinted(rgba, (255, 43, 214), 0.75)
+    out.alpha_composite(_tinted(rgba, (0, 229, 255), 0.55), (0, 0), (shift, 0))
+    magenta = _tinted(rgba, (255, 43, 214), 0.45)
     out.alpha_composite(magenta.crop((0, 0, w - shift, h)), (shift, 0))
-    out.alpha_composite(lit)
-
-    # Glitch slices: two thin bands knocked sideways.
-    for top, height, dx in ((0.30, 2.0, 2.0), (0.68, 1.5, -2.5)):
-        y0, y1 = round(top * h), round(top * h + height * unit)
-        band = out.crop((0, y0, w, y1))
-        out.paste((0, 0, 0, 0), (0, y0, w, y1))
-        out.alpha_composite(band, (max(0, round(dx * unit)), y0),
-                            (max(0, round(-dx * unit)), 0))
+    out.alpha_composite(rgba)
     return out
 
 

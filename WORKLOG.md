@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.7.7: footer A back to solid orange, subtler
+- `scripts/build_footer_strip_images.py`: `_add_cyber` now only adds the two fringes (0.8px, 55% and 45% strength) behind an untouched A. Rebuilt `assets/icons/aes_mark_footer.png`.
+- Why: user found the 1.7.2 effect too much and asked for solid orange, a little more subtle.
+- Verified in Outlook's editor on a discarded draft.
+- Follow-up: none. Applies to newly scanned mail.
+
 ### 2026-11-17 — 1.7.6: whole footer button clickable
 - `aes/geolocate_headers.py`: `_chip_link_label` pads each chip code inside its link; used by `chip()` in `_build_quick_actions_row_html`.
 - Why: user reported only the text was clickable. Outlook's Word engine makes only a link's own text a target; a cell cannot be a link.

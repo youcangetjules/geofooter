@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.7.7] — 2026-11-17
+
+### Changed
+
+- Footer orange A: back to solid orange. The scanlines and glitch slices from 1.7.2 are gone; a faint cyan fringe on the left edges and magenta on the right remains.
+
 ## [1.7.6] — 2026-11-17
 
 ### Fixed

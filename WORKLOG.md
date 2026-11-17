@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.8.1: line through the footer buttons
+- `aes/geolocate_headers.py`: `chip()` drops the border and the 1px text raise.
+- Why: user screenshot of a real 1.8.0 footer. The same line was in my own 1.8.0 renders; I did not zoom in on the buttons before committing.
+- Tried in order: no raise (line moved from bottom to top), border in the chip's own colour (hairline gap at one end of some chips), no border (clean).
+- Verified zoomed 4x in Outlook's editor at 1900 and 700px. When buttons wrap, the two lines of buttons touch with no gap.
+
 ### 2026-11-17 — 1.8.0: reflowing footer strip
 - `aes/geolocate_headers.py`: `flow_separators`, `_nb_text`, `_flow_clean`, `_footer_float`, `_footer_flow_row`, `_footer_status_flow`; chips and the Quick Actions run rebuilt as inline text; the row section of `_build_html` rewritten. `strip_separators` is no longer used by the strip. `tests/test_report_attachment.py`: 3 tests, one failing if anything but the logo and AURA chip gets a fixed width or `nowrap`.
 - Why: user asked for the footer to scale with page width. At 900px the right side was cut off. Prototyped outside the scanner first, shown at four widths, then built on the user's go-ahead and committed after they saw the built renders.

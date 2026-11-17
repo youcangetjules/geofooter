@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.1] — 2026-11-17
+
+### Fixed
+
+- Footer buttons had a line through them, with a sliver of fill beyond it (1.8.0). Outlook paints a text shading one pixel larger than a border box on the same text, so the dark border sat inside the fill. The buttons now have no border, only the fill.
+
 ## [1.8.0] — 2026-11-17
 
 ### Added

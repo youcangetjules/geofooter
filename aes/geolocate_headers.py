@@ -4943,9 +4943,11 @@ class HTMLReportGenerator:
         trust_bg, trust_fg = AES_CHIP_TRUSTED_BG, AES_CHIP_TRUSTED_FG
 
         def chip(url: str, code: str, bg: str, fg: str, tip: str) -> str:
-            # Shaded, bordered text rather than a table cell, so a run of chips
-            # wraps and centres like words. Same dark border on every chip: a
-            # border that matched the fill made the blocked chip look wider.
+            # Shaded text rather than a table cell, so a run of chips wraps and
+            # centres like words. No border: Word paints the shading a pixel
+            # larger than a border box, so a dark border showed as a line through
+            # the chip, and a border in the chip's own colour left a hairline gap
+            # at one end. Shading alone is clean, and every chip is the same width.
             # The padding inside the link is what makes the whole chip clickable.
             # title= is the Outlook-safe hover explanation for aes:// chips.
             href = html.escape(url, quote=True)
@@ -4956,8 +4958,8 @@ class HTMLReportGenerator:
             )
             return (
                 f"<a href='{href}' title='{title}' style='{look} text-decoration:none;'>"
-                f"<span style='{look} background:{bg}; border:1px solid {AES_CHIP_FG}; "
-                f"mso-text-raise:1px;'>{_chip_link_label(code)}</span></a>"
+                f"<span style='{look} background:{bg}; "
+                f"text-decoration:none;'>{_chip_link_label(code)}</span></a>"
             )
 
         who = sender or domain or "this sender"

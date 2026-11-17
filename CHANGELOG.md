@@ -20,6 +20,20 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.6.0] — 2026-11-17
+
+Minor bump at the user's request, covering the VBA auto-update work since 1.5.67.
+
+### Fixed
+
+- `Import_VBA_ViaUi.ps1`: writing `ThisOutlookSession` waits for the editor's Edit commands to become available instead of sleeping 500 ms. The fixed sleep failed two real updates (5 and 10 November) with "Menu item is disabled: Edit > Select All".
+- `Import_VBA_ViaUi.ps1`: a save is now proven by the project file's content hash changing, read in place. The old check only tested that the file existed.
+
+### Notes
+
+- Outlook's saves change `VbaProject.OTM`'s contents but not its timestamp, so the timestamp says nothing about whether a save happened.
+- Norton blocks any copy of `VbaProject.OTM` outside the excluded paths, including in `%TEMP%`.
+
 ## [1.5.72] — 2026-11-17
 
 ### Fixed

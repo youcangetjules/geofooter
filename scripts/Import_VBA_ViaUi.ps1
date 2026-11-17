@@ -503,24 +503,38 @@ function Get-GuardCode {
         "End Sub`r`n"
 }
 
+# Edit commands are greyed out until the code pane has focus, which can take
+# seconds after a large import. Fixed sleeps here failed twice in normal use.
+function Invoke-EditCommand {
+    param([IntPtr]$Vbe, [string]$Item, [int]$TimeoutSec = 20)
+    $deadline = (Get-Date).AddSeconds($TimeoutSec)
+    $nextOpen = Get-Date
+    while (-not [VbeUi]::MenuEnabled($Vbe, "Edit", $Item)) {
+        if ((Get-Date) -gt $deadline) { throw "Edit > $Item stayed disabled for $TimeoutSec seconds" }
+        if ((Get-Date) -ge $nextOpen) {
+            try { [VbeUi]::SelectNode($Vbe, "ThisOutlookSession"); [VbeUi]::Invoke($Vbe, "View", "Code") } catch {}
+            $nextOpen = (Get-Date).AddSeconds(3)
+        }
+        Start-Sleep -Milliseconds 200
+    }
+    [VbeUi]::Invoke($Vbe, "Edit", $Item)
+}
+
 function Set-ThisOutlookSessionCode {
     param([IntPtr]$Vbe, [string]$Code)
     $saved = Save-ClipboardData
     try {
-        [VbeUi]::SelectNode($Vbe, "ThisOutlookSession")
-        [VbeUi]::Invoke($Vbe, "View", "Code")
-        Start-Sleep -Milliseconds 500
-        [VbeUi]::Invoke($Vbe, "Edit", "Select All")
+        Invoke-EditCommand -Vbe $Vbe -Item "Select All"
         Start-Sleep -Milliseconds 200
         Set-Clipboard -Value $Code
         Start-Sleep -Milliseconds 150
-        [VbeUi]::Invoke($Vbe, "Edit", "Paste")
+        Invoke-EditCommand -Vbe $Vbe -Item "Paste"
         Start-Sleep -Milliseconds 500
         # Read the pane back: a silently failed paste must not count as success.
-        [VbeUi]::Invoke($Vbe, "Edit", "Select All")
+        Invoke-EditCommand -Vbe $Vbe -Item "Select All"
         Start-Sleep -Milliseconds 150
         Set-Clipboard -Value " "
-        [VbeUi]::Invoke($Vbe, "Edit", "Copy")
+        Invoke-EditCommand -Vbe $Vbe -Item "Copy"
         Start-Sleep -Milliseconds 300
         $back = Get-Clipboard -Raw
         if (($back -replace '\s+', '') -ne ($Code -replace '\s+', '')) {
@@ -529,6 +543,23 @@ function Set-ThisOutlookSessionCode {
     } finally {
         Restore-ClipboardData $saved
     }
+}
+
+# Content hash of VbaProject.OTM, read in place while Outlook has it open. Proves a
+# Save reached disk. Not the timestamp: Outlook's saves leave it unchanged. Not a
+# copy either: Norton blocks copies of this file outside the excluded folders.
+function Get-OtmStamp {
+    param([string]$Otm)
+    if (-not (Test-Path -LiteralPath $Otm)) { return "missing" }
+    for ($try = 0; $try -lt 5; $try++) {
+        $stream = $null
+        try {
+            $stream = [IO.File]::Open($Otm, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
+            return [BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash($stream))
+        } catch { Start-Sleep -Milliseconds 300 }
+        finally { if ($stream) { $stream.Close() } }
+    }
+    throw "Could not read $Otm to check the save."
 }
 
 # Fingerprint of what was imported, so the ribbon host can tell when VBA\ is newer.
@@ -732,15 +763,23 @@ try {
     }
 
     # Save even after a compile error: the source is still worth keeping on disk.
-    Log "Saving"
-    [VbeUi]::Invoke($vbe, "File", "Save")
-    $msg = Read-EditorMessage -OutlookPid $olPid -WaitMs 1500
-    if ($msg) { throw "Save failed: $msg" }
-
     $otm = Join-Path $env:APPDATA "Microsoft\Outlook\VbaProject.OTM"
-    $deadline = (Get-Date).AddSeconds(20)
-    while (-not (Test-Path $otm) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 300 }
-    if (-not (Test-Path $otm)) { throw "Save ran but $otm was not written." }
+    $stampBefore = Get-OtmStamp -Otm $otm
+    $stampAfter = $stampBefore
+    foreach ($attempt in 1, 2) {
+        Log "Saving$(if ($attempt -gt 1) { ' (second attempt)' })"
+        [VbeUi]::Invoke($vbe, "File", "Save")
+        $msg = Read-EditorMessage -OutlookPid $olPid -WaitMs 1500
+        if ($msg) { throw "Save failed: $msg" }
+        $deadline = (Get-Date).AddSeconds(20)
+        do {
+            Start-Sleep -Milliseconds 500
+            $stampAfter = Get-OtmStamp -Otm $otm
+        } while ($stampAfter -eq $stampBefore -and (Get-Date) -lt $deadline)
+        if ($stampAfter -ne $stampBefore) { break }
+    }
+    if ($stampAfter -eq "missing") { throw "Save ran but $otm was not written." }
+    if ($stampAfter -eq $stampBefore) { throw "Save ran twice but $otm did not change on disk." }
     $len = (Get-Item $otm).Length
     Log "VbaProject.OTM written: $len bytes"
 

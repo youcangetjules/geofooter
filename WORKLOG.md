@@ -13,6 +13,15 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.6.0: live test of the importer fixes; two more fixes; minor bump
+- Live import 1 (1.5.72 code): send guard, 20 modules, compile wait and save all ran; exit 0. Outlook restarted with the new DLL: AES started, startup backup logged "unchanged", `-IfStale` did nothing.
+- Found in `VbaImport.log`: updates failed on 2026-11-05 16:09 and 2026-11-10 11:19 at `Edit > Select All` (code pane not focused yet). Added `Invoke-EditCommand`, which waits and re-opens the pane.
+- Thought the save had not reached disk because the OTM timestamp stayed at 11-05. Wrong: the content hash changes on every save; only the timestamp does not. Added `Get-OtmStamp` (in-place SHA-256) as the save check.
+- My first version of that check copied the OTM to `%TEMP%`. Norton quarantined 25 such copies (`aes_otm_*.tmp`, `aes_diag.tmp`) and the check failed live import 2 with a false "did not change". The saved project from that run is complete and compiled; `vba_sync_state.json` was set to current by hand.
+- NOT tested end to end: the final in-place save check inside a full import (the function was tested alone against the open OTM). The user was composing mail, so no third import was run.
+- Follow-up: user may delete the 25 temp entries from Norton's quarantine. DLL in `bin/Release` was built from 1.5.72 source; only the `<Version>` number differs.
+- Minor bump requested by the user.
+
 ### 2026-11-17 — 1.5.72: fixes from the review of the VBA auto-update work
 - Why: user asked for a flaw review of this month's changes, then for every finding to be fixed.
 - `scripts/Import_VBA_ViaUi.ps1`: popup after lock release; "already running" notice; `InvokeWait` for Compile; full clipboard save/restore; duplicate module lines ignored; state marked `import-in-progress` during a run; send guard in `ThisOutlookSession` while modules are replaced.

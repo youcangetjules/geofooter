@@ -127,13 +127,54 @@ def test_readnotify_category_from_last_send(tmp_path, monkeypatch):
     assert gh.readnotify_category() == "Invisible"                      # cannot be combined
 
 
-def test_status_cells_show_both_indicators(tmp_path, monkeypatch):
+def test_status_indicators_show_both_values(tmp_path, monkeypatch):
     monkeypatch.setattr(gh, "aspr_active", lambda: True)
     monkeypatch.setattr(gh, "readnotify_category", lambda: "")
-    cells = gh._footer_status_cells("#d5dee4")
-    assert "ASPR:" in cells and "&nbsp;ACTIVE" in cells and "RN:" in cells and "&nbsp;OFF" in cells
+    flow = gh._footer_status_flow("#d5dee4")
+    assert "ASPR:" in flow and ">ACTIVE<" in flow and "RN:" in flow and ">OFF<" in flow
+    assert "<td" not in flow and "<table" not in flow          # inline, so the row can wrap
     monkeypatch.setattr(gh, "aspr_active", lambda: False)
     monkeypatch.setattr(gh, "readnotify_category", lambda: "Certified")
-    cells = gh._footer_status_cells("#d5dee4")
-    assert "&nbsp;NOT ACTIVE" in cells and "&nbsp;CERTIFIED" in cells
+    flow = gh._footer_status_flow("#d5dee4")
+    assert ">NOT&nbsp;ACTIVE<" in flow and ">CERTIFIED<" in flow
 
+
+# --- reflowing strip ----------------------------------------------------------
+
+def test_flow_separators_break_only_after_dots():
+    out = gh.flow_separators(
+        "Scan Result - Basic | <a href=\"x\" style=\"color:#fff; line-height:12px; vertical-align:middle;\">Risk LOW</a>"
+        " | Links: %% <font style='color:#0f0; line-height:16px;'>12 OK</font>",
+        color="#ffffff", weight="bold",
+    )
+    assert out.count("&#9679;") == 2                             # one dot between each pair
+    assert "Scan&nbsp;Result&nbsp;-&nbsp;Basic" in out and "Risk&nbsp;LOW" in out
+    assert "Links:&nbsp;<font" in out and "12&nbsp;OK" in out
+    assert "vertical-align" not in out and "line-height" not in out
+    assert 'href="x"' in out                                     # tags and attributes untouched
+    assert "&#9679;</span> <span" in out                         # the only plain space is after a dot
+
+
+def test_strip_has_no_fixed_width_content(monkeypatch):
+    """Nothing but the logo may pin the strip's width, or a narrow window cuts it off."""
+    cls = next(v for v in vars(gh).values() if isinstance(v, type) and "_build_html" in vars(v))
+    obj = object.__new__(cls)
+    for name in ("_write_risk_report_file", "_write_full_scan_report_file", "_build_full_details_html"):
+        monkeypatch.setattr(cls, name, lambda *a, **k: "", raising=False)
+    monkeypatch.setattr(gh, "aspr_active", lambda: True)
+    monkeypatch.setattr(gh, "readnotify_category", lambda: "")
+    page = obj._build_html({
+        "risk_level": "LOW", "risk_score": 20, "hre": 1,
+        "summary_line1_html": "Aliniant AES Scan Result - Basic Scan | {{AES_RISK}} | {{AES_HRE}}",
+        "summary_line2_html": "Sender IP 203.0.113.9 | Testville | {{AES_FULLSCAN}}",
+        "sender_email": "someone@example.org", "sender_domain": "example.org", "guri": "T",
+    }, "compact")
+    import re
+    rows = page[page.index("aes-footer-start"):]
+    assert "nowrap" not in rows
+    widths = [int(w) for w in re.findall(r"<td[^>]* width='([0-9]+)'", rows)]
+    assert max(widths) <= 78                                      # logo cell and the AURA chip only
+    for code in ("SL", "BA", "BB", "TS", "NT"):
+        if code != "SL":                                          # SL needs a links report
+            assert f"{code}&nbsp;" in rows
+    assert "&#8203;" in rows                                      # break points between chips

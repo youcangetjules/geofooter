@@ -613,7 +613,7 @@ AES_STRIP_LETTER_H = 14
 # gap height makes the whole strip taller, and Word anchors the image by its
 # bottom edge, so padding inside the image does nothing. Word's text-lowering on
 # a span around the image is what moves it.
-AES_STRIP_LETTER_DROP = {"E": 2, "S": 3}
+AES_STRIP_LETTER_DROP = {"E": 0.6, "S": 2}
 AES_STRIP_AES_COL = 16
 # Outlook drops padding on a div. This row is the gap above the strip.
 AES_FOOTER_GAP_HTML = (
@@ -1050,32 +1050,107 @@ def readnotify_category() -> str:
     return " + ".join(names) if names else "Tracking"
 
 
-def _footer_status_cells(label_color: str) -> str:
-    """ASPR and RN indicators for the end of the Quick Actions row."""
+# --------------------------------------------------------------------------- #
+# Reflowing strip. Outlook's Word engine cannot scale text with the window, so
+# the strip wraps instead: each row is one cell of inline text with its
+# right-hand item in a floated table. In a narrow window the text wraps, then
+# the floated item drops onto its own line. Nothing is fixed-width except the
+# logo, so nothing is cut off.
+# --------------------------------------------------------------------------- #
+
+# A break is forbidden beside a non-breaking space, so runs padded with them
+# (the chips) need an explicit break point between them.
+_FLOW_BREAK = "&#8203;"
+
+
+def _nb_text(fragment: str) -> str:
+    """Make the visible text of an HTML fragment unbreakable; tags are untouched."""
+    return re.sub(
+        r"(^|>)([^<]+)", lambda m: m.group(1) + m.group(2).replace(" ", "&nbsp;"), fragment or ""
+    )
+
+
+def _flow_clean(fragment: str) -> str:
+    """Drop the per-cell alignment locks the table layout needed; inline text shares one line box."""
+    def repl(match: "re.Match[str]") -> str:
+        quote, body = match.group(1), match.group(2)
+        body = re.sub(r"(?:mso-)?line-height(?:-rule)?\s*:[^;'\"]+;?\s*", "", body)
+        body = re.sub(r"vertical-align\s*:[^;'\"]+;?\s*", "", body)
+        return f"style={quote}{body.strip()}{quote}"
+
+    return re.sub(r"style=(['\"])([^'\"]*)\1", repl, fragment or "")
+
+
+def flow_separators(inner_html: str, *, color: str, weight: str, size: str = "12px") -> str:
+    """Turn ' | ' into green dots in wrappable inline text. Lines break only after a dot."""
+    dot = (
+        f"<span style='color:{AES_STRIP_DOT}; font-size:8px; mso-text-raise:2px;'>&#9679;</span>"
+    )
+    labels = []
+    for part in (inner_html or "").split(" | "):
+        part = part.replace(" %% ", "&nbsp;").replace(" ^^ ", "&nbsp;")
+        labels.append(
+            f"<span style='color:{color}; font-family:{AES_STRIP_FONT}; font-size:{size}; "
+            f"font-weight:{weight};'>{_nb_text(_flow_clean(part))}</span>"
+        )
+    return f"&nbsp;{dot} ".join(labels)
+
+
+def _footer_float(side: str, inner_html: str, *, width: int = 0, height: int = 16) -> str:
+    """A table Word floats left or right. Text wraps beside it and drops below when squeezed."""
+    fixed = f"width='{width}' " if width else ""
+    fixed_css = f"width:{width}px; " if width else ""
+    return (
+        f"<table border='0' cellpadding='0' cellspacing='0' align='{side}' {fixed}"
+        f"style='{fixed_css}border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt; "
+        f"mso-table-tspace:0pt; mso-table-bspace:0pt;'><tr>"
+        f"<td align='{side}' valign='middle' height='{height}' style='height:{height}px; padding:0; "
+        f"font-size:1px; line-height:{height}px; mso-line-height-rule:exactly; text-align:{side};'>"
+        f"{inner_html}</td></tr></table>"
+    )
+
+
+def _footer_flow_row(centre_html: str, right_html: str, mirror_px: int, v_pad: str) -> str:
+    """One strip row: centred inline text, right-hand item floated, mirrored spacer on the left.
+
+    The spacer is one pixel tall. It shortens only the first line, so that line
+    stays centred on the whole strip when there is room, and it costs one pixel
+    rather than a blank line when the row has wrapped.
+    """
+    top, bottom = v_pad.split()
+    spacer = _footer_float("left", "&nbsp;", width=mirror_px, height=1) if mirror_px > 0 else ""
+    return (
+        f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
+        f"style='background:{AES_STRIP_BG}; border-left:2px solid {AES_STRIP_BG}; "
+        f"padding:{top} 16px {bottom} 16px; text-align:center; vertical-align:middle; "
+        f"font-family:{AES_STRIP_FONT}; font-size:12px; line-height:16px; "
+        f"mso-line-height-rule:at-least;'>"
+        f"{spacer}{_footer_float('right', right_html)}{centre_html}</td>"
+    )
+
+
+def _footer_status_flow(label_color: str) -> str:
+    """ASPR and RN indicators as inline text for the end of the Quick Actions row."""
     active = aspr_active()
     category = readnotify_category()
     font = (
-        f"font-family:{AES_STRIP_FONT}; font-size:9px; font-weight:bold; "
-        "letter-spacing:1px; white-space:nowrap; vertical-align:middle; "
-        "line-height:16px; mso-line-height-rule:exactly;"
+        f"font-family:{AES_STRIP_FONT}; font-size:9px; font-weight:bold; letter-spacing:1px;"
     )
 
     def pair(code: str, tip: str, value: str, on: bool) -> str:
         value_color = "#90EE90" if on else label_color
+        title = html.escape(tip, quote=True)
         return (
-            "<td width='20' valign='middle' style='width:20px; font-size:1px; "
-            "line-height:1px; vertical-align:middle;'>&nbsp;</td>"
-            f"<td valign='middle' nowrap style='{font}'>"
-            f"<span style='color:{label_color};' title='{html.escape(tip, quote=True)}'>{code}:</span>"
-            f"<span style='color:{value_color};' title='{html.escape(tip, quote=True)}'>"
-            f"&nbsp;{html.escape(value.upper())}</span></td>"
+            f"<span style='{font} color:{label_color};' title='{title}'>{code}:&nbsp;</span>"
+            f"<span style='{font} color:{value_color};' title='{title}'>"
+            f"{_nb_text(html.escape(value.upper()))}</span>"
         )
 
     return (
         pair("ASPR", "Aliniant Smart Pixel Reporting for the mail you send",
              "Active" if active else "Not Active", active)
-        + pair("RN", "ReadNotify choice on your most recent send",
-               category or "Off", bool(category))
+        + f"&nbsp;&nbsp;&nbsp;{_FLOW_BREAK}"
+        + pair("RN", "ReadNotify choice on your most recent send", category or "Off", bool(category))
     )
 
 
@@ -4868,27 +4943,21 @@ class HTMLReportGenerator:
         trust_bg, trust_fg = AES_CHIP_TRUSTED_BG, AES_CHIP_TRUSTED_FG
 
         def chip(url: str, code: str, bg: str, fg: str, tip: str) -> str:
-            # Same dark border on every chip. A border that matched the fill
-            # (blocked BB) made that chip look ~2px wider than the white ones.
-            # No letter-spacing: Outlook was also widening "BB" past the fixed
-            # width. Outer table is 78 so a 1px border still fits inside.
+            # Shaded, bordered text rather than a table cell, so a run of chips
+            # wraps and centres like words. Same dark border on every chip: a
+            # border that matched the fill made the blocked chip look wider.
+            # The padding inside the link is what makes the whole chip clickable.
             # title= is the Outlook-safe hover explanation for aes:// chips.
             href = html.escape(url, quote=True)
             title = html.escape(tip, quote=True)
-            border = AES_CHIP_FG
+            look = (
+                f"font-family:{AES_STRIP_FONT}; font-size:10px; font-weight:bold; "
+                f"letter-spacing:0; color:{fg};"
+            )
             return (
-                "<table border='0' cellpadding='0' cellspacing='0' width='78' align='center' "
-                "style='border-collapse:collapse; width:78px;'>"
-                f"<tr><td bgcolor='{bg}' align='center' valign='middle' width='78' height='16' "
-                f"style='background:{bg}; border:1px solid {border}; "
-                f"width:78px; height:16px; line-height:16px; mso-line-height-rule:exactly; "
-                f"text-align:center; padding:0; font-size:10px;'>"
-                f"<a href='{href}' title='{title}' "
-                f"style='color:{fg}; font-family:{AES_STRIP_FONT}; font-size:10px; "
-                f"font-weight:bold; letter-spacing:0; line-height:16px; "
-                f"mso-line-height-rule:exactly; text-decoration:none;'>"
-                f"{_chip_link_label(code)}</a>"
-                "</td></tr></table>"
+                f"<a href='{href}' title='{title}' style='{look} text-decoration:none;'>"
+                f"<span style='{look} background:{bg}; border:1px solid {AES_CHIP_FG}; "
+                f"mso-text-raise:1px;'>{_chip_link_label(code)}</span></a>"
             )
 
         who = sender or domain or "this sender"
@@ -4948,35 +5017,21 @@ class HTMLReportGenerator:
         if not planned:
             return ""
 
-        # Shrink-wrapped row so the chips sit together. A 20px spacer cell is
-        # what Outlook actually honours between them.
+        # Inline run: label, chips, indicators. Gaps are non-breaking spaces, each
+        # followed by an explicit break point so the run can wrap between chips.
         label_color = contrasting_text_color(banner_bg)
         if label_color == "#ffffff":
             label_color = AES_STRIP_MUTED
-        parts = [
-            f"<td valign='middle' style='font-family:{AES_STRIP_FONT}; font-size:9px; "
-            "font-weight:bold; letter-spacing:1.5px; white-space:nowrap; "
-            "vertical-align:middle; line-height:16px; mso-line-height-rule:exactly;'>"
-            f"<span style='color:{label_color};' "
-            f"title='Quick Actions for this sender'>QUICK ACTIONS</span></td>"
-        ]
-        for code, url, bg, fg, tip in planned:
-            parts.append(
-                "<td width='20' valign='middle' "
-                "style='width:20px; font-size:1px; line-height:1px; "
-                "vertical-align:middle;'>&nbsp;</td>"
-            )
-            parts.append(
-                "<td valign='middle' style='vertical-align:middle;'>"
-                f"{chip(url, code, bg, fg, tip)}</td>"
-            )
-        parts.append(_footer_status_cells(label_color))
-        return (
-            "<table border='0' cellpadding='0' cellspacing='0' align='center' "
-            "style='border-collapse:separate; margin:0 auto;'>"
-            f"<tr>{''.join(parts)}</tr></table>"
+        gap = f"<span style='font-size:10px;'>&nbsp;&nbsp;&nbsp;&nbsp;{_FLOW_BREAK}</span>"
+        label = (
+            f"<span style='font-family:{AES_STRIP_FONT}; font-size:9px; font-weight:bold; "
+            f"letter-spacing:1.5px; color:{label_color};' "
+            f"title='Quick Actions for this sender'>QUICK&nbsp;ACTIONS</span>"
         )
-    
+        run = [label] + [chip(url, code, bg, fg, tip) for code, url, bg, fg, tip in planned]
+        run.append(_footer_status_flow(label_color))
+        return gap.join(run)
+
     def _calculate_domain_age(self, creation_date: str) -> Optional[int]:
         """Calculate domain age in days."""
         if not creation_date or creation_date == "Unknown":
@@ -6098,20 +6153,10 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             str(data.get("links_report_url") or ""),
             AES_STRIP_BG,
         )
-        summary_line1 = strip_separators(
-            summary_line1,
-            color=AES_STRIP_TEXT,
-            size="12px",
-            weight="bold",
-            line_height="16px",
-        )
-        summary_line2 = strip_separators(
-            summary_line2, color=AES_STRIP_MUTED, size="12px", weight="normal"
-        )
+        summary_line1 = flow_separators(summary_line1, color=AES_STRIP_TEXT, weight="bold")
+        summary_line2 = flow_separators(summary_line2, color=AES_STRIP_MUTED, weight="normal")
         # A 1px cell. Outlook drops a div border, so the line has to be the
         # cell background. Inset 16px, same width between every row.
-        # Every row is AES_STRIP_ROW_H: 16px text + 2px, or 18px chips + 1px.
-        # Bottom row: +2px under the content so the strip has a little air.
         mark = _footer_mark_html()
         aes_letters = bool(mark)
         # Rules live only in the content column. The A/E/S column is a rowspan
@@ -6129,41 +6174,21 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"background:{AES_STRIP_RULE}; mso-line-height-rule:exactly;'>"
             f"&nbsp;</td></tr></table></td></tr>"
         )
-        quip = html.escape(footer_quip(str(risk or ""), int(score or 0)))
-        # The logo (+ optional A/E/S column) spans every row. The pad beside the
-        # logo is only as wide as the quip minus that left block, so the middle
-        # text stays centred on the full strip.
-        quip_px = _footer_text_px(quip, 12, italic=True)
-        # Rows 1 and 2 share one right-hand width (quip or AURA chip, whichever
-        # is wider) so both centre on the same line.
-        side_w = max(quip_px + 16, 78 + 16)
-        right_w = aura_w = side_w
+        quip_plain = footer_quip(str(risk or ""), int(score or 0))
+        # Mirrored on the left (less the logo block) so the first line of each
+        # row centres on the whole strip when the window is wide enough.
         logo_col = (AES_STRIP_MARK_CELL_W + AES_STRIP_AES_COL) if mark else 0
+        quip_px = _footer_text_px(quip_plain, 12, italic=True)
+        side_w = max(quip_px, 78)
+        # The quip may wrap inside its float in a narrow window; it is not nowrap.
         right_top = (
-            f"<table border='0' cellpadding='0' cellspacing='0' width='{right_w}' "
-            f"align='right' style='width:{right_w}px; border-collapse:collapse;'><tr>"
-            f"<td align='right' valign='middle' nowrap "
-            f"style='white-space:nowrap; text-align:right; color:{risk_color}; "
-            # Same size and line as the title, so both sit on one baseline with
-            # no raise. An 11px quip could only land above or below its centre.
-            f"font-family:{AES_STRIP_FONT}; font-size:12px; font-style:italic; "
-            f"font-weight:normal; line-height:16px; mso-line-height-rule:exactly;'>"
-            f"{quip}</td>"
-            f"<td width='16' style='width:16px; font-size:1px; line-height:1px;'>&nbsp;</td>"
-            f"</tr></table>"
+            f"<span style='color:{risk_color}; font-family:{AES_STRIP_FONT}; font-size:12px; "
+            f"font-style:italic; font-weight:normal; line-height:16px;'>"
+            f"{html.escape(quip_plain)}</span>"
         )
-        aura_chip = _footer_aura_chip_html(
+        right_aura = _footer_aura_chip_html(
             sender_email=str(data.get("sender_email") or ""),
             sender_domain=str(data.get("sender_domain") or ""),
-        )
-        right_aura = (
-            f"<table border='0' cellpadding='0' cellspacing='0' width='{aura_w}' "
-            f"align='right' style='width:{aura_w}px; border-collapse:collapse;'><tr>"
-            f"<td align='right' valign='middle' "
-            f"style='text-align:right; vertical-align:middle; padding:0;'>"
-            f"{aura_chip}</td>"
-            f"<td width='16' style='width:16px; font-size:1px; line-height:1px;'>&nbsp;</td>"
-            f"</tr></table>"
         )
         logo_cell = ""
         letters_cell = ""
@@ -6182,59 +6207,15 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
         except Exception:
             _aes_ver = ""
         _ver_bit = f" v.{_aes_ver}" if _aes_ver else ""
-        copy_plain = f"© 2026 Aliniant Labs{_ver_bit}"
-        copy_html = f"&#169; 2026 Aliniant Labs{_ver_bit}"
+        copy_plain = f"\u00a9 2026 Aliniant Labs{_ver_bit}"
         copy_px = _footer_text_px(copy_plain, 11, italic=False)
-        copy_w = copy_px + 16
-        copy_font = (
-            f"font-family:{AES_STRIP_FONT}; font-size:11px; font-weight:normal; "
-            f"white-space:nowrap; line-height:16px; mso-line-height-rule:exactly; "
-            f"vertical-align:middle;"
-        )
         right_copy = (
-            f"<table border='0' cellpadding='0' cellspacing='0' width='{copy_w}' "
-            f"align='right' style='width:{copy_w}px; border-collapse:collapse;'><tr>"
-            f"<td align='right' valign='middle' nowrap style='{copy_font} "
-            f"color:{AES_STRIP_MUTED}; text-align:right;'>"
-            f"<span style='color:{AES_STRIP_MUTED};'>{copy_html}</span></td>"
-            f"<td width='16' style='width:16px; font-size:1px;'>&nbsp;</td>"
-            f"</tr></table>"
+            f"<span style='color:{AES_STRIP_MUTED}; font-family:{AES_STRIP_FONT}; font-size:11px; "
+            f"font-weight:normal; line-height:16px;'>"
+            f"{_nb_text(html.escape(copy_plain))}</span>"
         )
-        def strip_row(
-            centre_html: str, centre_style: str, right_html: str, side: int,
-            v_pad: str,
-        ) -> str:
-            """One strip row centred on the whole footer, not on its own cell.
 
-            Rows used to share one column grid, and Outlook spread the strip's
-            spare width into the right-hand column, pushing the centre text
-            left. Each row is now its own two-cell table: a fixed-width right
-            cell, and a centre cell padded on the left by that width less the
-            logo column.
-            """
-            top, bottom = v_pad.split()
-            left_pad = 16 + max(0, side - logo_col)
-            return (
-                f"<td valign='middle' bgcolor='{AES_STRIP_BG}' "
-                f"style='background:{AES_STRIP_BG}; border-left:2px solid {AES_STRIP_BG}; "
-                f"padding:0; vertical-align:middle;'>"
-                f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
-                f"bgcolor='{AES_STRIP_BG}' style='width:100%; background:{AES_STRIP_BG}; "
-                f"border-collapse:collapse;'><tr>"
-                f"<td align='center' valign='middle' bgcolor='{AES_STRIP_BG}' "
-                f"style='background:{AES_STRIP_BG}; "
-                f"padding:{top} 16px {bottom} {left_pad}px; text-align:center; "
-                f"vertical-align:middle; {centre_style}'>{centre_html}</td>"
-                f"<td width='{side}' align='right' valign='middle' bgcolor='{AES_STRIP_BG}' "
-                f"style='width:{side}px; background:{AES_STRIP_BG}; "
-                f"padding:{top} 0 {bottom} 0; vertical-align:middle;'>{right_html}</td>"
-                f"</tr></table></td>"
-            )
-
-        # The mark spans all five rows. Word gives any extra rowspan height to
-        # row 1, so the mark cell must be no taller than the rows
-        # (AES_STRIP_MARK_PAD_TOP). Nesting the rows in a side cell instead made
-        # Word add ~6px after the nested table and centre it, pushing row 1 down.
+        # The mark and the A/E/S letters span all five rows.
         summary_block = (
             f"<table border='0' cellpadding='0' cellspacing='0' width='100%' "
             f"bgcolor='{AES_STRIP_BG}' style='background:{AES_STRIP_BG}; "
@@ -6242,30 +6223,15 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
             f"<tr>"
             f"{logo_cell}"
             f"{letters_cell}"
-            + strip_row(
-                summary_line1,
-                f"color:{AES_STRIP_TEXT}; font-family:{AES_STRIP_FONT}; font-size:12px; "
-                f"font-weight:bold; letter-spacing:0.3px; line-height:16px; "
-                f"mso-line-height-rule:exactly;",
-                right_top,
-                side_w,
-                "2px 2px",
-            )
+            + _footer_flow_row(summary_line1, right_top, max(0, side_w - logo_col), "2px 2px")
             + f"</tr>"
             f"{rule_row}"
             f"<tr>"
-            + strip_row(
-                summary_line2,
-                f"color:{AES_STRIP_MUTED}; font-family:{AES_STRIP_FONT}; font-size:12px; "
-                f"font-weight:normal; line-height:16px; mso-line-height-rule:exactly;",
-                right_aura,
-                side_w,
-                "2px 2px",
-            )
+            + _footer_flow_row(summary_line2, right_aura, max(0, side_w - logo_col), "2px 2px")
             + f"</tr>"
             f"{rule_row}"
             f"<tr>"
-            + strip_row(quick_actions, "", right_copy, copy_w, "1px 3px")
+            + _footer_flow_row(quick_actions, right_copy, max(0, copy_px - logo_col), "0px 2px")
             + f"</tr>"
             f"</table>"
         )

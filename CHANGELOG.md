@@ -20,6 +20,17 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.0] — 2026-11-17
+
+### Added
+
+- **Reflowing footer.** The scan strip now adapts to the window width. In a narrow window the centre text wraps, then the right-hand items (quip, AURA chip, copyright) drop onto their own line, then the buttons wrap. Nothing is cut off. Outlook cannot scale text with the window, so the strip gets taller instead: 68px wide, about 81px at 1100px, 147px at 700px, 196px at 520px.
+
+### Changed
+
+- Each strip row is one cell of inline text with its right-hand item in a floated table and a one-pixel mirrored spacer on the left, replacing the fixed two-cell tables. Quick Action buttons are shaded, bordered text rather than table cells; the whole button is still clickable.
+- `AES_STRIP_LETTER_DROP` is now `{"E": 0.6, "S": 2}` for the new row heights.
+
 ## [1.7.17] — 2026-11-17
 
 ### Changed

@@ -13,6 +13,15 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.8.0: reflowing footer strip
+- `aes/geolocate_headers.py`: `flow_separators`, `_nb_text`, `_flow_clean`, `_footer_float`, `_footer_flow_row`, `_footer_status_flow`; chips and the Quick Actions run rebuilt as inline text; the row section of `_build_html` rewritten. `strip_separators` is no longer used by the strip. `tests/test_report_attachment.py`: 3 tests, one failing if anything but the logo and AURA chip gets a fixed width or `nowrap`.
+- Why: user asked for the footer to scale with page width. At 900px the right side was cut off. Prototyped outside the scanner first, shown at four widths, then built on the user's go-ahead and committed after they saw the built renders.
+- Dead ends worth knowing: a break is forbidden beside a non-breaking space, so nbsp-padded chips need a zero-width space between them; auto-width cells did not shrink the quip; fixed-width floats still pinned the width.
+- Verified in Outlook's editor on discarded drafts at 1900, 1100, 700 and 520px. Wide view: logo 6/6, letters A 4/3, E 4/4, S 5/4, strip 68px.
+- Not verified: top-row text alignment by measurement; a real scanned message; narrow reading-pane widths below 520px.
+- Known rough edges when wrapped: A/E/S letters do not track the rows, lines end with a separator dot, wrapped button lines are about 2px apart.
+- MINOR bump: new behaviour, per AGENTS.md.
+
 ### 2026-11-17 — 1.7.17: footer A centred again
 - `aes/geolocate_headers.py`: mark cell back to `valign` middle, `AES_STRIP_MARK_PAD_TOP` 1.
 - Why: user request, with the plain-orange change.

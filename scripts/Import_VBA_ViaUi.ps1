@@ -433,9 +433,16 @@ function Remove-Module {
 
 function Import-Module-File {
     param([IntPtr]$Vbe, [int]$OutlookPid, [string]$Path)
-    [VbeUi]::Invoke($Vbe, "File", "Import File")
-    $dlg = [VbeUi]::WaitDialog($OutlookPid, "Import File", 10000)
-    if ($dlg -eq [IntPtr]::Zero) { throw "Import File dialog did not open" }
+    # The command can be swallowed if Outlook is busy for a moment (a mail
+    # arriving, the user clicking). Ask again rather than fail the whole import
+    # with the modules already removed.
+    $dlg = [IntPtr]::Zero
+    foreach ($attempt in 1..4) {
+        try { [VbeUi]::Invoke($Vbe, "File", "Import File") } catch { Start-Sleep -Seconds 1; continue }
+        $dlg = [VbeUi]::WaitDialog($OutlookPid, "Import File", 8000)
+        if ($dlg -ne [IntPtr]::Zero) { break }
+    }
+    if ($dlg -eq [IntPtr]::Zero) { throw "Import File dialog did not open after 4 attempts" }
     if (-not [VbeUi]::SetFileName($dlg, $Path)) {
         [VbeUi]::ClickId($dlg, 2)
         throw "File name box not found in Import File dialog"
@@ -517,18 +524,25 @@ function Get-GuardCode {
 # Edit commands are greyed out until the code pane has focus, which can take
 # seconds after a large import. Fixed sleeps here failed twice in normal use.
 function Invoke-EditCommand {
-    param([IntPtr]$Vbe, [string]$Item, [int]$TimeoutSec = 20)
+    param([IntPtr]$Vbe, [string]$Item, [int]$TimeoutSec = 30)
     $deadline = (Get-Date).AddSeconds($TimeoutSec)
     $nextOpen = Get-Date
-    while (-not [VbeUi]::MenuEnabled($Vbe, "Edit", $Item)) {
-        if ((Get-Date) -gt $deadline) { throw "Edit > $Item stayed disabled for $TimeoutSec seconds" }
+    $lastError = "stayed disabled"
+    while ((Get-Date) -le $deadline) {
+        if ([VbeUi]::MenuEnabled($Vbe, "Edit", $Item)) {
+            # The pane can lose focus between the check and the command (the user
+            # clicks, a mail arrives). That failed an import on 2026-11-17 and left
+            # sends held, so a failed command goes round again instead of throwing.
+            try { [VbeUi]::Invoke($Vbe, "Edit", $Item); return }
+            catch { $lastError = $_.Exception.Message }
+        }
         if ((Get-Date) -ge $nextOpen) {
             try { [VbeUi]::SelectNode($Vbe, "ThisOutlookSession"); [VbeUi]::Invoke($Vbe, "View", "Code") } catch {}
             $nextOpen = (Get-Date).AddSeconds(3)
         }
         Start-Sleep -Milliseconds 200
     }
-    [VbeUi]::Invoke($Vbe, "Edit", $Item)
+    throw "Edit > $Item did not run in $TimeoutSec seconds: $lastError"
 }
 
 function Set-ThisOutlookSessionCode {
@@ -759,7 +773,15 @@ try {
     Log "All $($wanted.Count) modules are in the project"
 
     Log "Writing built-in ThisOutlookSession"
-    Set-ThisOutlookSessionCode -Vbe $vbe -Code $realCode
+    $written = $false
+    foreach ($attempt in 1..3) {
+        try { Set-ThisOutlookSessionCode -Vbe $vbe -Code $realCode; $written = $true; break }
+        catch {
+            Log "ThisOutlookSession write attempt $attempt failed: $($_.Exception.Message)"
+            if ($attempt -eq 3) { throw }
+            Start-Sleep -Seconds 2
+        }
+    }
     $guardOn = $false
 
     Log "Compiling"

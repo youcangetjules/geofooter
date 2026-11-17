@@ -13,6 +13,13 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.8.3: importer retries after a failed update left sends held
+- `scripts/Import_VBA_ViaUi.ps1`: `Invoke-EditCommand` retries a failed command until its deadline; the final `ThisOutlookSession` write retries 3 times; `Import-Module-File` asks for the dialog 4 times.
+- What happened (12:10-12:20): the import for 1.8.2 failed at "Edit > Select All" on the last step, so sends were held with the explanatory message. Three re-runs then failed because that Outlook session would no longer open the editor's Import File dialog at all: no window appeared, while Tools > Options still opened. Cause unknown. Sends were held for about 10 minutes.
+- Recovery: Outlook restarted, answering No to "save the VBA project?" so the half-built project was discarded; the add-in's startup import then succeeded in the fresh session; a second restart loaded it.
+- The retries address the first failure. They would NOT have fixed the dead Import dialog; only a restart did.
+- Open problems: (1) a failed import leaves sends held until someone restarts Outlook; (2) Outlook's Quit is blocked by the VBA save prompt, which only a person or a script answering No clears.
+
 ### 2026-11-17 — 1.8.2: rescans replace an outdated footer logo
 - `aes/geolocate_headers.py`: `_versioned_mark_path`, used by `_footer_mark_html`. `VBA/MSCANModule1.bas`: `AesMarkFileAttached`; `EmbedAesFooterMark` re-attaches when the file name differs and attaches under the real file name. 2 tests.
 - Why: user screenshot of a 1.8.0 footer still showing the 1.7.2 striped A. VBA only checked that an attachment with the mark's Content-ID existed.

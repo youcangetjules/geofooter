@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.3] — 2026-11-17
+
+### Fixed
+
+- `Import_VBA_ViaUi.ps1`: an Edit command that loses focus between its check and its click is retried instead of failing the import; writing `ThisOutlookSession` is attempted up to three times; the Import File dialog is requested up to four times.
+
 ## [1.8.2] — 2026-11-17
 
 ### Fixed

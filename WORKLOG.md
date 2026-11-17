@@ -13,6 +13,13 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.7.15: ASPR and RN indicators on the footer
+- `aes/geolocate_headers.py`: `aspr_active`, `readnotify_category`, `_footer_status_cells`, appended in `_build_quick_actions_row_html`. Two tests added to `tests/test_report_attachment.py`.
+- Why: user request; they confirmed the indicators should show their own settings.
+- ReadNotify has no standing switch, so RN shows the choice saved from the most recent send (`classify_result.json`): OFF, TRACKING, or the option names (Invisible, Self-Destruct, Certified, Ensured, No-Print, Translate).
+- Verified: unit tests, live values (ASPR active, RN off), and a render in Outlook's editor on a discarded draft; strip height unchanged at 68px.
+- Follow-up: the values are a snapshot from scan time and do not update in footers already written.
+
 ### 2026-11-17 — 1.7.14: footer A moved up 4px
 - `aes/geolocate_headers.py`: mark cell `valign` top, `AES_STRIP_MARK_PAD_TOP` 2.
 - Why: user request, after the 1.7.8 centring.

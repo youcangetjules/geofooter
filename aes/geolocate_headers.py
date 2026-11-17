@@ -1009,6 +1009,76 @@ def write_shareable_report(report_url: str) -> str:
         return ""
 
 
+def aspr_active() -> bool:
+    """Aliniant Smart Pixel Reporting: is the tracking pixel switched on for outgoing mail?"""
+    try:
+        import aes.pixel_tracking as pixel_tracking
+
+        return bool(pixel_tracking.load_config().get("enabled"))
+    except Exception:
+        return False
+
+
+# ReadNotify options, strongest first; the first one set names the category.
+_RN_CATEGORIES = (
+    ("invisible", "Invisible"),
+    ("self_destruct", "Self-Destruct"),
+    ("certified", "Certified"),
+    ("ensured", "Ensured"),
+    ("block_print", "No-Print"),
+    ("translate", "Translate"),
+)
+
+
+def readnotify_category() -> str:
+    """ReadNotify choice from the most recent send: "" when off, else its category.
+
+    ReadNotify has no standing switch. It is chosen per message in the
+    classification dialog, which saves its last answer to classify_result.json.
+    """
+    try:
+        path = Path(os.environ.get("LOCALAPPDATA", "")) / "GeoFooter" / "classify_result.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return ""
+    options = data.get("read_notify_options") or {}
+    if not (data.get("read_notify") or options.get("activate")):
+        return ""
+    names = [label for key, label in _RN_CATEGORIES if options.get(key)]
+    if options.get("invisible"):
+        return "Invisible"
+    return " + ".join(names) if names else "Tracking"
+
+
+def _footer_status_cells(label_color: str) -> str:
+    """ASPR and RN indicators for the end of the Quick Actions row."""
+    active = aspr_active()
+    category = readnotify_category()
+    font = (
+        f"font-family:{AES_STRIP_FONT}; font-size:9px; font-weight:bold; "
+        "letter-spacing:1px; white-space:nowrap; vertical-align:middle; "
+        "line-height:16px; mso-line-height-rule:exactly;"
+    )
+
+    def pair(code: str, tip: str, value: str, on: bool) -> str:
+        value_color = "#90EE90" if on else label_color
+        return (
+            "<td width='20' valign='middle' style='width:20px; font-size:1px; "
+            "line-height:1px; vertical-align:middle;'>&nbsp;</td>"
+            f"<td valign='middle' nowrap style='{font}'>"
+            f"<span style='color:{label_color};' title='{html.escape(tip, quote=True)}'>{code}:</span>"
+            f"<span style='color:{value_color};' title='{html.escape(tip, quote=True)}'>"
+            f"&nbsp;{html.escape(value.upper())}</span></td>"
+        )
+
+    return (
+        pair("ASPR", "Aliniant Smart Pixel Reporting for the mail you send",
+             "Active" if active else "Not Active", active)
+        + pair("RN", "ReadNotify choice on your most recent send",
+               category or "Off", bool(category))
+    )
+
+
 def _chip_link_label(code: str, *, inner_px: int = 75) -> str:
     """Chip code padded with non-breaking spaces so the link fills the chip.
 
@@ -4900,6 +4970,7 @@ class HTMLReportGenerator:
                 "<td valign='middle' style='vertical-align:middle;'>"
                 f"{chip(url, code, bg, fg, tip)}</td>"
             )
+        parts.append(_footer_status_cells(label_color))
         return (
             "<table border='0' cellpadding='0' cellspacing='0' align='center' "
             "style='border-collapse:separate; margin:0 auto;'>"

@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.7.15] — 2026-11-17
+
+### Added
+
+- Footer bottom row, after the Quick Action buttons: **ASPR: ACTIVE / NOT ACTIVE** (Aliniant Smart Pixel Reporting, from `aes_pixel.ini`) and **RN: OFF / category** (ReadNotify). Both reflect the user's own outgoing-mail settings at the moment the message was scanned, not anything about the message.
+
 ## [1.7.14] — 2026-11-17
 
 ### Changed

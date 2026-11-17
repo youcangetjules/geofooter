@@ -99,3 +99,41 @@ def test_no_hostname_is_empty_not_an_error(monkeypatch):
     assert gh.hostname_for_ip("192.0.2.45", None) == ""
     assert gh.hostname_for_ip("", None) == ""
 
+
+# --- ASPR / RN indicators on the footer's bottom row ---------------------------
+
+def _settings(tmp_path, monkeypatch, *, pixel=None, classify=None):
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    folder = tmp_path / "GeoFooter"
+    folder.mkdir(exist_ok=True)
+    if pixel is not None:
+        (folder / "aes_pixel.ini").write_text(pixel, encoding="utf-8")
+    if classify is not None:
+        (folder / "classify_result.json").write_text(json.dumps(classify), encoding="utf-8")
+
+
+def test_readnotify_category_from_last_send(tmp_path, monkeypatch):
+    _settings(tmp_path, monkeypatch)
+    assert gh.readnotify_category() == ""                               # no file
+    _settings(tmp_path, monkeypatch, classify={"read_notify": False, "read_notify_options": {"certified": True}})
+    assert gh.readnotify_category() == ""                               # off wins
+    _settings(tmp_path, monkeypatch, classify={"read_notify": True, "read_notify_options": {"activate": True}})
+    assert gh.readnotify_category() == "Tracking"
+    _settings(tmp_path, monkeypatch, classify={"read_notify": True, "read_notify_options": {
+        "activate": True, "certified": True, "block_print": True}})
+    assert gh.readnotify_category() == "Certified + No-Print"
+    _settings(tmp_path, monkeypatch, classify={"read_notify": True, "read_notify_options": {
+        "activate": True, "invisible": True, "certified": True}})
+    assert gh.readnotify_category() == "Invisible"                      # cannot be combined
+
+
+def test_status_cells_show_both_indicators(tmp_path, monkeypatch):
+    monkeypatch.setattr(gh, "aspr_active", lambda: True)
+    monkeypatch.setattr(gh, "readnotify_category", lambda: "")
+    cells = gh._footer_status_cells("#d5dee4")
+    assert "ASPR:" in cells and "&nbsp;ACTIVE" in cells and "RN:" in cells and "&nbsp;OFF" in cells
+    monkeypatch.setattr(gh, "aspr_active", lambda: False)
+    monkeypatch.setattr(gh, "readnotify_category", lambda: "Certified")
+    cells = gh._footer_status_cells("#d5dee4")
+    assert "&nbsp;NOT ACTIVE" in cells and "&nbsp;CERTIFIED" in cells
+

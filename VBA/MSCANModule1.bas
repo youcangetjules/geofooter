@@ -41,6 +41,10 @@ Private Const AES_MARK_FILE_PREFIX As String = "aes_mark_"
 ' Extra footer images (A/E/S letters): "<!-- AES-Inline-Img: cid|path -->".
 ' Files must start with aes_mark_ so the mark cleanup also removes them.
 Private Const AES_INLINE_MARKER As String = "<!-- AES-Inline-Img: "
+' Shareable full-scan report: "<!-- AES-Report-Attach: path -->". The file is
+' named "AES Scan Report.html"; that name is how AES recognises its own copy.
+Private Const AES_REPORT_MARKER As String = "<!-- AES-Report-Attach: "
+Private Const AES_REPORT_FILE_PREFIX As String = "AES Scan Report"
 ' Compact auto-scan still needs body for link/beacon counts, but reading huge
 ' HTMLBody on the UI thread freezes Outlook - cap the sidecar write.
 Private Const AES_COMPACT_BODY_CAP As Long = 400000
@@ -1129,6 +1133,54 @@ Private Function IsAesBannerAttachment(ByVal att As Object) As Boolean
     IsAesBannerAttachment = _
         (InStr(1, att.FileName, AES_BANNER_FILE_PREFIX, vbTextCompare) = 1) Or _
         (InStr(1, att.FileName, AES_MARK_FILE_PREFIX, vbTextCompare) = 1)
+    If Not IsAesBannerAttachment Then IsAesBannerAttachment = IsAesReportAttachment(att)
+End Function
+
+' True for the report AES attached itself. The name alone is not enough: a
+' sender could call a hostile file "AES Scan Report.html" to dodge scanning and
+' quarantine. AES only attaches its report to a message it has scanned, so on a
+' message not yet scanned a file with this name is the sender's and gets no pass.
+Public Function IsAesReportAttachment(ByVal att As Object) As Boolean
+    On Error Resume Next
+    IsAesReportAttachment = False
+    If att Is Nothing Then Exit Function
+    If InStr(1, CStr(att.FileName), AES_REPORT_FILE_PREFIX, vbTextCompare) <> 1 Then Exit Function
+    IsAesReportAttachment = IsAesScannedLite(att.Parent)
+End Function
+
+' Attaches the shareable report named in the footer payload and returns the
+' payload without the marker, so the local path never reaches the message.
+' A message that already carries a report keeps it: deleting and re-adding
+' attachments on a rescan is what raced IMAP stores before (BUG-030).
+Private Function AttachAesReport(ByVal mail As Object, ByVal footerHtml As String) As String
+    On Error GoTo EH
+    AttachAesReport = footerHtml
+
+    Dim s As Long
+    Dim e As Long
+    Dim reportPath As String
+    s = InStr(1, footerHtml, AES_REPORT_MARKER, vbTextCompare)
+    If s = 0 Then Exit Function
+    e = InStr(s, footerHtml, "-->")
+    If e = 0 Then Exit Function
+    reportPath = Trim$(Mid$(footerHtml, s + Len(AES_REPORT_MARKER), e - s - Len(AES_REPORT_MARKER)))
+    AttachAesReport = Left$(footerHtml, s - 1) & Mid$(footerHtml, e + 3)
+
+    If Len(reportPath) = 0 Then Exit Function
+    If Not TypeOf mail Is Outlook.MailItem Then Exit Function
+    If Not CreateObject("Scripting.FileSystemObject").FileExists(reportPath) Then Exit Function
+
+    Dim i As Long
+    For i = 1 To mail.Attachments.Count
+        If InStr(1, CStr(mail.Attachments.Item(i).FileName), AES_REPORT_FILE_PREFIX, vbTextCompare) = 1 Then
+            Exit Function
+        End If
+    Next i
+
+    mail.Attachments.Add reportPath, olByValue
+    Exit Function
+EH:
+    MSCANModLogging.WriteLog "AttachAesReport: #" & Err.Number & " - " & Err.Description
 End Function
 
 Private Function ExportAttachmentsForScan(ByVal mail As Object) As String
@@ -3540,6 +3592,7 @@ Private Function InsertFooterIntoMail(mail As Object, footerPath As String) As B
     ' Normal mail: HTML body. ReportItem (ReadNotify IPNRN etc.): Body only.
     If TypeOf mail Is Outlook.MailItem Then
         footerHTML = EmbedAesFooterMark(mail, footerHTML)
+        footerHTML = AttachAesReport(mail, footerHTML)
         Dim blockBeaconsIns As Boolean
         On Error Resume Next
         blockBeaconsIns = MSCANModSenderRules.ShouldBlockBeacons(mail)
@@ -3672,6 +3725,7 @@ Private Function ReplaceAesFooterInMail(ByVal mail As Object, ByVal footerPath A
     End If
 
     footerHTML = EmbedAesFooterMark(mail, footerHTML)
+    footerHTML = AttachAesReport(mail, footerHTML)
 
     ' Never force BodyFormat while an HTML body exists - on IMAP/Google
     ' stores that regenerates the body from the plain-text copy and

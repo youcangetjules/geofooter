@@ -863,6 +863,68 @@ def _footer_prefix_for_px(text: str, target: int, *, italic: bool) -> str:
     return best
 
 
+# Full-scan report attached to each scanned mail, so someone the mail is
+# forwarded to can read it without AES. VBA attaches the file named in an
+# "<!-- AES-Report-Attach: path -->" marker and recognises it by this name.
+AES_REPORT_ATTACH_NAME = "AES Scan Report.html"
+AES_REPORT_ATTACH_MARKER = "<!-- AES-Report-Attach: "
+_SHARE_NOTE = (
+    "<div style='margin:0 0 12px 0; padding:8px 10px; background:#eef4f6; "
+    "border:1px solid #d5dee3; border-radius:4px; font:12px Arial,sans-serif; color:#333;'>"
+    "This security report was produced by Aliniant Email Scanner (AES) for the person who "
+    "first received the message. Action buttons and linked sub-reports need AES and are "
+    "not available in this copy.</div>"
+)
+
+
+def report_attachment_enabled() -> bool:
+    """On unless %LOCALAPPDATA%\\GeoFooter\\aes_report_attachment.json says {"enabled": false}."""
+    try:
+        path = Path(os.environ.get("LOCALAPPDATA", "")) / "GeoFooter" / "aes_report_attachment.json"
+        if path.is_file():
+            return bool(json.loads(path.read_text(encoding="utf-8")).get("enabled", True))
+    except Exception:
+        pass
+    return True
+
+
+def _report_url_to_path(report_url: str) -> Optional[Path]:
+    raw = (report_url or "").strip()
+    if not raw:
+        return None
+    if raw.lower().startswith("file:"):
+        raw = urllib.parse.unquote(re.sub(r"^file:/*", "", raw, flags=re.I))
+    return Path(raw.replace("/", "\\"))
+
+
+def write_shareable_report(report_url: str) -> str:
+    """Write a copy of a full-scan report that works without AES; return its path, or "".
+
+    aes:// links only work on the scanning PC, so each becomes plain text. The
+    copy sits in its own folder because the attachment's name comes from the file.
+    """
+    try:
+        source = _report_url_to_path(report_url)
+        if source is None or not source.is_file():
+            return ""
+        page = source.read_text(encoding="utf-8", errors="replace")
+        page = re.sub(
+            r"<a\b[^>]*\bhref\s*=\s*(['\"])aes://.*?\1[^>]*>(.*?)</a>",
+            r"\2", page, flags=re.I | re.S,
+        )
+        page, placed = re.subn(r"(<body\b[^>]*>)", lambda m: m.group(1) + _SHARE_NOTE, page, count=1, flags=re.I)
+        if not placed:
+            page = _SHARE_NOTE + page
+        folder = source.parent / "share" / source.stem
+        folder.mkdir(parents=True, exist_ok=True)
+        target = folder / AES_REPORT_ATTACH_NAME
+        target.write_text(page, encoding="utf-8")
+        return str(target)
+    except Exception as exc:
+        logging.getLogger(__name__).warning("Shareable report not written: %s", exc)
+        return ""
+
+
 def _chip_link_label(code: str, *, inner_px: int = 75) -> str:
     """Chip code padded with non-breaking spaces so the link fills the chip.
 
@@ -5847,6 +5909,14 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
                 show_link = "<span style='text-decoration:underline;'>Show Full Scan</span>"
             summary_line2 = summary_line2.replace("{{AES_FULLSCAN}}", show_link)
 
+        # A mail that already carries the full analysis, or has just had its
+        # attachments stripped, gets no report attachment.
+        attach_marker = ""
+        if report_url and not embed_full and not mitigate and report_attachment_enabled():
+            share_path = write_shareable_report(report_url)
+            if share_path:
+                attach_marker = f"{AES_REPORT_ATTACH_MARKER}{share_path} -->\n"
+
         quick_actions = self._build_quick_actions_row_html(
             str(data.get("sender_email") or ""),
             str(data.get("sender_domain") or ""),
@@ -6074,6 +6144,7 @@ common in Outlook-generated tracking pixels. They are not remote URLs but still 
                 f"{risktable_marker}"
                 f"{mitigate_markers}"
                 f"<!-- AES Start -->\n"
+                f"{attach_marker}"
                 f"<a id='aes-footer-start' name='aes-footer-start'></a>\n"
                 f"<div style='margin:0; padding:0; background:#ffffff; font-family:{AES_STRIP_FONT}; "
                 f"font-size:11px; color:#333;'>{AES_FOOTER_GAP_HTML}{summary_block}</div>\n"

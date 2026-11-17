@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.7.9] — 2026-11-17
+
+### Added
+
+- Each newly scanned email gets its full scan report attached as `AES Scan Report.html` (about 34 KB, self-contained), so someone it is forwarded to can read it without AES. In the attached copy the action buttons and linked sub-reports are plain text. Not added when the full analysis is already in the mail or when attachments were stripped for high risk. Off switch: `%LOCALAPPDATA%\GeoFooter\aes_report_attachment.json` with `{"enabled": false}`.
+- AES ignores its own report when counting, exporting, scanning and quarantining attachments, but only on a message it has already scanned: a sender's file of the same name gets no pass.
+
 ## [1.7.8] — 2026-11-17
 
 ### Fixed

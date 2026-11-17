@@ -13,6 +13,14 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-17 — 1.7.9: full scan report attached to each scanned email
+- `aes/geolocate_headers.py`: `write_shareable_report`, `report_attachment_enabled`, an `AES-Report-Attach` marker in the compact footer payload. `VBA/MSCANModule1.bas`: `AttachAesReport` on both footer-apply paths, `IsAesReportAttachment`. `VBA/MSCANModSenderRules.bas`: quarantine skips AES's own report. `tests/test_report_attachment.py`.
+- Why: user wants the full scan available to people without AES, attached to each email. I offered attach-on-forward and a hidden attachment as alternatives; the user did not pick, so this follows the original instruction.
+- Consequence: every scanned message shows a paperclip and matches "has attachment" filters. A rescan keeps the first report rather than replacing it (BUG-030 pattern).
+- Verified: 3 Python tests; VBA imported and compiles; AES starts. NOT tested: an actual attach, because scanning is OFF and I did not scan the user's mail. Not tested: what a recipient sees after a forward.
+- Found, not fixed: `IsAesScannedLite` treats any attachment named `aes_mark_*` as proof of a scan, so a sender can make AES skip a message by attaching a file with that name.
+- Restart note: the Outlook relaunched 2s after exit hung on its splash and was gone 90s later; the next launch was normal. Same quick-relaunch suspicion as 2026-11-04.
+
 ### 2026-11-17 — 1.7.8: footer A centred vertically
 - `aes/geolocate_headers.py`: `AES_STRIP_MARK_PAD_TOP` 3 -> 1; `AES_STRIP_LETTER_DROP` S 2 -> 3.
 - Why: user saw the A 3-4px low. Measured on a render with real buttons: 9px above, 5px below.

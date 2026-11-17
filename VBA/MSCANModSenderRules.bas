@@ -196,7 +196,9 @@ Private Function QuarantineAttachmentsEx(ByVal mail As Object, ByVal includeInli
     For i = mail.Attachments.count To 1 Step -1
         Dim att As Object
         Set att = mail.Attachments.item(i)
-        If includeInline Or Not IsInlineAttachment(att) Then
+        ' AES's own report stays; a look-alike on an unscanned message does not.
+        If (includeInline Or Not IsInlineAttachment(att)) And _
+           Not MSCANModule1.IsAesReportAttachment(att) Then
             If removed = 0 Then EnsureQuarantineDir fso, qDir
             On Error Resume Next
             att.SaveAsFile qDir & "\" & SafeFileName(att.fileName)

@@ -1063,7 +1063,13 @@ def write_shareable_report(report_url: str) -> str:
             r"<a\b[^>]*\bhref\s*=\s*(['\"])aes://.*?\1[^>]*>(.*?)</a>",
             r"\2", page, flags=re.I | re.S,
         )
-        page, placed = re.subn(r"(<body\b[^>]*>)", lambda m: m.group(1) + _SHARE_NOTE, page, count=1, flags=re.I)
+        # Inside the report's card, above its title. Straight after <body> it sat
+        # outside the card as a full-width bar that scrolled off the left edge.
+        placed = 0
+        for anchor in (r"""(<div class=['"]wrap['"][^>]*>)""", r"(<body\b[^>]*>)"):
+            page, placed = re.subn(anchor, lambda m: m.group(1) + _SHARE_NOTE, page, count=1, flags=re.I)
+            if placed:
+                break
         if not placed:
             page = _SHARE_NOTE + page
         folder = source.parent / "share" / source.stem

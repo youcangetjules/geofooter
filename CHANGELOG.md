@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.9] — 2026-11-18
+
+### Fixed
+
+- Attached report copy: the note explaining that action buttons need AES sat outside the report card as a full-width bar and was cut off on the left. It is now inside the card, above the title.
+
 ## [1.8.8] — 2026-11-18
 
 ### Fixed

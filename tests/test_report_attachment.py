@@ -228,3 +228,11 @@ def test_origin_without_a_public_hop_gives_location_but_no_ip():
     assert origin["ip"] == "" and origin["city"] == "Amsterdam"
     assert gh.origin_from_hops([]) == {} and gh.origin_from_hops([{"hop_kind": "unknown"}]) == {}
 
+
+def test_share_note_sits_inside_the_report_card(tmp_path):
+    src = tmp_path / "fullscan_card.html"
+    src.write_text('<html><body><div class="wrap"><h1>Full Analysis</h1></div></body></html>', encoding="utf-8")
+    page = Path(gh.write_shareable_report(str(src))).read_text(encoding="utf-8")
+    note = page.index("produced by Aliniant Email Scanner")
+    assert page.index('<div class="wrap">') < note < page.index("<h1>")
+

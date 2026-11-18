@@ -13,6 +13,11 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-18 — 1.8.9: shared-copy note inside the card
+- `aes/geolocate_headers.py`: `write_shareable_report` inserts the note after `<div class="wrap">`, falling back to `<body>`. 1 test.
+- Why: same user screenshot as 1.8.8.
+- Verified with a headless Edge screenshot of a shared copy built from the reported message.
+
 ### 2026-11-18 — 1.8.8: report page overflow
 - `aes/geolocate_headers.py`: report page CSS in `_write_full_scan_report_file` gains `overflow-wrap: anywhere` on the card and its cells, `max-width: 100%` on tables, and normal breaking on the first cell of each row.
 - Why: user screenshot of an attached report for a Zoom message.

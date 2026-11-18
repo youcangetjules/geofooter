@@ -527,6 +527,157 @@ def _iter_inbox_since(items, since: datetime, *, max_take: int):
         yield item
 
 
+# Folder.GetTable reads header columns straight from the store. Nothing is
+# opened, so Outlook fires no ItemLoad and runs no add-in code per message.
+# Walking Items instead cost one cross-process call per property per message,
+# all served on Outlook's UI thread: 12-39 seconds of a frozen Outlook on every
+# five-minute auto scrape.
+_PR_LONGTERM_ENTRYID = "http://schemas.microsoft.com/mapi/proptag/0x66700102"
+_PR_CONVERSATION_ID = "http://schemas.microsoft.com/mapi/proptag/0x30130102"
+_PR_SENDER_SMTP = "http://schemas.microsoft.com/mapi/proptag/0x5D01001F"
+_TABLE_COLUMNS = (
+    "ReceivedTime",
+    "Subject",
+    "MessageClass",
+    "UnRead",
+    "To",
+    "CC",
+    "Importance",
+    "FlagStatus",
+    "ConversationTopic",
+    "SenderEmailAddress",
+    "SenderName",
+    _PR_SENDER_SMTP,
+    _PR_CONVERSATION_ID,
+    _PR_LONGTERM_ENTRYID,
+)
+# Without these a row cannot become a ScrapedMail; the caller falls back.
+_TABLE_REQUIRED = ("ReceivedTime", _PR_LONGTERM_ENTRYID)
+_TABLE_PAGE = 50
+
+
+def _binary_hex(value: Any) -> str:
+    """Binary table column as the upper-case hex Outlook uses for EntryID."""
+    if value is None:
+        return ""
+    try:
+        return bytes(value).hex().upper()
+    except Exception:
+        return ""
+
+
+def _iter_inbox_rows_since(folder, since: datetime, *, max_scan: int):
+    """Yield header rows (dicts) newest first, stopping at ``since``.
+
+    The table is deliberately unfiltered. A date filter makes Outlook scan the
+    whole folder on IMAP stores (16 s measured on a 700-message window); the
+    received-time sort is already indexed, so reading from the top and stopping
+    at the first row that is too old takes about 0.1 s.
+    """
+    table = folder.GetTable("", 0)
+    columns = table.Columns
+    columns.RemoveAll()
+    names: List[str] = []
+    for name in _TABLE_COLUMNS:
+        try:
+            columns.Add(name)
+            names.append(name)
+        except Exception:
+            if name in _TABLE_REQUIRED:
+                raise
+    table.Sort("[ReceivedTime]", True)
+
+    scanned = 0
+    limit = max(1, int(max_scan))
+    while scanned < limit:
+        if bool(table.EndOfTable):
+            return
+        rows = table.GetArray(min(_TABLE_PAGE, limit - scanned))
+        if not rows:
+            return
+        for values in rows:
+            scanned += 1
+            row = dict(zip(names, values))
+            received_dt, _ = _parse_received(row.get("ReceivedTime"))
+            if received_dt is not None and received_dt < since:
+                return
+            yield row
+
+
+def _sender_from_row(row: Dict[str, Any]) -> str:
+    smtp = _safe_str(row.get(_PR_SENDER_SMTP))
+    addr = _safe_str(row.get("SenderEmailAddress"))
+    name = _safe_str(row.get("SenderName"))
+    if "@" in smtp:
+        return smtp
+    if "@" in addr:
+        return addr
+    if "@" in name:
+        return name
+    return addr or name
+
+
+def _mail_from_row(
+    row: Dict[str, Any],
+    *,
+    store_id: str,
+    account_smtp: str,
+    cfg: "AesAccountScanConfig",
+    since: datetime,
+    unread_only: bool,
+    folder: str = "Inbox",
+) -> Optional[ScrapedMail]:
+    """Table-row twin of ``_mail_from_item`` (headers only, no body)."""
+    try:
+        msg_class = _safe_str(row.get("MessageClass"))
+        lowered = msg_class.lower()
+        is_meeting = lowered.startswith("ipm.schedule.meeting")
+        if not lowered.startswith("ipm.note") and not is_meeting:
+            return None
+
+        unread = bool(row.get("UnRead"))
+        if unread_only and not unread:
+            return None
+
+        to_line = _safe_str(row.get("To"), limit=1000)
+        cc_line = _safe_str(row.get("CC"), limit=1000)
+        role = _recipient_role_from_headers(to_line, cc_line, account_smtp)
+        if role == "cc" and not cfg.in_cc:
+            return None
+
+        received_dt, received_str = _parse_received(row.get("ReceivedTime"))
+        if received_dt is not None and received_dt < since:
+            return None
+
+        entry_id = _binary_hex(row.get(_PR_LONGTERM_ENTRYID))
+        if not entry_id:
+            return None
+        return ScrapedMail(
+            entry_id=entry_id,
+            store_id=store_id,
+            account_smtp=account_smtp,
+            subject=_safe_str(row.get("Subject"), limit=500),
+            sender=_sender_from_row(row),
+            to=to_line,
+            cc=cc_line,
+            received=received_str,
+            received_dt=received_dt,
+            unread=unread,
+            importance=int(row.get("Importance") or 1),
+            flag_status=int(row.get("FlagStatus") or 0),
+            message_class=msg_class,
+            conversation=_safe_str(row.get("ConversationTopic"), limit=500),
+            body_preview="",
+            recipient_role=role,
+            is_meeting_request=is_meeting,
+            conversation_id=_binary_hex(row.get(_PR_CONVERSATION_ID))[:200],
+            folder=folder or "Inbox",
+        )
+    except Exception as exc:
+        logger.debug("Skip row in %s: %s", account_smtp, exc)
+        return None
+
+
 def _mail_from_item(
     item,
     *,
@@ -739,7 +890,40 @@ def _scrape_outlook_inboxes_impl(
 
         stores_scraped += 1
         taken = 0
-        for item in _iter_inbox_since(items, since, max_take=max_per_account):
+        table_done = False
+        if not include_body:
+            # Rows skipped by the unread / Cc filters still count as scanned,
+            # so look further than the cap before giving up.
+            try:
+                for row in _iter_inbox_rows_since(
+                    inbox, since, max_scan=max(300, int(max_per_account) * 5)
+                ):
+                    if taken >= max_per_account:
+                        break
+                    mail = _mail_from_row(
+                        row,
+                        store_id=store_id,
+                        account_smtp=account_smtp,
+                        cfg=cfg,
+                        since=since,
+                        unread_only=unread_only,
+                    )
+                    if mail is None or mail.entry_id in seen_entry_ids:
+                        continue
+                    seen_entry_ids.add(mail.entry_id)
+                    results.append(mail)
+                    taken += 1
+                table_done = True
+            except Exception as exc:
+                logger.warning(
+                    "Table read failed for %s (%s); walking items instead",
+                    account_smtp or store_id[:20],
+                    exc,
+                )
+
+        for item in () if table_done else _iter_inbox_since(
+            items, since, max_take=max_per_account
+        ):
             if taken >= max_per_account:
                 break
             mail = _mail_from_item(

@@ -20,6 +20,10 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.11] — 2026-11-18
+
+- **GURI's five-minute Outlook scrape no longer freezes Outlook.** It opened up to 60 messages per account and read a dozen properties from each, every call served on Outlook's UI thread: 12-39 seconds of a frozen Outlook every five minutes. It now reads the same headers through `Folder.GetTable` (nothing is opened, no `ItemLoad` fires) and takes under 2 seconds for five accounts. The table is unfiltered and sorted newest first, stopping at the first message outside the window; a date filter made IMAP stores scan the whole folder (16 s measured). Falls back to the old walk if a store refuses the table. Restart GURI to pick it up.
+
 ## [1.8.10] — 2026-11-18
 
 ### Fixed

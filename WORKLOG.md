@@ -13,6 +13,16 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-18 — 1.8.11: **Stop GURI's auto scrape freezing Outlook (1.8.11)**
+
+- Symptom: Outlook "freezing regularly" with no AES scan or footer work in the log and no hang recorded (the window kept answering WM_NULL probes).
+- Diagnosis: a one-second trace of Outlook's per-thread CPU plus helper-process CPU showed the UI thread at 90-100% for 12-39 s every five minutes (xx:x2:53 / xx:x7:54), each burst coinciding with CPU in the GURI process. That is `scrape_timer` -> `_start_outlook_scrape(manual=False)` -> `scrape_outlook_inboxes`, which walked `Items.Restrict(...)` and read ~12 properties per message over cross-process COM. Each `Item(n)` also fired `Application_ItemLoad`, running AES's VBA handler per message (the repeated "resuming after compose window closed" log lines).
+- Fix (`guri/outlook_scraper.py`): `_iter_inbox_rows_since` + `_mail_from_row` read headers with `Folder.GetTable("")`, sorted by ReceivedTime descending, paged 50 rows at a time, stopping at the first row older than the window. Entry IDs come from PR_LONGTERM_ENTRYID_FROM_TABLE (the table's own EntryID column is a short-term id), sender SMTP from PR_SENDER_SMTP_ADDRESS, conversation id from PR_CONVERSATION_ID. Used whenever the body is not requested (auto and manual scrapes); the item walk remains as the fallback.
+- Measured live: whole auto scrape 1.7 s for 241 mails across 5 stores (was 12-39 s); 17 sampled mails field-for-field identical to the item path.
+- Tests: `tests/test_scrape_table.py` (9).
+- Not changed: the manual-only important-sender pass and `scrape_inbox_for_search` still use DASL filters and item walks; they run only on an explicit click.
+- Follow-up: GURI must be restarted to load the new code. No VBA change, no re-import.
+
 ### 2026-11-18 — 1.8.10: direct WHOIS fallback
 - `aes/geolocate_headers.py`: `WhoisService._port43_whois` and `_port43_query`; `get_whois_info` checks for `whois.whois` first. `tests/test_whois_fallback.py` (3 tests).
 - Why: user asked why a Zoom report had no registrar.

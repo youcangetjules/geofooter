@@ -20,6 +20,13 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.10] — 2026-11-18
+
+### Fixed
+
+- Registrar and creation date showed "WHOIS/RDAP unavailable" for `.us` domains (zoom.us). `.us` has no RDAP service, and the WHOIS library call has been failing for every domain on this machine. A third route now asks the TLD's own WHOIS server directly on port 43 (IANA referral, then the registry), so zoom.us resolves to MarkMonitor, Inc., created 2002-04-24.
+- The scanner no longer calls `whois.whois` when the installed module does not have it; it logs the reason and goes to the fallbacks.
+
 ## [1.8.9] — 2026-11-18
 
 ### Fixed

@@ -13,6 +13,13 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-18 — 1.8.10: direct WHOIS fallback
+- `aes/geolocate_headers.py`: `WhoisService._port43_whois` and `_port43_query`; `get_whois_info` checks for `whois.whois` first. `tests/test_whois_fallback.py` (3 tests).
+- Why: user asked why a Zoom report had no registrar.
+- Found: the venv has both `python-whois 0.9.6` and `whois 1.20240129.2`. Both install a module named `whois`, and the second has overwritten the first, so `whois.whois` does not exist and every classic WHOIS lookup raised AttributeError. Reports only had registrars because RDAP worked for most TLDs.
+- Verified live: zoom.us 1.2s, coleago.com (RDAP) 0.9s, bbc.co.uk (Nominet RDAP).
+- Follow-up: the venv itself is not repaired. `pip uninstall whois` then `pip install --force-reinstall python-whois` would restore the library; not done without the user's say-so. What installed `whois` is unknown; `requirements.txt` lists only `python-whois`.
+
 ### 2026-11-18 — 1.8.9: shared-copy note inside the card
 - `aes/geolocate_headers.py`: `write_shareable_report` inserts the note after `<div class="wrap">`, falling back to `<body>`. 1 test.
 - Why: same user screenshot as 1.8.8.

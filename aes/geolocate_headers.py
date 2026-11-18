@@ -2451,6 +2451,13 @@ class WhoisService:
         from concurrent.futures import TimeoutError as FuturesTimeout
 
         try:
+            # Two PyPI packages install a module called "whois". Only python-whois
+            # has whois.whois(); when the other one has overwritten it, say so once
+            # and go straight to the fallbacks instead of failing every lookup.
+            if not hasattr(whois, "whois"):
+                raise RuntimeError(
+                    "the installed 'whois' module is not python-whois (no whois.whois)"
+                )
             pool = ThreadPoolExecutor(max_workers=1)
             try:
                 w = pool.submit(whois.whois, lookup_domain).result(timeout=8)
@@ -2482,7 +2489,72 @@ class WhoisService:
         if rdap:
             self.logger.info(f"RDAP WHOIS for {lookup_domain}: {rdap}")
             return rdap
+        direct = self._port43_whois(lookup_domain)
+        if direct:
+            self.logger.info(f"Direct WHOIS for {lookup_domain}: {direct}")
+            return direct
         return {"error": f"WHOIS/RDAP unavailable for {lookup_domain}"}
+
+    @staticmethod
+    def _port43_query(server: str, text: str, timeout: float = 6.0) -> str:
+        import socket
+
+        with socket.create_connection((server, 43), timeout=timeout) as sock:
+            sock.settimeout(timeout)
+            sock.sendall((text + "\r\n").encode("ascii", "ignore"))
+            chunks: List[bytes] = []
+            size = 0
+            while size < 65536:
+                chunk = sock.recv(4096)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                size += len(chunk)
+        return b"".join(chunks).decode("utf-8", "replace")
+
+    def _port43_whois(self, domain: str) -> Optional[Dict[str, Any]]:
+        """Plain WHOIS on port 43, for TLDs with no RDAP service (.us among them).
+
+        Asks IANA which server holds the TLD, then asks that server. Two short
+        queries, no third-party library.
+        """
+        if not re.fullmatch(r"[a-z0-9.-]{3,253}", domain or "") or "." not in domain:
+            return None
+        try:
+            referral = self._port43_query("whois.iana.org", domain.rsplit(".", 1)[1])
+            found = re.search(r"(?im)^whois:\s*([a-z0-9.-]+)\s*$", referral)
+            if not found:
+                return None
+            text = self._port43_query(found.group(1), domain)
+        except Exception as exc:
+            self.logger.warning("Direct WHOIS failed for %s: %s", domain, exc)
+            return None
+
+        def first(*patterns: str) -> str:
+            for pattern in patterns:
+                hit = re.search(pattern, text, re.I | re.M)
+                if hit and hit.group(1).strip():
+                    return hit.group(1).strip()
+            return ""
+
+        def day(value: str) -> str:
+            hit = re.match(r"\d{4}-\d{2}-\d{2}", value)
+            return hit.group(0) if hit else (value or "Unknown")
+
+        registrar = first(r"^\s*Registrar:\s*(\S.*)$", r"^\s*Registrar:\s*\n\s*(\S.*)$",
+                          r"^\s*Sponsoring Registrar:\s*(\S.*)$")
+        created = first(r"^\s*Creation Date:\s*(\S.*)$", r"^\s*Registered on:\s*(\S.*)$",
+                        r"^\s*Domain Registration Date:\s*(\S.*)$", r"^\s*created:\s*(\S.*)$")
+        expires = first(r"^\s*Registry Expiry Date:\s*(\S.*)$", r"^\s*Registrar Registration Expiration Date:\s*(\S.*)$",
+                        r"^\s*Expiry date:\s*(\S.*)$")
+        if not registrar and not created:
+            return None
+        return {
+            "registrar": registrar or "Unknown",
+            "creation_date": day(created) if created else "Unknown",
+            "expiration_date": day(expires) if expires else "Unknown",
+            "status": "Unknown",
+        }
 
     def _registrable_domain(self, domain: str) -> str:
         """Best-effort eTLD+1 for common UK / multi-part suffixes."""

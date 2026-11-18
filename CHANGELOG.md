@@ -20,6 +20,12 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.8] — 2026-11-18
+
+### Fixed
+
+- Full scan report page: one very long link in the Links row (418 characters in the reported case) stretched every table past the white card, so the green header bar and rows ran off to the right. Long text now wraps inside the card. Row labels still break only at spaces.
+
 ## [1.8.7] — 2026-11-17
 
 ### Fixed

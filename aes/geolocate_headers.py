@@ -7173,7 +7173,13 @@ table.aes th {{ color: #334; background: #f4f7f9; }}
 <style>
 body {{ font-family: Arial, sans-serif; margin: 16px; color: #222; background: #f7f9fa; }}
 .wrap {{ max-width: 1100px; margin: 0 auto; background: #fff; padding: 16px 18px;
-         border: 1px solid #d5dee3; border-radius: 6px; }}
+         border: 1px solid #d5dee3; border-radius: 6px;
+         overflow-wrap: anywhere; word-break: break-word; }}
+/* One long link used to stretch every table past the card's edge. */
+.wrap table {{ max-width: 100%; }}
+.wrap td, .wrap th {{ overflow-wrap: anywhere; word-break: break-word; }}
+/* ...but row labels break only at spaces, or "Location" becomes "Locatio / n". */
+.wrap td:first-child, .wrap th:first-child {{ overflow-wrap: normal; word-break: normal; }}
 h1 {{ font-size: 18px; color: #0f6b7c; margin: 0 0 8px 0; }}
 .meta {{ color: #555; font-size: 12px; margin-bottom: 14px; }}
 .footer {{ margin-top: 18px; font-size: 11px; color: #777; }}

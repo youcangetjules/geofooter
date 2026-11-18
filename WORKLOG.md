@@ -13,6 +13,12 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-18 — 1.8.8: report page overflow
+- `aes/geolocate_headers.py`: report page CSS in `_write_full_scan_report_file` gains `overflow-wrap: anywhere` on the card and its cells, `max-width: 100%` on tables, and normal breaking on the first cell of each row.
+- Why: user screenshot of an attached report for a Zoom message.
+- Verified by applying the new CSS to that exact report and screenshotting it in headless Edge at 1500px: everything stays inside the card. My first version let labels break mid-word ("Locatio / n"); fixed before committing.
+- Applies to reports written from now on. Reports already attached to mail keep the old styling.
+
 ### 2026-11-17 — 1.8.7: origin fields from the first mail server
 - `aes/geolocate_headers.py`: `origin_from_hops`; `_prepare_display_data` uses it when there is no sender IP and geolocation failed; the footer's "Sender IP" falls back the same way. 2 tests.
 - Why: user screenshot of a report for an internal Exchange Online message with four "Unknown" rows while the Route row named Amsterdam and Dublin datacentres. The headers have `AuthAs: Internal` and no client address; the first hop's public address is 2603:10a6:208:140::11.

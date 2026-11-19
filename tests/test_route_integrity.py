@@ -119,7 +119,7 @@ def test_unanswered_lookup_is_reported_and_not_cached(monkeypatch):
     monkeypatch.setattr(requests, "get", boom)
     monkeypatch.setattr(rc, "_CACHE", {})
     assert rc._ripestat("network-info", "8.8.8.8") is None
-    assert len(calls) == 2 and rc._CACHE == {}       # retried once, failure not remembered
+    assert len(calls) == 3 and rc._CACHE == {}       # retried, failure not remembered
 
 
 def test_banner_names_the_strongest_bgp_risk_and_warns():
@@ -154,3 +154,23 @@ def test_status_strip_carries_the_bgp_result(monkeypatch):
     cls._build_top_of_mail_banners(
         me, route_integrity={"bgp_checked": 1, "items": [{"kind": "bgp-rpki-invalid"}]}, **kwargs)
     assert "BGP scan: RISK - hijack suspected" in seen["line"] and seen["warn"] is True
+
+
+def test_origin_comes_from_dns_and_unread_rpki_is_not_called_clean(monkeypatch):
+    monkeypatch.setattr(rc, "_CACHE", {})
+    monkeypatch.setattr(rc, "_dns_origin", lambda ip: ("8.8.8.0/24", ["15169"]))
+    monkeypatch.setattr(rc, "_ripestat", lambda *a, **k: None)      # registry silent
+    info = rc.bgp_origin_info("8.8.8.8", want_peers=False)
+    assert info["prefix"] == "8.8.8.0/24" and info["origins"] == ["15169"] and info["rpki_unknown"]
+    hops = [_public("8.8.8.8")]
+    summary = rc.integrity_summary(hops, rc.check_bgp(hops, lite=True), lite=True)
+    assert rc.banner_note(summary) == ("BGP scan: origin OK, RPKI unverified", False)
+
+
+def test_registry_calls_stop_at_the_scan_deadline(monkeypatch):
+    import requests
+    calls = []
+    monkeypatch.setattr(requests, "get", lambda *a, **k: calls.append(1) or (_ for _ in ()).throw(requests.Timeout()))
+    monkeypatch.setattr(rc, "_CACHE", {})
+    monkeypatch.setattr(rc, "_DEADLINE", rc.time.monotonic() - 1)
+    assert rc._ripestat("rpki-validation", "AS1", prefix="1.0.0.0/24") is None and calls == []

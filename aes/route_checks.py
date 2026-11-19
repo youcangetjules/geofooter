@@ -21,6 +21,7 @@ from __future__ import annotations
 import ipaddress
 import logging
 import math
+import time
 from typing import Any, Dict, List, Optional, Tuple
 
 try:
@@ -35,6 +36,9 @@ MAX_TOTAL_POINTS = 25
 TROMBONE_AWAY_KM = 3000
 TROMBONE_RETURN_KM = 1500
 _CACHE: Dict[Tuple[str, str], Optional[Dict[str, Any]]] = {}
+_VERIFY_TLS = True
+# Wall-clock limit for registry calls in the current scan (time.monotonic()).
+_DEADLINE = 0.0
 
 
 # --------------------------------------------------------------------------- #
@@ -126,8 +130,13 @@ def _ripestat(name: str, resource: str, **extra: str) -> Optional[Dict[str, Any]
     if key in _CACHE:
         return _CACHE[key]
     data: Optional[Dict[str, Any]] = None
-    # Two tries: one dropped request must not turn into "BGP not assessed".
-    for attempt in (1, 2):
+    # Three short tries. Measured here: the first connection can stall past
+    # 20 s while the very next one answers in 0.1 s, so waiting longer on one
+    # request loses to asking again.
+    global _VERIFY_TLS
+    for attempt in (1, 2, 3):
+        if _DEADLINE and time.monotonic() > _DEADLINE:
+            break
         try:
             import requests
             from requests import exceptions as req_exc
@@ -135,9 +144,12 @@ def _ripestat(name: str, resource: str, **extra: str) -> Optional[Dict[str, Any]
             params = {"resource": resource, "sourceapp": "aliniant-aes", **extra}
             url = RIPESTAT_URL.format(name=name)
             try:
-                resp = requests.get(url, params=params, timeout=5)
+                resp = requests.get(url, params=params, timeout=(3, 4), verify=_VERIFY_TLS)
             except req_exc.SSLError:
-                resp = requests.get(url, params=params, timeout=5, verify=False)
+                # HTTPS inspection (antivirus) re-signs the connection. Stop
+                # paying for a verified attempt that cannot succeed.
+                _VERIFY_TLS = False
+                resp = requests.get(url, params=params, timeout=(3, 4), verify=False)
             if resp.status_code == 200:
                 body = resp.json()
                 if isinstance(body, dict) and isinstance(body.get("data"), dict):
@@ -158,14 +170,64 @@ def _norm_asn(value: Any) -> str:
     return s if s.isdigit() else ""
 
 
+def _dns_origin(ip: str) -> Optional[Tuple[str, List[str]]]:
+    """(announced prefix, origin ASNs) from Team Cymru's IP-to-ASN DNS zone.
+
+    TXT answer: ``"15169 | 8.8.8.0/24 | US | arin | 2023-12-28"``. Several
+    records mean several covering announcements; the most specific wins and
+    every ASN announcing it is kept (that is what MOAS detection needs).
+    """
+    key = ("dns-origin", ip)
+    if key in _CACHE:
+        return _CACHE[key]  # type: ignore[return-value]
+    try:
+        import dns.resolver
+
+        addr = ipaddress.ip_address(ip)
+        if addr.version == 4:
+            name = ".".join(reversed(ip.split("."))) + ".origin.asn.cymru.com"
+        else:
+            name = ".".join(reversed(addr.exploded.replace(":", ""))) + ".origin6.asn.cymru.com"
+        resolver = dns.resolver.Resolver()
+        resolver.timeout = 2
+        resolver.lifetime = 4
+        best: Optional[ipaddress._BaseNetwork] = None
+        origins: List[str] = []
+        for record in resolver.resolve(name, "TXT"):
+            text = b"".join(record.strings).decode("ascii", "replace")
+            parts = [p.strip() for p in text.split("|")]
+            if len(parts) < 2 or "/" not in parts[1]:
+                continue
+            net = ipaddress.ip_network(parts[1], strict=False)
+            asns = [a for a in (_norm_asn(x) for x in parts[0].split()) if a]
+            if best is None or net.prefixlen > best.prefixlen:
+                best, origins = net, asns
+            elif net == best:
+                origins += [a for a in asns if a not in origins]
+        if best is None or not origins:
+            return None
+        result = (str(best), origins)
+        _CACHE[key] = result  # type: ignore[assignment]
+        return result
+    except Exception as exc:
+        logger.debug("DNS origin lookup for %s failed: %s", ip, exc)
+        return None
+
+
 def bgp_origin_info(ip: str, *, want_peers: bool = True) -> Optional[Dict[str, Any]]:
     """Current announcement for an IP: prefix, origin ASNs, RPKI, upstreams."""
-    net = _ripestat("network-info", ip)
-    if not net or not net.get("prefix"):
-        return None
-    prefix = str(net["prefix"])
-    origins = [_norm_asn(a) for a in net.get("asns") or []]
-    origins = [a for a in origins if a]
+    # DNS first: it answers in milliseconds, where RIPEstat's network-info was
+    # measured stalling past 20 s for the same address it answered a moment ago.
+    found = _dns_origin(ip)
+    if found:
+        prefix, origins = found
+    else:
+        net = _ripestat("network-info", ip)
+        if not net or not net.get("prefix"):
+            return None
+        prefix = str(net["prefix"])
+        origins = [_norm_asn(a) for a in net.get("asns") or []]
+        origins = [a for a in origins if a]
     info: Dict[str, Any] = {"prefix": prefix, "origins": origins, "holders": {},
                             "rpki": {}, "upstreams": []}
 
@@ -182,6 +244,8 @@ def bgp_origin_info(ip: str, *, want_peers: bool = True) -> Optional[Dict[str, A
         status = str(rv.get("status") or "").lower()
         if status:
             info["rpki"][asn] = status
+    # Origin known but the registry never said whether it is authorised.
+    info["rpki_unknown"] = bool(origins) and not info["rpki"]
 
     if want_peers and origins:
         nb = _ripestat("asn-neighbours", f"AS{origins[0]}") or {}
@@ -204,6 +268,9 @@ def _public_ip(hop: Dict[str, Any]) -> Optional[str]:
 
 def check_bgp(hops: List[Dict[str, Any]], *, lite: bool) -> List[Dict[str, Any]]:
     findings: List[Dict[str, Any]] = []
+    # The registry can stall; a scan must not wait on it indefinitely.
+    global _DEADLINE
+    _DEADLINE = time.monotonic() + (12 if lite else 45)
     targets = [h for h in hops if h.get("hop_kind") == "public" and _public_ip(h)]
     if lite:
         # The sending exit hop when it is marked; otherwise the first internet
@@ -279,6 +346,7 @@ def check_bgp(hops: List[Dict[str, Any]], *, lite: bool) -> List[Dict[str, Any]]
         hop["bgp_lines"] = lines
         if info["upstreams"]:
             hop["bgp_peers"] = [f"{u} (upstream)" for u in info["upstreams"]]
+    _DEADLINE = 0.0
     return findings
 
 
@@ -301,6 +369,7 @@ def integrity_summary(hops: List[Dict[str, Any]], findings: List[Dict[str, Any]]
         "located": located,
         "bgp_checked": bgp_checked,
         "bgp_attempted": sum(1 for h in hops if h.get("bgp_attempted")),
+        "rpki_unknown": sum(1 for h in hops if (h.get("bgp") or {}).get("rpki_unknown")),
         "lite": bool(lite),
         "clean": not items and (located >= 3 or bgp_checked > 0),
     }
@@ -334,6 +403,9 @@ def banner_note(summary: Optional[Dict[str, Any]]) -> Tuple[str, bool]:
         return note, True
     if int(summary.get("bgp_checked") or 0) > 0:
         advisories = sum(1 for i in items if str(i.get("kind")) == "bgp-origin-mismatch")
+        if int(summary.get("rpki_unknown") or 0) >= int(summary.get("bgp_checked") or 0):
+            # The announcing network was read, its authorisation was not.
+            return "BGP scan: origin OK, RPKI unverified", False
         if advisories:
             return f"BGP scan: no risks ({advisories} advisory)", False
         return "BGP scan: no risks", False

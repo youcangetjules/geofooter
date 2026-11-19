@@ -20,6 +20,10 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.18] — 2026-11-19
+
+- **The BGP scan gets an answer instead of "UNVERIFIED - no reply".** The route registry (RIPEstat) was stalling: one request timed out after 20 s, the next answered in 0.1 s. The announcing network is now read from DNS first (milliseconds), registry calls use three short tries inside a time limit, and if only the authorisation check (RPKI) cannot be read the strip says `BGP scan: origin OK, RPKI unverified` rather than "no risks". No VBA change.
+
 ## [1.8.17] — 2026-11-19
 
 - **The attachment count is the number of files you can see.** Signature logos and pictures quoted in the body are attachments to Outlook, and they were counted, so a mail with nothing in its attachment well read "Attach: 9". They are still scanned, but the strip and footer now count only the files listed as attachments. A picture that fails its scan is always counted. AES's own scan report is not counted. Needs a VBA re-import.

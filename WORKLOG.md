@@ -13,6 +13,18 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-19 — 1.8.18: **Make the BGP lookup dependable (1.8.18)**
+
+- Symptom: first live mail on 1.8.16 showed `BGP scan: UNVERIFIED - no reply`.
+- Measured from this PC: RIPEstat `network-info` for one address timed out at 5 s and at 20 s, then answered in 0.1 s; other endpoints answered in 0.1 s, then stalled on a later run. A verified TLS attempt fails first every time (HTTPS inspection) before the unverified retry.
+- Fix (`aes/route_checks.py`):
+  - `_dns_origin`: prefix and origin ASNs from Team Cymru's `origin.asn.cymru.com` / `origin6` TXT zone (dnspython, 4 s lifetime); RIPEstat `network-info` is the fallback.
+  - `_ripestat`: three tries at (3 s connect, 4 s read); remembers that TLS verification fails so later calls skip the doomed attempt; stops at a per-scan deadline (`_DEADLINE`: 12 s Basic, 45 s Full) set by `check_bgp`.
+  - `rpki_unknown` on a hop whose origin is known but whose RPKI status never arrived; `banner_note` then says `BGP scan: origin OK, RPKI unverified`.
+- Checked live: three addresses resolved with RPKI status in 0.2-1.3 s each. Tests: two added (13 in `tests/test_route_integrity.py`).
+- Not established: whether the stalls are RIPEstat's or local HTTPS inspection.
+- Follow-up: none.
+
 ### 2026-11-19 — 1.8.17: **Count only the attachments a reader sees (1.8.17)**
 
 - Symptom: top strip said `Attach: 9` on a reply whose only listed attachment was AES's own report; the rest were inline signature / quoted images.

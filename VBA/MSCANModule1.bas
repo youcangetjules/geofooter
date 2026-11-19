@@ -1129,10 +1129,68 @@ Private Function BuildAttachmentSummary(ByVal mail As Object) As String
     On Error Resume Next
     Dim i As Long
     Dim realCount As Long
+    Dim visibleCount As Long
     For i = 1 To mail.Attachments.Count
-        If Not IsAesBannerAttachment(mail.Attachments(i)) Then realCount = realCount + 1
+        If Not IsAesBannerAttachment(mail.Attachments(i)) Then
+            realCount = realCount + 1
+            If Not IsInlineBodyAttachment(mail.Attachments(i)) Then visibleCount = visibleCount + 1
+        End If
     Next i
-    BuildAttachmentSummary = "count=" & realCount & "; ok=0; not_ok=0"
+    ' count = every part that gets scanned; visible = the files a reader sees
+    ' in the attachment well. Signature logos and quoted pictures are parts
+    ' too, and reporting them made a mail with no attachments say "Attach: 9".
+    BuildAttachmentSummary = "count=" & realCount & "; visible=" & visibleCount & "; ok=0; not_ok=0"
+End Function
+
+' True for a picture shown inside the body rather than listed as a file:
+' Outlook marks it hidden, or it carries a content id the HTML refers to.
+' Such parts are still exported and scanned; they are only left out of the
+' attachment count shown to the reader.
+Private Function IsInlineBodyAttachment(ByVal att As Object) As Boolean
+    On Error Resume Next
+    Const PR_ATTACH_CONTENT_ID As String = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
+    Const PR_ATTACHMENT_HIDDEN As String = "http://schemas.microsoft.com/mapi/proptag/0x7FFE000B"
+    Const PR_ATTACH_FLAGS As String = "http://schemas.microsoft.com/mapi/proptag/0x37140003"
+    Const ATT_MHTML_REF As Long = 4
+
+    Dim isHidden As Boolean
+    Dim cid As String
+    Dim flags As Long
+    Dim ext As String
+    Dim dotAt As Long
+
+    IsInlineBodyAttachment = False
+    If att Is Nothing Then Exit Function
+    If att.Type = olOLE Then
+        IsInlineBodyAttachment = True
+        Exit Function
+    End If
+
+    isHidden = CBool(att.PropertyAccessor.GetProperty(PR_ATTACHMENT_HIDDEN))
+    Err.Clear
+    If isHidden Then
+        IsInlineBodyAttachment = True
+        Exit Function
+    End If
+
+    cid = Trim$(CStr(att.PropertyAccessor.GetProperty(PR_ATTACH_CONTENT_ID)))
+    Err.Clear
+    If Len(cid) = 0 Then Exit Function
+
+    flags = CLng(att.PropertyAccessor.GetProperty(PR_ATTACH_FLAGS))
+    Err.Clear
+    If (flags And ATT_MHTML_REF) = ATT_MHTML_REF Then
+        IsInlineBodyAttachment = True
+        Exit Function
+    End If
+
+    ' Some stores (IMAP) keep the content id but not the flag.
+    dotAt = InStrRev(att.FileName, ".")
+    If dotAt > 0 Then ext = LCase$(Mid$(att.FileName, dotAt + 1))
+    Select Case ext
+        Case "png", "jpg", "jpeg", "gif", "bmp", "emz", "wmz", "emf", "wmf", "svg", "webp", "tif", "tiff"
+            IsInlineBodyAttachment = True
+    End Select
 End Function
 
 ' True for the hidden inline PNG that carries the AES status strip.

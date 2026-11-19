@@ -5667,8 +5667,29 @@ class HTMLReportGenerator:
         metadata: Dict[str, str],
     ) -> Tuple[int, int, int]:
         if results:
-            return AttachmentScanner.summarize(results)
-        return self._parse_attachment_metadata(metadata)
+            counts = AttachmentScanner.summarize(results)
+        else:
+            counts = self._parse_attachment_metadata(metadata)
+        return self._visible_attachment_counts(counts, metadata)
+
+    def _visible_attachment_counts(
+        self, counts: Tuple[int, int, int], metadata: Dict[str, str]
+    ) -> Tuple[int, int, int]:
+        """Report the files a reader sees, not every MIME part that was scanned.
+
+        Signature logos and quoted pictures are attachments to Outlook and are
+        scanned like any other, but counting them made a mail with nothing in
+        its attachment well read "Attach: 9". VBA reports ``visible=N``; a
+        part that fails its scan is always counted, inline or not, so hiding
+        a file inside the body cannot hide a bad verdict.
+        """
+        total, _ok, not_ok = counts
+        att = self._metadata_value(metadata, "aes-attachments", "gefooter-attachments")
+        found = re.search(r"visible=(\d+)", att or "", re.IGNORECASE)
+        if not found:
+            return counts
+        shown = max(min(int(found.group(1)), total), not_ok)
+        return shown, shown - not_ok, not_ok
 
     def _parse_attachment_metadata(self, metadata: Dict[str, str]) -> Tuple[int, int, int]:
         """Return attachment total, OK count, and Not OK count from VBA export metadata."""

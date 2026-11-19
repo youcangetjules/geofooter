@@ -13,6 +13,16 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-19 — 1.8.17: **Count only the attachments a reader sees (1.8.17)**
+
+- Symptom: top strip said `Attach: 9` on a reply whose only listed attachment was AES's own report; the rest were inline signature / quoted images.
+- Cause: `BuildAttachmentSummary` counted every part except AES's own, and Python reported `len(results)` of everything exported for scanning.
+- Fix:
+  - `VBA\MSCANModule1.bas`: `IsInlineBodyAttachment` (hidden flag, or content id with the MHTML-ref flag, or content id on an image type, or an OLE object). The summary now carries `visible=N` beside `count=N`. Export and scanning are unchanged: inline parts are still scanned.
+  - `aes/geolocate_headers.py`: `_visible_attachment_counts` shows `visible`, raised to the number of failed parts so an inline file with a bad verdict is never hidden. Without the field (older VBA) the count is unchanged.
+- Tests: one added to `tests/test_report_attachment.py`. The VBA function is not exercised by a test (needs live attachments).
+- Follow-up: **VBA re-import + Outlook restart.** Mails already scanned keep their old count until rescanned.
+
 ### 2026-11-19 — 1.8.16: **Always run the BGP scan and state its assessment in the strip (1.8.16)**
 
 - Request: the strip must not say "BGP risks not checked"; check them, then say the scan was done and the assessment, briefly.

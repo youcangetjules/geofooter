@@ -20,6 +20,10 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.17] — 2026-11-19
+
+- **The attachment count is the number of files you can see.** Signature logos and pictures quoted in the body are attachments to Outlook, and they were counted, so a mail with nothing in its attachment well read "Attach: 9". They are still scanned, but the strip and footer now count only the files listed as attachments. A picture that fails its scan is always counted. AES's own scan report is not counted. Needs a VBA re-import.
+
 ## [1.8.16] — 2026-11-19
 
 - **The BGP scan always runs and the top strip states its assessment briefly.** The strip no longer says "not checked". It reads `BGP scan: no risks`, `BGP scan: RISK - hijack suspected` (or `multiple origins` / `tromboning`), `BGP scan: n/a - internal route` when no relay was on the internet, or `BGP scan: UNVERIFIED - no reply` (amber) when the route registry did not answer. A Basic scan now assesses the first internet hop when no exit hop is marked, and a failed lookup is retried once and not remembered. No VBA change.

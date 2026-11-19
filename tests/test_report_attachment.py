@@ -236,3 +236,22 @@ def test_share_note_sits_inside_the_report_card(tmp_path):
     note = page.index("produced by Aliniant Email Scanner")
     assert page.index('<div class="wrap">') < note < page.index("<h1>")
 
+
+
+def test_attachment_count_is_what_the_reader_sees_not_every_inline_picture():
+    import aes.geolocate_headers as gh
+
+    cls = next(v for v in vars(gh).values()
+               if isinstance(v, type) and hasattr(v, "_visible_attachment_counts"))
+    me = object.__new__(cls)
+
+    def shown(counts, summary):
+        return cls._visible_attachment_counts(me, counts, {"aes-attachments": summary})
+
+    # Nine scanned parts, none in the attachment well.
+    assert shown((9, 9, 0), "count=9; visible=0; ok=0; not_ok=0") == (0, 0, 0)
+    assert shown((9, 9, 0), "count=9; visible=2; ok=0; not_ok=0") == (2, 2, 0)
+    # A part that fails its scan is counted even when it hides inline.
+    assert shown((9, 8, 1), "count=9; visible=0; ok=0; not_ok=0") == (1, 0, 1)
+    # Older export without the field: unchanged.
+    assert shown((9, 9, 0), "count=9; ok=0; not_ok=0") == (9, 9, 0)

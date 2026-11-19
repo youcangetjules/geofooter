@@ -4722,11 +4722,11 @@ class HTMLReportGenerator:
         )
         if risktable_note:
             line = f"{line}  |  {risktable_note}"
-        # Always state the BGP result, including "checked - none found".
+        # Always state the BGP scan and its assessment.
         bgp_note, bgp_warn = (
             route_checks.banner_note(route_integrity)
             if route_checks is not None
-            else ("BGP risks not checked", False)
+            else ("BGP scan: UNVERIFIED - unavailable", True)
         )
         line = f"{line}  |  {bgp_note}"
         if score > 25:

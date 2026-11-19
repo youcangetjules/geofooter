@@ -20,6 +20,10 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.16] — 2026-11-19
+
+- **The BGP scan always runs and the top strip states its assessment briefly.** The strip no longer says "not checked". It reads `BGP scan: no risks`, `BGP scan: RISK - hijack suspected` (or `multiple origins` / `tromboning`), `BGP scan: n/a - internal route` when no relay was on the internet, or `BGP scan: UNVERIFIED - no reply` (amber) when the route registry did not answer. A Basic scan now assesses the first internet hop when no exit hop is marked, and a failed lookup is retried once and not remembered. No VBA change.
+
 ## [1.8.15] — 2026-11-19
 
 - **A VBA update that stumbles on its first step can no longer leave sends silently held.** Writing the temporary "hold sends" code goes through the clipboard; one collision failed the update on 2026-11-19 and the failure path assumed the hold had never been placed, so it undid nothing. The write is now tried three times, a failure there is undone like any other, and the result message reports what is actually in the editor.

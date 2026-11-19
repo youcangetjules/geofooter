@@ -65,22 +65,73 @@ def test_report_block_names_hops_and_states_coverage():
     assert gh._route_integrity_html({}) == ""
 
 
-def test_banner_says_checked_and_none_found_only_after_a_lookup():
-    assert rc.banner_note({"items": [], "bgp_checked": 1}) == ("BGP risks checked - none found", False)
-    assert rc.banner_note({"items": [], "bgp_checked": 0}) == ("BGP risks not checked", False)
-    assert rc.banner_note(None) == ("BGP risks not checked", False)
+def test_banner_always_says_scan_done_with_an_assessment():
+    assert rc.banner_note({"items": [], "bgp_checked": 1}) == ("BGP scan: no risks", False)
+    nothing = ("BGP scan: n/a - internal route", False)
+    assert rc.banner_note({"items": [], "bgp_checked": 0}) == nothing
+    assert rc.banner_note(None) == nothing
+    # Asked, no answer: never passed off as clean.
+    assert rc.banner_note({"items": [], "bgp_checked": 0, "bgp_attempted": 1}) == (
+        "BGP scan: UNVERIFIED - no reply", True)
+
+
+def _public(ip, **extra):
+    return dict({"hop_kind": "public", "ip": ip, "fqdn": "mx.example"}, **extra)
+
+
+def test_basic_scan_assesses_the_first_internet_hop_when_no_exit_hop_is_marked(monkeypatch):
+    asked = []
+
+    def fake(ip, *, want_peers=True):
+        asked.append(ip)
+        return {"prefix": "8.8.8.0/24", "origins": ["15169"], "holders": {}, "rpki": {"15169": "valid"},
+                "upstreams": []}
+
+    monkeypatch.setattr(rc, "bgp_origin_info", fake)
+    hops = [{"hop_kind": "internal", "ip": "10.0.0.1"}, _public("8.8.8.8"), _public("1.1.1.1")]
+    findings = rc.check_bgp(hops, lite=True)
+    assert asked == ["8.8.8.8"]
+    summary = rc.integrity_summary(hops, findings, lite=True)
+    assert (summary["bgp_attempted"], summary["bgp_checked"]) == (1, 1)
+    assert rc.banner_note(summary)[0] == "BGP scan: no risks"
+
+
+def test_marked_exit_hop_is_still_preferred(monkeypatch):
+    asked = []
+    monkeypatch.setattr(rc, "bgp_origin_info", lambda ip, *, want_peers=True: asked.append(ip))
+    rc.check_bgp([_public("8.8.8.8"), _public("1.1.1.1", exit_hop=True)], lite=True)
+    assert asked == ["1.1.1.1"]
+
+
+def test_unanswered_lookup_is_reported_and_not_cached(monkeypatch):
+    monkeypatch.setattr(rc, "bgp_origin_info", lambda ip, *, want_peers=True: None)
+    hops = [_public("8.8.8.8")]
+    summary = rc.integrity_summary(hops, rc.check_bgp(hops, lite=True), lite=True)
+    assert rc.banner_note(summary) == ("BGP scan: UNVERIFIED - no reply", True)
+
+    import requests
+    calls = []
+
+    def boom(*a, **k):
+        calls.append(1)
+        raise requests.ConnectionError("down")
+
+    monkeypatch.setattr(requests, "get", boom)
+    monkeypatch.setattr(rc, "_CACHE", {})
+    assert rc._ripestat("network-info", "8.8.8.8") is None
+    assert len(calls) == 2 and rc._CACHE == {}       # retried once, failure not remembered
 
 
 def test_banner_names_the_strongest_bgp_risk_and_warns():
     summary = {"bgp_checked": 2, "items": [
         {"kind": "bgp-rpki-invalid", "hops": [1]}, {"kind": "tromboning", "hops": [1, 2, 3]},
         {"kind": "bgp-origin-mismatch", "hops": [1]}]}
-    assert rc.banner_note(summary) == ("BGP RISK: hijack or route leak suspected (+1 more)", True)
+    assert rc.banner_note(summary) == ("BGP scan: RISK - hijack suspected (+1 more)", True)
 
 
 def test_banner_treats_an_origin_mismatch_alone_as_an_advisory():
     summary = {"bgp_checked": 1, "items": [{"kind": "bgp-origin-mismatch", "hops": [1]}]}
-    assert rc.banner_note(summary) == ("BGP risks checked - none found (1 advisory)", False)
+    assert rc.banner_note(summary) == ("BGP scan: no risks (1 advisory)", False)
 
 
 def test_status_strip_carries_the_bgp_result(monkeypatch):
@@ -99,7 +150,7 @@ def test_status_strip_carries_the_bgp_result(monkeypatch):
     kwargs = dict(block_state={"trusted": True}, attachment_count=0, beacon_count=0, beacon_blocked=None,
                   attachment_not_ok=0, attachments_quarantined=0, link_findings=[], risk_score=5)
     cls._build_top_of_mail_banners(me, route_integrity={"items": [], "bgp_checked": 1}, **kwargs)
-    assert seen["line"].endswith("BGP risks checked - none found") and seen["warn"] is False
+    assert seen["line"].endswith("BGP scan: no risks") and seen["warn"] is False
     cls._build_top_of_mail_banners(
         me, route_integrity={"bgp_checked": 1, "items": [{"kind": "bgp-rpki-invalid"}]}, **kwargs)
-    assert "BGP RISK: hijack or route leak suspected" in seen["line"] and seen["warn"] is True
+    assert "BGP scan: RISK - hijack suspected" in seen["line"] and seen["warn"] is True

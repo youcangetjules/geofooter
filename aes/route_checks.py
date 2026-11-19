@@ -126,23 +126,28 @@ def _ripestat(name: str, resource: str, **extra: str) -> Optional[Dict[str, Any]
     if key in _CACHE:
         return _CACHE[key]
     data: Optional[Dict[str, Any]] = None
-    try:
-        import requests
-        from requests import exceptions as req_exc
-
-        params = {"resource": resource, "sourceapp": "aliniant-aes", **extra}
-        url = RIPESTAT_URL.format(name=name)
+    # Two tries: one dropped request must not turn into "BGP not assessed".
+    for attempt in (1, 2):
         try:
-            resp = requests.get(url, params=params, timeout=5)
-        except req_exc.SSLError:
-            resp = requests.get(url, params=params, timeout=5, verify=False)
-        if resp.status_code == 200:
-            body = resp.json()
-            if isinstance(body, dict) and isinstance(body.get("data"), dict):
-                data = body["data"]
-    except Exception as exc:
-        logger.debug("RIPEstat %s(%s) failed: %s", name, resource, exc)
-    _CACHE[key] = data
+            import requests
+            from requests import exceptions as req_exc
+
+            params = {"resource": resource, "sourceapp": "aliniant-aes", **extra}
+            url = RIPESTAT_URL.format(name=name)
+            try:
+                resp = requests.get(url, params=params, timeout=5)
+            except req_exc.SSLError:
+                resp = requests.get(url, params=params, timeout=5, verify=False)
+            if resp.status_code == 200:
+                body = resp.json()
+                if isinstance(body, dict) and isinstance(body.get("data"), dict):
+                    data = body["data"]
+                    break
+        except Exception as exc:
+            logger.debug("RIPEstat %s(%s) try %d failed: %s", name, resource, attempt, exc)
+    if data is not None:
+        # A failure is not remembered, so the next scan asks again.
+        _CACHE[key] = data
     return data
 
 
@@ -201,10 +206,13 @@ def check_bgp(hops: List[Dict[str, Any]], *, lite: bool) -> List[Dict[str, Any]]
     findings: List[Dict[str, Any]] = []
     targets = [h for h in hops if h.get("hop_kind") == "public" and _public_ip(h)]
     if lite:
-        targets = [h for h in targets if h.get("exit_hop")][:1]
+        # The sending exit hop when it is marked; otherwise the first internet
+        # hop, so a Basic scan always assesses BGP when there is one to assess.
+        targets = ([h for h in targets if h.get("exit_hop")] or targets)[:1]
     for hop in targets[:6]:
         hop_no = next((n for n, h in enumerate(hops, 1) if h is hop), 0)
         ip = _public_ip(hop) or ""
+        hop["bgp_attempted"] = True
         info = bgp_origin_info(ip, want_peers=not lite)
         if not info:
             continue
@@ -292,39 +300,46 @@ def integrity_summary(hops: List[Dict[str, Any]], findings: List[Dict[str, Any]]
         "items": items,
         "located": located,
         "bgp_checked": bgp_checked,
+        "bgp_attempted": sum(1 for h in hops if h.get("bgp_attempted")),
         "lite": bool(lite),
         "clean": not items and (located >= 3 or bgp_checked > 0),
     }
 
 
 _BANNER_RISKS = {
-    "bgp-rpki-invalid": "hijack or route leak suspected",
-    "bgp-multiple-origins": "several networks announce the sender's address block",
-    "tromboning": "route leaves the region and returns",
+    "bgp-rpki-invalid": "hijack suspected",
+    "bgp-multiple-origins": "multiple origins",
+    "tromboning": "tromboning",
 }
 
 
 def banner_note(summary: Optional[Dict[str, Any]]) -> Tuple[str, bool]:
     """One phrase for the status strip at the top of the mail, and whether it warns.
 
-    "Checked - none found" is only said when a BGP lookup actually ran. An
-    origin mismatch on its own is informational (common for cloud senders),
-    so it is reported as an advisory, not as a risk.
+    Always "BGP scan:" plus a brief assessment. The scan runs on every mail;
+    what varies is the result: a risk, nothing found, or nothing to assess
+    because no relay sat on the internet (mail that never left the
+    organisation). "No risks found" is only said when an announcement was
+    actually read; if the route registry gave no answer the strip says so
+    and warns, rather than passing the mail as clean. An origin mismatch on
+    its own is informational (common for cloud senders): an advisory.
     """
     summary = summary or {}
     items = summary.get("items") or []
     risks = [str(i.get("kind")) for i in items if str(i.get("kind")) in _BANNER_RISKS]
     if risks:
-        note = f"BGP RISK: {_BANNER_RISKS[risks[0]]}"
+        note = f"BGP scan: RISK - {_BANNER_RISKS[risks[0]]}"
         if len(risks) > 1:
             note += f" (+{len(risks) - 1} more)"
         return note, True
-    if int(summary.get("bgp_checked") or 0) <= 0:
-        return "BGP risks not checked", False
-    advisories = sum(1 for i in items if str(i.get("kind")) == "bgp-origin-mismatch")
-    if advisories:
-        return f"BGP risks checked - none found ({advisories} advisory)", False
-    return "BGP risks checked - none found", False
+    if int(summary.get("bgp_checked") or 0) > 0:
+        advisories = sum(1 for i in items if str(i.get("kind")) == "bgp-origin-mismatch")
+        if advisories:
+            return f"BGP scan: no risks ({advisories} advisory)", False
+        return "BGP scan: no risks", False
+    if int(summary.get("bgp_attempted") or 0) > 0:
+        return "BGP scan: UNVERIFIED - no reply", True
+    return "BGP scan: n/a - internal route", False
 
 
 def check_routing(hops: List[Dict[str, Any]], *, lite: bool) -> List[Dict[str, Any]]:

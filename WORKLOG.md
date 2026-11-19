@@ -13,6 +13,17 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-19 — 1.8.16: **Always run the BGP scan and state its assessment in the strip (1.8.16)**
+
+- Request: the strip must not say "BGP risks not checked"; check them, then say the scan was done and the assessment, briefly.
+- `aes/route_checks.py`:
+  - `check_bgp` (Basic/lite): uses the marked exit hop, else the first public hop, so a mail with any internet hop is always assessed. Marks `bgp_attempted` on each hop it asks about.
+  - `_ripestat`: two tries per request; a failure is no longer cached, so the next scan asks again.
+  - `integrity_summary` reports `bgp_attempted`.
+  - `banner_note`: `BGP scan: no risks` / `no risks (N advisory)` / `RISK - ...` / `n/a - internal route` / `UNVERIFIED - no reply` (warns). "No risks" still requires an announcement to have been read.
+- Tests: `tests/test_route_integrity.py` updated, three added (fallback hop, exit hop preferred, unanswered lookup retried and not cached).
+- Follow-up: none.
+
 ### 2026-11-19 — 1.8.15: **Importer: retry the send-hold write and undo it when it fails (1.8.15)**
 
 - Symptom: `Import_VBA_ViaUi.ps1` failed with "ThisOutlookSession code did not match after paste" at "Holding sends while modules are replaced". No restore ran. A second run succeeded.

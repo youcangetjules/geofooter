@@ -13,6 +13,21 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-19 — 1.8.12: **Remove footers quoted through a reply (1.8.12)**
+
+- Symptom: a received reply showed two AES footers, the quoted one directly above the new one. No `HEALTH | footer count` warning was logged.
+- Cause: `CountAesScanResults` / `StripAllAesScanResults` (`VBA\MSCANModule1.bas`) matched `id='aes-footer-start'`, `id="aes-footer-start"` and the heading with plain spaces. After a round trip through Outlook's reply editor the quoted footer has no comments, no end anchor, `<a name="aes-footer-start">` inside a spacer table, and the heading as `Aliniant&nbsp;AES&nbsp;Scan&nbsp;Result` - which is also how the scanner has written it since the heading moved to `_nb_text`. So the heading fallback had been dead since then: count 1, nothing stripped.
+- Fix:
+  - `FindAesHeading` matches the heading with spaces, `&nbsp;`, `&#160;` or U+00A0; `FindAesAnchorTag` matches the bare anchor name in any attribute spelling.
+  - `CountAesScanResults` counts whole (bounded) footers, sets them aside, then counts leftover headings / start anchors.
+  - `StripAllAesScanResults` removes a marker-less footer by the outermost enclosing table carrying the footer colour (`AES_STRIP_COLOUR`, must match `AES_STRIP_BG`), then `RemoveOrphanFooterAnchors` clears leftover anchors and Word's empty spacer table.
+  - `EnclosingTableStart` tracks tables as a stack. The old `FooterContainerStart` took the last `<div`/`<table` before the hit even if it had already closed, which could delete the sender's block; it is gone, and nothing is removed unless it is a footer-coloured table.
+  - `FindAesFooterBounds` pairs an end anchor with the nearest start anchor, so an orphan quoted start cannot swallow the text between it and the new footer.
+  - The plain-summary comment (`AES-Plain-Summary`) is ignored when counting and stripped with the footer.
+- Tests: `tests/test_vba_footer_strip.py` (8) lifts the VBA functions into VBScript and runs them under cscript. Also run against the real two-footer message: count 2 -> 0, sender content intact.
+- Not changed: an outgoing reply still quotes the one footer of the mail being answered.
+- Follow-up: **VBA re-import + Outlook restart.** Existing two-footer mails are collapsed on their next scan.
+
 ### 2026-11-18 — 1.8.11: **Stop GURI's auto scrape freezing Outlook (1.8.11)**
 
 - Symptom: Outlook "freezing regularly" with no AES scan or footer work in the log and no hang recorded (the window kept answering WM_NULL probes).

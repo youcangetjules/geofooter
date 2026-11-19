@@ -20,6 +20,10 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.12] — 2026-11-19
+
+- **A footer quoted in a reply chain is removed again, so a mail carries one footer.** When a scanned mail is replied to, Word rewrites the footer: the comment markers and the end anchor are dropped, the start anchor becomes `<a name="aes-footer-start">`, and the heading keeps its non-breaking spaces. The detector only knew the pristine spellings, so it neither saw nor removed that quoted footer and the new one was added beneath it. Footers are now recognised in every spelling and a marker-less one is removed by its own table (identified by the footer background colour). Needs a VBA re-import. A mail already showing two footers is repaired the next time it is scanned (Short Scan).
+
 ## [1.8.11] — 2026-11-18
 
 - **GURI's five-minute Outlook scrape no longer freezes Outlook.** It opened up to 60 messages per account and read a dozen properties from each, every call served on Outlook's UI thread: 12-39 seconds of a frozen Outlook every five minutes. It now reads the same headers through `Folder.GetTable` (nothing is opened, no `ItemLoad` fires) and takes under 2 seconds for five accounts. The table is unfiltered and sorted newest first, stopping at the first message outside the window; a date filter made IMAP stores scan the whole folder (16 s measured). Falls back to the old walk if a store refuses the table. Restart GURI to pick it up.

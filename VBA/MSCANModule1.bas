@@ -18,6 +18,14 @@ Private m_StripHeadersUnsupported As Boolean
 ' The rendered footer heading. Survives comment stripping and id rewriting, so
 ' it is the last-resort way to find a footer that must be removed.
 Private Const AES_VISIBLE_HEADING As String = "Aliniant AES Scan Result"
+' Anchor names, matched bare: mail clients respell the attributes around them.
+Private Const AES_ANCHOR_START As String = "aes-footer-start"
+Private Const AES_ANCHOR_END As String = "aes-footer-end"
+' Footer background (AES_STRIP_BG in aes\geolocate_headers.py). It survives a
+' reply's rewrite and identifies a footer table that has lost its markers.
+Private Const AES_STRIP_COLOUR As String = "46525c"
+Private Const AES_PLAIN_START As String = "<!-- AES-Plain-Summary-Start -->"
+Private Const AES_PLAIN_END As String = "<!-- AES-Plain-Summary-End -->"
 
 ' Stamped onto a beacon tag once it has been defanged, so the next pass does
 ' not treat its own handiwork as a fresh beacon.
@@ -2856,7 +2864,9 @@ EH:
 End Function
 
 ' Locate AES footer block. IMAP often strips <!-- comments -->, so also use
-' durable anchor ids and the visible "Aliniant AES Scan Result" heading.
+' the durable anchors and the visible "Aliniant AES Scan Result" heading.
+' Anchors and heading are matched in every form a mail client leaves them in
+' (see FindAesAnchorTag / FindAesHeading).
 Private Sub FindAesFooterBounds(ByVal bodyHtml As String, ByRef startPos As Long, ByRef endPos As Long, ByRef endLen As Long, _
                                 Optional ByVal allowBodyFallback As Boolean = True)
     startPos = 0
@@ -2867,13 +2877,9 @@ Private Sub FindAesFooterBounds(ByVal bodyHtml As String, ByRef startPos As Long
     Const FOOTER_END_AES As String = "<!-- AES End -->"
     Const FOOTER_START_LEGACY As String = "<!-- GeoFooter Start -->"
     Const FOOTER_END_LEGACY As String = "<!-- GeoFooter End -->"
-    Const ANCHOR_START As String = "id='aes-footer-start'"
-    Const ANCHOR_START2 As String = "id=""aes-footer-start"""
-    Const ANCHOR_END As String = "id='aes-footer-end'"
-    Const ANCHOR_END2 As String = "id=""aes-footer-end"""
-    Const VISIBLE_START As String = "Aliniant AES Scan Result"
 
     Dim endMarker As String
+    Dim startedByAnchor As Boolean
     startPos = InStr(1, bodyHtml, FOOTER_START_AES, vbTextCompare)
     endMarker = FOOTER_END_AES
     If startPos = 0 Then
@@ -2881,22 +2887,18 @@ Private Sub FindAesFooterBounds(ByVal bodyHtml As String, ByRef startPos As Long
         endMarker = FOOTER_END_LEGACY
     End If
     If startPos = 0 Then
-        startPos = InStr(1, bodyHtml, ANCHOR_START, vbTextCompare)
-        If startPos = 0 Then startPos = InStr(1, bodyHtml, ANCHOR_START2, vbTextCompare)
+        startPos = FindAesAnchorTag(bodyHtml, AES_ANCHOR_START, 1)
         If startPos > 0 Then
-            ' Rewind to the opening '<' of the anchor tag.
-            Dim lt As Long
-            lt = InStrRev(Left$(bodyHtml, startPos), "<")
-            If lt > 0 Then startPos = lt
+            startedByAnchor = True
             endMarker = ""
         End If
     End If
     If startPos = 0 Then
-        startPos = InStr(1, bodyHtml, VISIBLE_START, vbTextCompare)
+        startPos = FindAesHeading(bodyHtml, 1)
         If startPos > 0 Then
             Dim lt2 As Long
-            lt2 = InStrRev(Left$(bodyHtml, startPos), "<div")
-            If lt2 = 0 Then lt2 = InStrRev(Left$(bodyHtml, startPos), "<")
+            lt2 = InStrRev(bodyHtml, "<div", startPos, vbTextCompare)
+            If lt2 = 0 Then lt2 = InStrRev(bodyHtml, "<", startPos)
             If lt2 > 0 Then startPos = lt2
             endMarker = ""
         End If
@@ -2908,18 +2910,26 @@ Private Sub FindAesFooterBounds(ByVal bodyHtml As String, ByRef startPos As Long
         If endPos > 0 Then endLen = Len(endMarker)
     End If
     If endPos = 0 Then
-        endPos = InStr(startPos, bodyHtml, ANCHOR_END, vbTextCompare)
-        If endPos = 0 Then endPos = InStr(startPos, bodyHtml, ANCHOR_END2, vbTextCompare)
+        endPos = FindAesAnchorTag(bodyHtml, AES_ANCHOR_END, startPos)
         If endPos > 0 Then
-            Dim ltEnd As Long
             Dim gt As Long
-            ltEnd = InStrRev(Left$(bodyHtml, endPos), "<")
-            If ltEnd > 0 Then endPos = ltEnd
             gt = InStr(endPos, bodyHtml, ">")
             If gt > 0 Then
                 endLen = gt - endPos + 1
             Else
                 endLen = 1
+            End If
+            ' A quoted footer that lost its end anchor must not be paired with
+            ' the end of a later footer: everything between them is the
+            ' sender's. Pair this end with the start anchor nearest to it.
+            If startedByAnchor Then
+                Dim nearTok As Long
+                Dim nearLt As Long
+                nearTok = InStrRev(bodyHtml, AES_ANCHOR_START, endPos, vbTextCompare)
+                If nearTok > 0 Then
+                    nearLt = InStrRev(bodyHtml, "<", nearTok)
+                    If nearLt > startPos Then startPos = nearLt
+                End If
             End If
         End If
     End If
@@ -3038,26 +3048,124 @@ Private Function StripAesMarkupFromBody(ByVal bodyHtml As String) As String
     StripAesMarkupFromBody = StripAllAesScanResults(s)
 End Function
 
+' Position of the footer heading at or after fromPos, 0 when absent. The
+' scanner writes the heading with non-breaking spaces and every mail client
+' re-encodes those its own way, so each spelling is tried.
+Private Function FindAesHeading(ByVal html As String, ByVal fromPos As Long) As Long
+    Dim forms(0 To 3) As String
+    Dim i As Long
+    Dim p As Long
+    Dim best As Long
+
+    If fromPos < 1 Then fromPos = 1
+    forms(0) = AES_VISIBLE_HEADING
+    forms(1) = Replace(AES_VISIBLE_HEADING, " ", "&nbsp;")
+    forms(2) = Replace(AES_VISIBLE_HEADING, " ", "&#160;")
+    forms(3) = Replace(AES_VISIBLE_HEADING, " ", ChrW(160))
+    For i = 0 To 3
+        p = InStr(fromPos, html, forms(i), vbTextCompare)
+        If p > 0 Then
+            If best = 0 Or p < best Then best = p
+        End If
+    Next i
+    FindAesHeading = best
+End Function
+
+Private Function CountAesHeadings(ByVal html As String) As Long
+    Dim p As Long
+    Dim n As Long
+    Do While n < 200
+        p = FindAesHeading(html, p + 1)
+        If p = 0 Then Exit Do
+        n = n + 1
+    Loop
+    CountAesHeadings = n
+End Function
+
+' Position of the '<' of the tag carrying an AES anchor name, 0 when absent.
+' The scanner writes <a id='aes-footer-start' name='aes-footer-start'>; Word
+' rewrites that to <a name="aes-footer-start"> when the mail is replied to, so
+' the bare name is matched, not one attribute spelling.
+Private Function FindAesAnchorTag(ByVal html As String, ByVal anchorName As String, ByVal fromPos As Long) As Long
+    Dim p As Long
+    Dim lt As Long
+    If fromPos < 1 Then fromPos = 1
+    p = InStr(fromPos, html, anchorName, vbTextCompare)
+    If p = 0 Then Exit Function
+    lt = InStrRev(html, "<", p)
+    If lt = 0 Then lt = p
+    FindAesAnchorTag = lt
+End Function
+
+' Anchor tags, not occurrences: id and name sit in the same tag.
+Private Function CountAesStartAnchors(ByVal html As String) As Long
+    Dim p As Long
+    Dim gt As Long
+    Dim n As Long
+    p = 1
+    Do While n < 200
+        p = InStr(p, html, AES_ANCHOR_START, vbTextCompare)
+        If p = 0 Then Exit Do
+        n = n + 1
+        gt = InStr(p, html, ">")
+        If gt = 0 Then Exit Do
+        p = gt
+    Loop
+    CountAesStartAnchors = n
+End Function
+
+Private Function CountBlocksBetween(ByVal src As String, ByVal startMarker As String, _
+                                    ByVal endMarker As String) As Long
+    Dim s As Long
+    Dim e As Long
+    Dim n As Long
+    s = 1
+    Do While n < 200
+        s = InStr(s, src, startMarker, vbTextCompare)
+        If s = 0 Then Exit Do
+        e = InStr(s, src, endMarker, vbTextCompare)
+        If e = 0 Then Exit Do
+        n = n + 1
+        s = e + Len(endMarker)
+    Loop
+    CountBlocksBetween = n
+End Function
+
 ' How many AES / legacy scan blocks are in this body (quoted chain included).
 '
-' Each marker style degrades differently: IMAP strips HTML comments, Outlook and
-' Word can rewrite or drop the anchor ids, but the rendered heading survives
-' almost anything. Counting each style and taking the highest means a body
-' holding one comment-marked footer and one stripped footer reports 2, not 1.
+' Whole footers - both ends present - are counted and set aside first. What is
+' left is searched for the traces a damaged footer leaves. A footer is damaged
+' every time the mail is replied to: Word drops the comments and the end
+' anchor and rewrites the start anchor and the heading; IMAP drops comments.
+' Counting only the pristine spellings is how a quoted footer went unseen.
 Private Function CountAesScanResults(ByVal bodyHtml As String) As Long
-    Dim byComment As Long
-    Dim byAnchor As Long
-    Dim byVisible As Long
+    Dim rest As String
+    Dim whole As Long
+    Dim traces As Long
+    Dim anchors As Long
+    Dim guard As Long
+    Dim startPos As Long
+    Dim endPos As Long
+    Dim endLen As Long
 
-    byComment = CountMarker(bodyHtml, "<!-- AES Start -->") + _
-                CountMarker(bodyHtml, "<!-- GeoFooter Start -->")
-    byAnchor = CountMarker(bodyHtml, "id='aes-footer-start'") + _
-               CountMarker(bodyHtml, "id=""aes-footer-start""")
-    byVisible = CountMarker(bodyHtml, AES_VISIBLE_HEADING)
+    ' The plain-text summary rides in a comment and repeats the heading.
+    rest = StripBlockBetween(bodyHtml, AES_PLAIN_START, AES_PLAIN_END)
+    whole = CountBlocksBetween(rest, "<!-- AES Start -->", "<!-- AES End -->") + _
+            CountBlocksBetween(rest, "<!-- GeoFooter Start -->", "<!-- GeoFooter End -->")
+    rest = StripBlockBetween(rest, "<!-- AES Start -->", "<!-- AES End -->")
+    rest = StripBlockBetween(rest, "<!-- GeoFooter Start -->", "<!-- GeoFooter End -->")
+    Do While guard < 40
+        FindAesFooterBounds rest, startPos, endPos, endLen, False
+        If startPos = 0 Or endPos <= startPos Or endLen <= 0 Then Exit Do
+        rest = Left$(rest, startPos - 1) & Mid$(rest, endPos + endLen)
+        whole = whole + 1
+        guard = guard + 1
+    Loop
 
-    CountAesScanResults = byComment
-    If byAnchor > CountAesScanResults Then CountAesScanResults = byAnchor
-    If byVisible > CountAesScanResults Then CountAesScanResults = byVisible
+    traces = CountAesHeadings(rest)
+    anchors = CountAesStartAnchors(rest)
+    If anchors > traces Then traces = anchors
+    CountAesScanResults = whole + traces
 End Function
 
 Private Function CountMarker(ByVal src As String, ByVal marker As String) As Long
@@ -3091,7 +3199,8 @@ Private Function StripAllAesScanResults(ByVal bodyHtml As String) As String
     Dim endPos As Long
     Dim endLen As Long
 
-    s = StripBlockBetween(bodyHtml, "<!-- AES Start -->", "<!-- AES End -->")
+    s = StripBlockBetween(bodyHtml, AES_PLAIN_START, AES_PLAIN_END)
+    s = StripBlockBetween(s, "<!-- AES Start -->", "<!-- AES End -->")
     s = StripBlockBetween(s, "<!-- GeoFooter Start -->", "<!-- GeoFooter End -->")
     guard = 0
     Do While guard < 40
@@ -3102,118 +3211,102 @@ Private Function StripAllAesScanResults(ByVal bodyHtml As String) As String
     Loop
 
     ' The loop above only removes a block whose END marker survived. A footer
-    ' that lost its markers (IMAP strips HTML comments, Word rewrites ids) would
-    ' otherwise stay and the new footer would be appended beside it. Remove any
-    ' block still carrying the rendered heading by its enclosing element.
+    ' quoted in a reply has none: Word keeps the tables and drops the markers.
+    ' Remove each remaining heading together with the footer table around it.
     Dim hit As Long
-    Dim before As String
+    Dim lenBefore As Long
     guard = 0
     Do While guard < 20
-        hit = FindAesFooterTrace(s)
+        hit = FindAesHeading(s, 1)
         If hit = 0 Then Exit Do
-        before = s
-        s = RemoveEnclosingBlockAt(s, hit)
-        If s = before Then
-            ' Could not identify a container. Stop rather than spin; the
+        lenBefore = Len(s)
+        s = RemoveFooterTableAt(s, hit)
+        If Len(s) = lenBefore Then
+            ' Not inside a footer table. Stop rather than spin; the
             ' invariant check reports the leftover.
             Exit Do
         End If
         guard = guard + 1
     Loop
 
-    StripAllAesScanResults = s
+    StripAllAesScanResults = RemoveOrphanFooterAnchors(s)
 End Function
 
-' Position of anything that betrays a footer: the rendered heading first, then
-' the anchor id (an emptied shell left by an earlier partial removal).
-Private Function FindAesFooterTrace(ByVal html As String) As Long
-    FindAesFooterTrace = InStr(1, html, AES_VISIBLE_HEADING, vbTextCompare)
-    If FindAesFooterTrace > 0 Then Exit Function
-    FindAesFooterTrace = InStr(1, html, "id='aes-footer-start'", vbTextCompare)
-    If FindAesFooterTrace > 0 Then Exit Function
-    FindAesFooterTrace = InStr(1, html, "id=""aes-footer-start""", vbTextCompare)
-End Function
+' Start of a <table> that encloses hitPos, 0 when there is none. With
+' tagNeedle, the outermost enclosing table whose opening tag contains it;
+' without, the innermost enclosing table. Tables are tracked as a stack from
+' the top of the document, so a table that closed before hitPos is never
+' mistaken for one that contains it.
+Private Function EnclosingTableStart(ByVal html As String, ByVal hitPos As Long, ByVal tagNeedle As String) As Long
+    On Error GoTo EH
+    Dim re As Object
+    Dim ms As Object
+    Dim m As Object
+    Dim opens() As Long
+    Dim wanted() As Boolean
+    Dim depth As Long
+    Dim i As Long
 
-' Start of the element to delete. The AES anchor wins when it precedes the hit:
-' the heading normally sits in a table nested inside the anchored div, and
-' cutting only that table would leave the empty footer shell behind.
-Private Function FooterContainerStart(ByVal html As String, ByVal hitPos As Long) As Long
-    Dim head As String
-    Dim at As Long
-    Dim lt As Long
-    Dim divPos As Long
-    Dim tablePos As Long
+    If hitPos <= 1 Then Exit Function
+    Set re = CreateObject("VBScript.RegExp")
+    re.Global = True
+    re.IgnoreCase = True
+    re.Pattern = "<(/?)table\b[^>]*>"
+    Set ms = re.Execute(Left$(html, hitPos))
 
-    head = Left$(html, hitPos)
+    ReDim opens(0 To 31)
+    ReDim wanted(0 To 31)
+    For Each m In ms
+        If Len(m.SubMatches(0)) > 0 Then
+            If depth > 0 Then depth = depth - 1
+        Else
+            depth = depth + 1
+            If depth > UBound(opens) Then
+                ReDim Preserve opens(0 To depth + 31)
+                ReDim Preserve wanted(0 To depth + 31)
+            End If
+            opens(depth) = m.FirstIndex + 1
+            If Len(tagNeedle) > 0 Then
+                wanted(depth) = (InStr(1, m.Value, tagNeedle, vbTextCompare) > 0)
+            End If
+        End If
+    Next
 
-    at = InStrRev(head, "id='aes-footer-start'", , vbTextCompare)
-    If at = 0 Then at = InStrRev(head, "id=""aes-footer-start""", , vbTextCompare)
-    If at > 0 Then
-        lt = InStrRev(Left$(html, at), "<")
-        If lt > 0 Then
-            FooterContainerStart = lt
+    If depth = 0 Then Exit Function
+    If Len(tagNeedle) = 0 Then
+        EnclosingTableStart = opens(depth)
+        Exit Function
+    End If
+    For i = 1 To depth
+        If wanted(i) Then
+            EnclosingTableStart = opens(i)
             Exit Function
         End If
-    End If
-
-    divPos = InStrRev(head, "<div", , vbTextCompare)
-    tablePos = InStrRev(head, "<table", , vbTextCompare)
-    If tablePos > divPos Then
-        FooterContainerStart = tablePos
-    Else
-        FooterContainerStart = divPos
-    End If
-End Function
-
-' Name of the element opening at openPos (which points at the '<').
-Private Function TagNameAt(ByVal html As String, ByVal openPos As Long) As String
-    Dim i As Long
-    Dim ch As String
-    Dim tagText As String
-
-    For i = openPos + 1 To Len(html)
-        ch = Mid$(html, i, 1)
-        If ch = " " Or ch = ">" Or ch = "/" Or ch = vbCr Or ch = vbLf Or ch = vbTab Then Exit For
-        tagText = tagText & ch
-        If Len(tagText) > 12 Then Exit For
     Next i
-    TagNameAt = LCase$(tagText)
+    Exit Function
+EH:
+    EnclosingTableStart = 0
 End Function
 
-' Removes the <div> or <table> that encloses hitPos, matching nested tags of the
-' same name so the correct closing tag is used. Returns the input unchanged if
-' no container can be identified - it never guesses, because a wrong cut here
-' would delete the sender's content.
-Private Function RemoveEnclosingBlockAt(ByVal html As String, ByVal hitPos As Long) As String
+' Removes the <table> opening at openPos through its matching </table>.
+' Returns the input unchanged when the close cannot be found.
+Private Function RemoveTableStartingAt(ByVal html As String, ByVal openPos As Long) As String
     On Error Resume Next
-    RemoveEnclosingBlockAt = html
-    If hitPos <= 1 Or Len(html) = 0 Then Exit Function
+    RemoveTableStartingAt = html
+    If openPos < 1 Then Exit Function
 
-    Dim openPos As Long
-    Dim tagName As String
-
-    openPos = FooterContainerStart(html, hitPos)
-    If openPos = 0 Then Exit Function
-    tagName = TagNameAt(html, openPos)
-    If tagName <> "div" And tagName <> "table" Then Exit Function
-
-    Dim openTag As String
-    Dim closeTag As String
     Dim depth As Long
     Dim scanAt As Long
     Dim nextOpen As Long
     Dim nextClose As Long
+    Dim closeEnd As Long
     Dim guard As Long
 
-    openTag = "<" & tagName
-    closeTag = "</" & tagName
-    depth = 0
     scanAt = openPos
-
     Do While guard < 5000
         guard = guard + 1
-        nextOpen = InStr(scanAt + 1, html, openTag, vbTextCompare)
-        nextClose = InStr(scanAt + 1, html, closeTag, vbTextCompare)
+        nextOpen = InStr(scanAt + 1, html, "<table", vbTextCompare)
+        nextClose = InStr(scanAt + 1, html, "</table", vbTextCompare)
         If nextClose = 0 Then Exit Function
 
         If nextOpen > 0 And nextOpen < nextClose Then
@@ -3223,13 +3316,83 @@ Private Function RemoveEnclosingBlockAt(ByVal html As String, ByVal hitPos As Lo
             depth = depth - 1
             scanAt = nextClose
         Else
-            Dim closeEnd As Long
             closeEnd = InStr(nextClose, html, ">")
             If closeEnd = 0 Then Exit Function
-            RemoveEnclosingBlockAt = Left$(html, openPos - 1) & Mid$(html, closeEnd + 1)
+            RemoveTableStartingAt = Left$(html, openPos - 1) & Mid$(html, closeEnd + 1)
             Exit Function
         End If
     Loop
+End Function
+
+' Removes the footer table around a heading at hitPos: the outermost enclosing
+' table drawn in the footer's own background colour. Returns the input
+' unchanged when the heading is not inside one - a correspondent can type the
+' product name, and their table must not be deleted for it.
+Private Function RemoveFooterTableAt(ByVal html As String, ByVal hitPos As Long) As String
+    Dim openPos As Long
+    RemoveFooterTableAt = html
+    openPos = EnclosingTableStart(html, hitPos, AES_STRIP_COLOUR)
+    If openPos = 0 Then Exit Function
+    RemoveFooterTableAt = RemoveTableStartingAt(html, openPos)
+End Function
+
+' True when the fragment shows nothing: no image, no text.
+Private Function HtmlFragmentIsBlank(ByVal fragment As String) As Boolean
+    On Error GoTo EH
+    Dim re As Object
+    If InStr(1, fragment, "<img", vbTextCompare) > 0 Then Exit Function
+    If InStr(1, fragment, "<v:imagedata", vbTextCompare) > 0 Then Exit Function
+    Set re = CreateObject("VBScript.RegExp")
+    re.Global = True
+    re.IgnoreCase = True
+    re.Pattern = "<[^>]*>"
+    fragment = re.Replace(fragment, "")
+    re.Pattern = "&nbsp;|&#160;|[\s\u00A0\u200B]+"
+    fragment = re.Replace(fragment, "")
+    HtmlFragmentIsBlank = (Len(fragment) = 0)
+    Exit Function
+EH:
+    HtmlFragmentIsBlank = False
+End Function
+
+' Called once every whole footer and every footer table is gone: an AES anchor
+' still in the body belongs to nothing. Left in place it would be counted as a
+' footer for ever. The small empty spacer table Word wraps around the start
+' anchor goes with it; anywhere else only the anchor tag itself is removed.
+Private Function RemoveOrphanFooterAnchors(ByVal html As String) As String
+    Dim guard As Long
+    Dim lt As Long
+    Dim gt As Long
+    Dim tableAt As Long
+    Dim trimmed As String
+    Dim tookTable As Boolean
+
+    Do While guard < 40
+        guard = guard + 1
+        lt = FindAesAnchorTag(html, AES_ANCHOR_START, 1)
+        If lt = 0 Then lt = FindAesAnchorTag(html, AES_ANCHOR_END, 1)
+        If lt = 0 Then Exit Do
+        gt = InStr(lt, html, ">")
+        If gt = 0 Then Exit Do
+
+        tookTable = False
+        tableAt = EnclosingTableStart(html, lt, "")
+        If tableAt > 0 Then
+            trimmed = RemoveTableStartingAt(html, tableAt)
+            If Len(trimmed) < Len(html) And Len(html) - Len(trimmed) <= 2000 Then
+                If HtmlFragmentIsBlank(Mid$(html, tableAt, Len(html) - Len(trimmed))) Then
+                    html = trimmed
+                    tookTable = True
+                End If
+            End If
+        End If
+
+        If Not tookTable Then
+            If LCase$(Mid$(html, gt + 1, 4)) = "</a>" Then gt = gt + 4
+            html = Left$(html, lt - 1) & Mid$(html, gt + 1)
+        End If
+    Loop
+    RemoveOrphanFooterAnchors = html
 End Function
 
 ' One footer per message, always. Called on the finished body just before it is

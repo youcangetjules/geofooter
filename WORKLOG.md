@@ -13,6 +13,14 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-19 — 1.8.13: **Keep the right-hand border on the top status strip (1.8.13)**
+
+- Symptom: the status strip at the top of a mail (seen quoted in a reply) had top and bottom borders but no right-hand one.
+- Cause (likely, not reproduced in Outlook): `_render_status_banner_png` drew the border on pixel column `width - 1`. Word sizes images in half points, so an odd pixel width loses its last column. The top edge already had a `clip_guard_top` for the same engine.
+- Fix (`aes/geolocate_headers.py`): `clip_guard_right = 4` white columns after the bordered strip; background and border are drawn to `strip_w`, the image is `strip_w + 4` wide.
+- Checked: rendered a sample strip; border at x = strip_w - 1 followed by four white columns.
+- Follow-up: none. Already-scanned mails keep their old image until rescanned.
+
 ### 2026-11-19 — 1.8.12: **Remove footers quoted through a reply (1.8.12)**
 
 - Symptom: a received reply showed two AES footers, the quoted one directly above the new one. No `HEALTH | footer count` warning was logged.

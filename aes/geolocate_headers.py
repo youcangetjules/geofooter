@@ -4595,6 +4595,10 @@ class HTMLReportGenerator:
             # body image. Leave sacrificial white rows ABOVE the bordered strip
             # so the gold frame and text survive that crop.
             clip_guard_top = 6
+            # The same engine rounds the image width to half points and can
+            # drop the last pixel column, which was the right-hand border.
+            # Spare white columns to the right take that loss instead.
+            clip_guard_right = 4
 
             probe = Image.new("RGB", (10, 10), bg)
             probe_draw = ImageDraw.Draw(probe)
@@ -4606,13 +4610,14 @@ class HTMLReportGenerator:
             square = content_h  # risk square = full height of bordered strip
             height = clip_guard_top + content_h
             text_left = square + gap
-            width = max(720, text_left + text_w + pad_right)
+            strip_w = max(720, text_left + text_w + pad_right)
+            width = strip_w + clip_guard_right
 
             # White above the strip blends with the reading pane if uncropped.
             img = Image.new("RGB", (width, height), (255, 255, 255))
             draw = ImageDraw.Draw(img)
             y0 = clip_guard_top
-            draw.rectangle([0, y0, width - 1, height - 1], fill=bg)
+            draw.rectangle([0, y0, strip_w - 1, height - 1], fill=bg)
 
             # Risk square flush left of the bordered strip, full content height.
             draw.rectangle(
@@ -4637,9 +4642,9 @@ class HTMLReportGenerator:
             text_y = y0 + pad_top - bbox[1]
             draw.text((text_left, text_y), line, fill=fg, font=font)
 
-            # Border around the content strip only (not the white clip guard).
+            # Border around the content strip only (not the white clip guards).
             draw.rectangle(
-                [0, y0, width - 1, height - 1], outline=border_rgb, width=1
+                [0, y0, strip_w - 1, height - 1], outline=border_rgb, width=1
             )
 
             out_dir = Path(CONFIG["base_path"]) / "output" / "banners"

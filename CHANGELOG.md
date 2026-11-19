@@ -20,6 +20,10 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.13] — 2026-11-19
+
+- **The top status strip keeps its right-hand border.** The border was the last pixel column of the image, and Outlook's Word engine can drop that column when it rounds the image width (most visibly when the mail is quoted in a reply). The image now carries four spare white columns to the right of the border, the same way it already protects its top edge. Applies to mails scanned from now on; no VBA change.
+
 ## [1.8.12] — 2026-11-19
 
 - **A footer quoted in a reply chain is removed again, so a mail carries one footer.** When a scanned mail is replied to, Word rewrites the footer: the comment markers and the end anchor are dropped, the start anchor becomes `<a name="aes-footer-start">`, and the heading keeps its non-breaking spaces. The detector only knew the pristine spellings, so it neither saw nor removed that quoted footer and the new one was added beneath it. Footers are now recognised in every spelling and a marker-less one is removed by its own table (identified by the footer background colour). Needs a VBA re-import. A mail already showing two footers is repaired the next time it is scanned (Short Scan).

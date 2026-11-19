@@ -576,8 +576,22 @@ function Restore-AfterFailure {
         Log "AES is off for this session: each send now asks before going without a classification"
         return "AES is off until Outlook is restarted. Until then each send asks whether to go without a classification."
     } catch {
-        Log "Could not replace the send hold: $($_.Exception.Message). Sends are held until Outlook is restarted."
-        return "Sends are HELD until Outlook is restarted, because the update could not undo its send hold."
+        $why = $_.Exception.Message
+        # Say what is actually in the editor rather than assume the worst or the best.
+        $now = $null
+        try { $now = (Get-ThisOutlookSessionCodeFromEditor -Vbe $Vbe) -replace '\s+', '' } catch {}
+        if ($now -and $PreviousCode.Trim().Length -gt 40 -and $now -eq ($PreviousCode -replace '\s+', '')) {
+            if (-not $ModulesTouched) {
+                if ($OldState) { Set-Content -LiteralPath $StatePath -Value $OldState -Encoding ASCII }
+                Log "The previous code is still in place: sending was not affected"
+                return "The previous AES code is still in place, so sending works as before."
+            }
+        } elseif ($now -and $now -eq ((Get-GuardCode -Failed) -replace '\s+', '')) {
+            Log "AES is off for this session: each send now asks before going without a classification"
+            return "AES is off until Outlook is restarted. Until then each send asks whether to go without a classification."
+        }
+        Log "Could not replace the send hold: $why. Sends may be held until Outlook is restarted."
+        return "Sends may be HELD until Outlook is restarted, because the update could not confirm that its send hold was undone. If a send does nothing, close and reopen Outlook and answer No if it asks to save the VBA project."
     }
 }
 
@@ -609,22 +623,35 @@ function Set-ThisOutlookSessionCode {
     param([IntPtr]$Vbe, [string]$Code)
     $saved = Save-ClipboardData
     try {
-        Invoke-EditCommand -Vbe $Vbe -Item "Select All"
-        Start-Sleep -Milliseconds 200
-        Set-Clipboard -Value $Code
-        Start-Sleep -Milliseconds 150
-        Invoke-EditCommand -Vbe $Vbe -Item "Paste"
-        Start-Sleep -Milliseconds 500
-        # Read the pane back: a silently failed paste must not count as success.
-        Invoke-EditCommand -Vbe $Vbe -Item "Select All"
-        Start-Sleep -Milliseconds 150
-        Set-Clipboard -Value " "
-        Invoke-EditCommand -Vbe $Vbe -Item "Copy"
-        Start-Sleep -Milliseconds 300
-        $back = Get-Clipboard -Raw
-        if (($back -replace '\s+', '') -ne ($Code -replace '\s+', '')) {
-            throw "ThisOutlookSession code did not match after paste"
+        # The paste and the read-back both go through the clipboard, which the
+        # user (or a clipboard tool) can take at any moment. One collision
+        # failed the whole update on 2026-11-19, so try again before giving up.
+        $want = $Code -replace '\s+', ''
+        $lastError = ""
+        for ($attempt = 1; $attempt -le 3; $attempt++) {
+            try {
+                Invoke-EditCommand -Vbe $Vbe -Item "Select All"
+                Start-Sleep -Milliseconds 200
+                Set-Clipboard -Value $Code
+                Start-Sleep -Milliseconds 150
+                Invoke-EditCommand -Vbe $Vbe -Item "Paste"
+                Start-Sleep -Milliseconds 500
+                # Read the pane back: a silently failed paste must not count as success.
+                Invoke-EditCommand -Vbe $Vbe -Item "Select All"
+                Start-Sleep -Milliseconds 150
+                Set-Clipboard -Value " "
+                Invoke-EditCommand -Vbe $Vbe -Item "Copy"
+                Start-Sleep -Milliseconds 300
+                $back = Get-Clipboard -Raw
+                if (($back -replace '\s+', '') -eq $want) { return }
+                $lastError = "ThisOutlookSession code did not match after paste"
+            } catch { $lastError = $_.Exception.Message }
+            if ($attempt -lt 3) {
+                Log "ThisOutlookSession write attempt $attempt failed ($lastError); retrying"
+                Start-Sleep -Milliseconds (600 * $attempt)
+            }
         }
+        throw $lastError
     } finally {
         Restore-ClipboardData $saved
     }
@@ -836,8 +863,11 @@ try {
     }
 
     Log "Holding sends while modules are replaced"
-    Set-ThisOutlookSessionCode -Vbe $vbe -Code (Get-GuardCode)
+    # Set before the write, not after: when the write fails its read-back, the
+    # hold may or may not be in the editor. Treating that as "never placed"
+    # left a silent send hold with nothing to undo it.
     $guardOn = $true
+    Set-ThisOutlookSessionCode -Vbe $vbe -Code (Get-GuardCode)
     if ($SelfTest -eq "FailBeforeRemove") { throw "self-test: stopping before any module is removed" }
     $stale = @("UserForm1", "frmClassification", "MSCANSecurityRatingForm", "ThisOutlookSession1", "ThisOutlookSession2")
     $wanted = @($files | ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) })

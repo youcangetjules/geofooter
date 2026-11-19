@@ -20,6 +20,10 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.15] — 2026-11-19
+
+- **A VBA update that stumbles on its first step can no longer leave sends silently held.** Writing the temporary "hold sends" code goes through the clipboard; one collision failed the update on 2026-11-19 and the failure path assumed the hold had never been placed, so it undid nothing. The write is now tried three times, a failure there is undone like any other, and the result message reports what is actually in the editor.
+
 ## [1.8.14] — 2026-11-19
 
 - **The top status strip states the BGP result.** It now ends with `BGP risks checked - none found`, or `BGP RISK: ...` naming the strongest finding (hijack / route leak, several networks announcing the block, tromboning), which also turns the strip amber. When no BGP lookup could run it says `BGP risks not checked` rather than claiming a clean result. An origin mismatch on its own is shown as an advisory. Applies to mails scanned from now on; no VBA change.

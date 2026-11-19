@@ -13,6 +13,17 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-19 — 1.8.15: **Importer: retry the send-hold write and undo it when it fails (1.8.15)**
+
+- Symptom: `Import_VBA_ViaUi.ps1` failed with "ThisOutlookSession code did not match after paste" at "Holding sends while modules are replaced". No restore ran. A second run succeeded.
+- Cause: `$guardOn` was set after `Set-ThisOutlookSessionCode`. That function pastes, then verifies by copying the pane back; if the paste landed and the read-back lost the clipboard, the silent `Cancel = True` stub was live while the catch block reported "the send hold had not been placed".
+- Fix (`scripts/Import_VBA_ViaUi.ps1`):
+  - `Set-ThisOutlookSessionCode` retries the paste + read-back up to three times, logging each failed attempt.
+  - `$guardOn = $true` is set before the write, so a failure goes through `Restore-AfterFailure`.
+  - `Restore-AfterFailure`'s last resort reads the editor and reports the real state (previous code still there / per-send prompt in place / unknown) instead of always claiming sends are held.
+- Checked: script parses; `-SelfTest FailBeforeRemove` run live: hold placed, failure raised, previous code restored, sync state restored. The retry branch itself was not forced.
+- Follow-up: none. No VBA change.
+
 ### 2026-11-19 — 1.8.14: **Show the BGP result in the top status strip (1.8.14)**
 
 - Request: the top banner should mention BGP risks, and say they were checked and none found when there are none.

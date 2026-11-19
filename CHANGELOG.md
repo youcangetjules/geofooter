@@ -20,6 +20,10 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.19] — 2026-11-19
+
+- **The VBA update waits for the editor before removing a module.** Two updates in a row failed with "Menu item is disabled: File > Remove" because the command is greyed out for a moment after the code pane is written. The importer now reselects the module and waits (up to 20 s) until the editor offers the command.
+
 ## [1.8.18] — 2026-11-19
 
 - **The BGP scan gets an answer instead of "UNVERIFIED - no reply".** The route registry (RIPEstat) was stalling: one request timed out after 20 s, the next answered in 0.1 s. The announcing network is now read from DNS first (milliseconds), registry calls use three short tries inside a time limit, and if only the authorisation check (RPKI) cannot be read the strip says `BGP scan: origin OK, RPKI unverified` rather than "no risks". No VBA change.

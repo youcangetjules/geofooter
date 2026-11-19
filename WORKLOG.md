@@ -13,6 +13,13 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-19 — 1.8.19: **Importer: wait for File > Remove to be available (1.8.19)**
+
+- Symptom: `Import_VBA_ViaUi.ps1` failed twice at "Removing MSCANAppBootstrap" with "Menu item is disabled: File > Remove"; the session was left on the per-send prompt as designed. A read-only check seconds later showed the command enabled.
+- Fix (`scripts/Import_VBA_ViaUi.ps1`, `Remove-Module`): select the node, poll `MenuEnabled("File","Remove")` every 0.75 s for up to 20 s, then invoke.
+- Checked: full import ran straight after: 20 modules, Compile OK, saved.
+- Follow-up: none.
+
 ### 2026-11-19 — 1.8.18: **Make the BGP lookup dependable (1.8.18)**
 
 - Symptom: first live mail on 1.8.16 showed `BGP scan: UNVERIFIED - no reply`.

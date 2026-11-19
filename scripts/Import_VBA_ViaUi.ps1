@@ -428,7 +428,18 @@ function Read-EditorMessage {
 
 function Remove-Module {
     param([IntPtr]$Vbe, [int]$OutlookPid, [string]$Name)
-    [VbeUi]::SelectNode($Vbe, $Name)
+    # File > Remove stays greyed out for a moment after the code pane was
+    # written or another module removed. Invoking it at once failed two updates
+    # in a row on 2026-11-19; select again and wait until the editor offers it.
+    $deadline = (Get-Date).AddSeconds(20)
+    while ($true) {
+        [VbeUi]::SelectNode($Vbe, $Name)
+        Start-Sleep -Milliseconds 250
+        $ready = $false
+        try { $ready = [VbeUi]::MenuEnabled($Vbe, "File", "Remove") } catch {}
+        if ($ready -or (Get-Date) -ge $deadline) { break }
+        Start-Sleep -Milliseconds 500
+    }
     [VbeUi]::Invoke($Vbe, "File", "Remove")
     $prompt = [VbeUi]::WaitDialog($OutlookPid, "Microsoft Visual Basic", 5000)
     if ($prompt -eq [IntPtr]::Zero) { throw "No confirmation appeared when removing $Name" }

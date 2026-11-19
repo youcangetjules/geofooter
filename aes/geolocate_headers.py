@@ -4040,6 +4040,7 @@ class HTMLReportGenerator:
             sender_seen_count=sender_seen_count,
             body_available=body_available,
             risktable_checked=risktable_checked,
+            route_integrity=route_integrity,
         )
         # Keep a short strip above the footer summary as well.
         sender_blocks_banner = top_mail_banners
@@ -4673,6 +4674,7 @@ class HTMLReportGenerator:
         sender_seen_count: int = 0,
         body_available: bool = False,
         risktable_checked: bool = False,
+        route_integrity: Optional[Dict[str, Any]] = None,
     ) -> str:
         """AES status strip as a PNG image for the top of the body (preview-safe).
 
@@ -4720,12 +4722,19 @@ class HTMLReportGenerator:
         )
         if risktable_note:
             line = f"{line}  |  {risktable_note}"
+        # Always state the BGP result, including "checked - none found".
+        bgp_note, bgp_warn = (
+            route_checks.banner_note(route_integrity)
+            if route_checks is not None
+            else ("BGP risks not checked", False)
+        )
+        line = f"{line}  |  {bgp_note}"
         if score > 25:
             line += "  |  Recommend Full Scan"
         if risk_requires_mitigation(score) and not block_state.get("trusted"):
             line += "  |  TEXT-ONLY MITIGATION"
 
-        warn = hre > 0 or score > 25 or (
+        warn = bgp_warn or hre > 0 or score > 25 or (
             "found on RiskTable" in (risktable_note or "")
         )
         img_path, img_w, img_h = self._render_status_banner_png(

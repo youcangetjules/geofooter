@@ -20,6 +20,10 @@ e.g. `Fix Create-GURI silent insert failure for long document paths`.
 
 ## [Unreleased]
 
+## [1.8.14] — 2026-11-19
+
+- **The top status strip states the BGP result.** It now ends with `BGP risks checked - none found`, or `BGP RISK: ...` naming the strongest finding (hijack / route leak, several networks announcing the block, tromboning), which also turns the strip amber. When no BGP lookup could run it says `BGP risks not checked` rather than claiming a clean result. An origin mismatch on its own is shown as an advisory. Applies to mails scanned from now on; no VBA change.
+
 ## [1.8.13] — 2026-11-19
 
 - **The top status strip keeps its right-hand border.** The border was the last pixel column of the image, and Outlook's Word engine can drop that column when it rounds the image width (most visibly when the mail is quoted in a reply). The image now carries four spare white columns to the right of the border, the same way it already protects its top edge. Applies to mails scanned from now on; no VBA change.

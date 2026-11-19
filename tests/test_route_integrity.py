@@ -63,3 +63,43 @@ def test_report_block_names_hops_and_states_coverage():
     unknown = gh._route_integrity_html({"items": [], "located": 1, "bgp_checked": 0, "lite": True, "clean": False})
     assert "Not enough route data" in unknown
     assert gh._route_integrity_html({}) == ""
+
+
+def test_banner_says_checked_and_none_found_only_after_a_lookup():
+    assert rc.banner_note({"items": [], "bgp_checked": 1}) == ("BGP risks checked - none found", False)
+    assert rc.banner_note({"items": [], "bgp_checked": 0}) == ("BGP risks not checked", False)
+    assert rc.banner_note(None) == ("BGP risks not checked", False)
+
+
+def test_banner_names_the_strongest_bgp_risk_and_warns():
+    summary = {"bgp_checked": 2, "items": [
+        {"kind": "bgp-rpki-invalid", "hops": [1]}, {"kind": "tromboning", "hops": [1, 2, 3]},
+        {"kind": "bgp-origin-mismatch", "hops": [1]}]}
+    assert rc.banner_note(summary) == ("BGP RISK: hijack or route leak suspected (+1 more)", True)
+
+
+def test_banner_treats_an_origin_mismatch_alone_as_an_advisory():
+    summary = {"bgp_checked": 1, "items": [{"kind": "bgp-origin-mismatch", "hops": [1]}]}
+    assert rc.banner_note(summary) == ("BGP risks checked - none found (1 advisory)", False)
+
+
+def test_status_strip_carries_the_bgp_result(monkeypatch):
+    seen = {}
+
+    def fake_render(self, line, *, warn, risk_score=0):
+        seen["line"], seen["warn"] = line, warn
+        return "", 0, 0
+
+    cls = next(v for v in vars(gh).values()
+               if isinstance(v, type) and hasattr(v, "_build_top_of_mail_banners"))
+    monkeypatch.setattr(cls, "_render_status_banner_png", fake_render)
+    monkeypatch.setattr(cls, "_sender_status_label", lambda *a, **k: "Known/Trust")
+    monkeypatch.setattr(cls, "_beacon_blocking_enabled", lambda self: False)
+    me = object.__new__(cls)
+    kwargs = dict(block_state={"trusted": True}, attachment_count=0, beacon_count=0, beacon_blocked=None,
+                  attachment_not_ok=0, attachments_quarantined=0, link_findings=[], risk_score=5)
+    cls._build_top_of_mail_banners(me, route_integrity={"items": [], "bgp_checked": 1}, **kwargs)
+    assert seen["line"].endswith("BGP risks checked - none found") and seen["warn"] is False
+    cls._build_top_of_mail_banners(
+        me, route_integrity={"bgp_checked": 1, "items": [{"kind": "bgp-rpki-invalid"}]}, **kwargs)
+    assert "BGP RISK: hijack or route leak suspected" in seen["line"] and seen["warn"] is True

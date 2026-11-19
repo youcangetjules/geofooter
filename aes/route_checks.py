@@ -297,6 +297,36 @@ def integrity_summary(hops: List[Dict[str, Any]], findings: List[Dict[str, Any]]
     }
 
 
+_BANNER_RISKS = {
+    "bgp-rpki-invalid": "hijack or route leak suspected",
+    "bgp-multiple-origins": "several networks announce the sender's address block",
+    "tromboning": "route leaves the region and returns",
+}
+
+
+def banner_note(summary: Optional[Dict[str, Any]]) -> Tuple[str, bool]:
+    """One phrase for the status strip at the top of the mail, and whether it warns.
+
+    "Checked - none found" is only said when a BGP lookup actually ran. An
+    origin mismatch on its own is informational (common for cloud senders),
+    so it is reported as an advisory, not as a risk.
+    """
+    summary = summary or {}
+    items = summary.get("items") or []
+    risks = [str(i.get("kind")) for i in items if str(i.get("kind")) in _BANNER_RISKS]
+    if risks:
+        note = f"BGP RISK: {_BANNER_RISKS[risks[0]]}"
+        if len(risks) > 1:
+            note += f" (+{len(risks) - 1} more)"
+        return note, True
+    if int(summary.get("bgp_checked") or 0) <= 0:
+        return "BGP risks not checked", False
+    advisories = sum(1 for i in items if str(i.get("kind")) == "bgp-origin-mismatch")
+    if advisories:
+        return f"BGP risks checked - none found ({advisories} advisory)", False
+    return "BGP risks checked - none found", False
+
+
 def check_routing(hops: List[Dict[str, Any]], *, lite: bool) -> List[Dict[str, Any]]:
     """All routing findings, points capped at MAX_TOTAL_POINTS."""
     findings: List[Dict[str, Any]] = []

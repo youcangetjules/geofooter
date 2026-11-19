@@ -13,6 +13,15 @@ Append an entry **whenever meaningful code or project-doc changes are made**. Ne
 
 ---
 
+### 2026-11-19 — 1.8.14: **Show the BGP result in the top status strip (1.8.14)**
+
+- Request: the top banner should mention BGP risks, and say they were checked and none found when there are none.
+- `aes/route_checks.py`: `banner_note(summary)` turns the existing `integrity_summary` into one phrase plus a warn flag. "Checked - none found" needs `bgp_checked > 0`; otherwise "BGP risks not checked". `bgp-rpki-invalid`, `bgp-multiple-origins` and `tromboning` are risks; `bgp-origin-mismatch` alone is an advisory count.
+- `aes/geolocate_headers.py`: `_build_top_of_mail_banners` takes `route_integrity` and appends the note after the RiskTable note; a BGP risk sets the amber warn style.
+- Note: a Basic (compact) scan checks BGP on the sending exit hop only, so the strip reports that hop.
+- Tests: four added to `tests/test_route_integrity.py`.
+- Follow-up: none.
+
 ### 2026-11-19 — 1.8.13: **Keep the right-hand border on the top status strip (1.8.13)**
 
 - Symptom: the status strip at the top of a mail (seen quoted in a reply) had top and bottom borders but no right-hand one.
